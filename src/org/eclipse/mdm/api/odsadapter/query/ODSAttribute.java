@@ -8,9 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.query;
 
-import org.asam.ods.AoException;
 import org.asam.ods.ApplAttr;
-import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.Entity;
@@ -21,8 +19,8 @@ public final class ODSAttribute implements Attribute {
 	private final ApplAttr applAttr;
 	private final Entity entity;
 	private final ValueType valueType;
-	
-	public ODSAttribute(ApplAttr applAttr, Entity entity) throws AoException {
+
+	public ODSAttribute(ApplAttr applAttr, Entity entity) {
 		this.applAttr = applAttr;
 		this.entity = entity;
 		valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);
@@ -30,32 +28,22 @@ public final class ODSAttribute implements Attribute {
 
 	@Override
 	public String getName() {
-		return this.applAttr.aaName;
+		return applAttr.aaName;
 	}
 
 	@Override
 	public Entity getEntity() {
-		return this.entity;
+		return entity;
 	}
 
 	@Override
 	public ValueType getType() {
 		return valueType;
 	}
-	
-	@Override
-	public Value create(Object value) {
-		return create("", value);
-	}
 
-	@Override
-	public Value create(String unit, Object value) {
-		return valueType.newValue(getName(), value, unit);
-	}
-	
 	@Override
 	public String toString() {
 		return getName();
 	}
-	
+
 }
