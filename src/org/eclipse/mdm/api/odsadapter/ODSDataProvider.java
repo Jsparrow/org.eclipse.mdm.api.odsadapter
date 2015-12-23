@@ -42,6 +42,7 @@ import org.eclipse.mdm.api.base.model.ContextDescribable;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.Parameter;
 import org.eclipse.mdm.api.base.model.ParameterSet;
@@ -535,6 +536,14 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 	}
 
 	public <T extends DataItem> void update(List<T> dataItems) throws DataAccessException {
+		/**
+		 * TODO: because lines below compile it is required to group passed data items by their entity type!!
+		 */
+		//		Test t = null;
+		//		TestStep ts = null;
+		//
+		//		odsDataProvider.update(Arrays.asList(t, ts));
+
 
 		try {
 
@@ -572,11 +581,19 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 		}
 	}
 
-	public <T extends DataItem>  List<URI> delete(T dataItems) throws DataAccessException {
-		return delete(Collections.singletonList(dataItems));
+	public <T extends Deletable>  List<URI> delete(T dataItem) throws DataAccessException {
+		return delete(Collections.singletonList(dataItem));
 	}
 
-	public <T extends DataItem> List<URI> delete(List<T> dataItems) throws DataAccessException {
+	public <T extends Deletable> List<URI> delete(List<T> dataItems) throws DataAccessException {
+
+		/**
+		 * TODO: because lines below compile it is required to group passed data items by their entity type!!
+		 */
+		//		Test t = null;
+		//		TestStep ts = null;
+		//
+		//		odsDataProvider.delete(Arrays.asList(t, ts));
 
 		try {
 
@@ -595,10 +612,7 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 			DeleteStatement deleteStatement = new DeleteStatement(applElemAccess, queryService,
 					rootEntity, true);
 			deleteStatement.addInstances(dataItems);
-			deleteStatement.execute();
-
-			return Collections.emptyList();
-
+			return deleteStatement.execute();
 		} catch(AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);
 		}

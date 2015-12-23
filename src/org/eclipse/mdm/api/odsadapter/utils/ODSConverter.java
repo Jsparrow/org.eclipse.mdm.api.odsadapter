@@ -310,12 +310,48 @@ public final class ODSConverter {
 				list[i] = (double[])values.get(i).extract();
 			}
 			tsvs.u.doubleSeq(list);
+		} else if(DataType.DS_FLOAT == dataType) {
+			float[][] list = new float[values.size()][];
+			for(int i=0; i<values.size(); i++) {
+				list[i] = (float[])values.get(i).extract();
+			}
+			tsvs.u.floatSeq(list);
 		} else if(DataType.DS_SHORT == dataType) {
 			short[][] list = new short[values.size()][];
 			for(int i=0; i<values.size(); i++) {
 				list[i] = (short[])values.get(i).extract();
 			}
 			tsvs.u.shortSeq(list);
+		} else if(DataType.DS_BOOLEAN == dataType) {
+			boolean[][] list = new boolean[values.size()][];
+			for(int i=0; i<values.size(); i++) {
+				list[i] = (boolean[])values.get(i).extract();
+			}
+			tsvs.u.booleanSeq(list);
+		} else if(DataType.DS_BYTE == dataType) {
+			byte[][] list = new byte[values.size()][];
+			for(int i=0; i<values.size(); i++) {
+				list[i] = (byte[])values.get(i).extract();
+			}
+			tsvs.u.byteSeq(list);
+		} else if(DataType.DS_STRING == dataType) {
+			String[][] list = new String[values.size()][];
+			for(int i=0; i<values.size(); i++) {
+				list[i] = (String[])values.get(i).extract();
+			}
+			tsvs.u.stringSeq(list);
+		} else if(DataType.DS_DATE == dataType) {
+			String[][] list = new String[values.size()][];
+			for(int i=0; i<values.size(); i++) {
+				list[i] = toODSDateSEQ(values.get(i).extract());
+			}
+			tsvs.u.dateSeq(list);
+		} else if(DataType.DS_BYTESTR == dataType) {
+			byte[][][] list = new byte[values.size()][][];
+			for(int i=0; i<values.size(); i++) {
+				list[i] = values.get(i).extract();
+			}
+			tsvs.u.bytestrSeq(list);
 		} else if(DataType.DS_EXTERNALREFERENCE == dataType) {
 			tsvs.u.extRefSeq(new T_ExternalReference[0][0]);
 		} else if(DataType.DT_EXTERNALREFERENCE == dataType) {
