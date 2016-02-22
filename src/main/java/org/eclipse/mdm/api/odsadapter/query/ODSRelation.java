@@ -1,0 +1,71 @@
+/*
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
+
+package org.eclipse.mdm.api.odsadapter.query;
+
+import org.asam.ods.ApplRel;
+import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.Relation;
+import org.eclipse.mdm.api.base.query.Relationship;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
+
+public final class ODSRelation implements Relation {
+
+	private final Relationship relationship;
+	private final EntityType source;
+	private final EntityType target;
+	private final String name;
+
+	private final int rangeMax;
+
+	public ODSRelation(ApplRel applRel, EntityType source, EntityType target) {
+		this.source = source;
+		this.target = target;
+		name = applRel.arName;
+		relationship = ODSUtils.RELATIONSHIPS.revert(applRel.arRelationType);
+		rangeMax = applRel.arRelationRange.max;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public EntityType getSource() {
+		return source;
+	}
+
+	@Override
+	public EntityType getTarget() {
+		return target;
+	}
+
+	@Override
+	public Relationship getRelationship() {
+		return relationship;
+	}
+
+	@Override
+	public String toString() {
+		return getName();
+	}
+
+	@Deprecated
+	//relation from N Site (= Fremdschlüsselspalte ist in gleicher Tabelle)
+	boolean isIncomming(Relationship relationship) {
+		return relationship.equals(getRelationship()) && rangeMax == 1;
+	}
+
+	@Deprecated
+	//relation to N Site (= Fremdschlüsselspalte ist in Ziel Tabelle)
+	boolean isOutgoing(Relationship relationship) {
+		return relationship.equals(getRelationship()) && rangeMax == -1;
+	}
+
+}

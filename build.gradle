@@ -1,0 +1,28 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'eclipse'
+
+repositories {
+    mavenLocal()
+}
+
+dependencies {
+    compile 'org.eclipse.mdm:org.eclipse.mdm.api.base:1.0.0-SNAPSHOT'
+//    compile 'org.asam:org.asam.ods:1.0.0-SNAPSHOT'
+}
+
+task compileIDL(type: JavaExec) {
+    classpath = files("${jacorb231Lib}idl.jar", "${jacorb231Lib}logkit-1.2.jar")
+    main = 'org.jacorb.idl.parser'
+    // TODO put generated classes in src/gen/java
+    args '-d', 'src/main/java/', 'src/main/idl/ods530.idl'
+}
+
+compileJava.dependsOn compileIDL
+
+task deleteGenerated(type: Delete) {
+    // TODO: remove src/gen/
+    delete 'src/main/java/org/asam'
+}
+
+clean.dependsOn deleteGenerated
