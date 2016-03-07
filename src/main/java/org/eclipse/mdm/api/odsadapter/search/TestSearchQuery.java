@@ -17,7 +17,7 @@ import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.Join;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
-final class TestSearchQuery extends BaseDataItemSearchQuery {
+final class TestSearchQuery extends BaseEntitySearchQuery {
 
 	public TestSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, Test.class, Test.class /* TODO: Change to Project */, Optional.of(contextState));

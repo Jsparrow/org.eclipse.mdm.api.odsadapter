@@ -11,16 +11,16 @@ package org.eclipse.mdm.api.odsadapter.query;
 import java.util.List;
 
 import org.eclipse.mdm.api.base.model.Core;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.MimeType;
 import org.eclipse.mdm.api.base.model.URI;
-import org.eclipse.mdm.api.base.model.factory.BaseEntityFactory;
+import org.eclipse.mdm.api.base.model.factory.EntityFactory;
 import org.eclipse.mdm.api.base.model.factory.EntityCore;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
-public final class ODSEntityFactory extends BaseEntityFactory {
+public final class ODSEntityFactory extends EntityFactory {
 
 	private final ODSTransaction transaction;
 
@@ -29,26 +29,26 @@ public final class ODSEntityFactory extends BaseEntityFactory {
 	}
 
 	@Override
-	protected Core createCore(Class<? extends DataItem> type) {
+	protected Core createCore(Class<? extends Entity> type) {
 		return new EntityCore(transaction.getModelManager().getEntityType(type));
 	}
 
 	@Override
-	protected MimeType getDefaultMimeType(Class<? extends DataItem> type) {
+	protected MimeType getDefaultMimeType(Class<? extends Entity> type) {
 		// TODO this is incomplete, we have to build custom ones for descriptive entity types
 		return new MimeType(ODSUtils.DEFAULT_MIMETYPES.get(type.getSimpleName()));
 	}
 
 	@Override
-	protected <T extends DataItem> T create(T dataItem, DataItem... implicitlyRelated) throws DataAccessException {
-		EntityType entityType = transaction.getModelManager().getEntityType(dataItem.getClass());
+	protected <T extends Entity> T create(T entity, Entity... implicitlyRelated) throws DataAccessException {
+		EntityType entityType = transaction.getModelManager().getEntityType(entity.getClass());
 		InsertStatement insertStatement = new InsertStatement(transaction, entityType);
 
-		insertStatement.add(dataItem.getCore(), implicitlyRelated);
+		insertStatement.add(entity.getCore(), implicitlyRelated);
 		List<Long> ids = insertStatement.execute();
-		dataItem.getCore().setURI(new URI(entityType.getSourceName(), dataItem.getCore().getTypeName(), ids.get(0)));
+		entity.getCore().setURI(new URI(entityType.getSourceName(), entity.getCore().getTypeName(), ids.get(0)));
 
-		return dataItem;
+		return entity;
 	}
 
 }

@@ -20,7 +20,7 @@ import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.Join;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
-final class ChannelSearchQuery extends BaseDataItemSearchQuery {
+final class ChannelSearchQuery extends BaseEntitySearchQuery {
 
 	public ChannelSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, Channel.class, Test.class /* TODO: Change to Project */, Optional.of(contextState));
@@ -34,6 +34,9 @@ final class ChannelSearchQuery extends BaseDataItemSearchQuery {
 		addDependency(Measurement.class, Channel.class, false, Join.INNER);
 		addDependency(Unit.class, Channel.class, true, Join.INNER);
 		addDependency(Quantity.class, Channel.class, true, Join.INNER);
+
+		// TODO join to sensor tables.... || this will break the joins to context data
+		// multiple outer join to the same table...
 	}
 
 }

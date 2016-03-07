@@ -219,7 +219,7 @@ public final class ODSConverter {
 
 		TS_ValueSeq odsValueSeq = new TS_ValueSeq(new TS_UnionSeq(), flags);
 		if(values == null || size < 1) {
-			odsValueSeq.u.__default();
+			odsValueSeq.u._default();
 			return odsValueSeq;
 		}
 

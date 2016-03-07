@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.eclipse.mdm.api.base.model.Channel;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
@@ -34,7 +34,7 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 public final class ODSSearchService implements SearchService {
 
-	private final Map<Class<? extends DataItem>, SearchQuery> searchQueriesByType = new HashMap<>();
+	private final Map<Class<? extends Entity>, SearchQuery> searchQueriesByType = new HashMap<>();
 
 	private final DataItemFactory dataItemFactory;
 	private final ODSModelManager modelManager;
@@ -50,50 +50,50 @@ public final class ODSSearchService implements SearchService {
 	}
 
 	@Override
-	public List<Class<? extends DataItem>> listSearchableTypes() {
+	public List<Class<? extends Entity>> listSearchableTypes() {
 		return new ArrayList<>(searchQueriesByType.keySet());
 	}
 
 	@Override
-	public List<EntityType> listEntityTypes(Class<? extends DataItem> type) {
+	public List<EntityType> listEntityTypes(Class<? extends Entity> type) {
 		return findSearchQuery(type).listEntityTypes();
 	}
 
 	@Override
-	public Searchable getSearchableRoot(Class<? extends DataItem> type) {
+	public Searchable getSearchableRoot(Class<? extends Entity> type) {
 		return findSearchQuery(type).getSearchableRoot();
 	}
 
 	@Override
-	public List<Value> getFilterValues(Class<? extends DataItem> type, Attribute attribute, Filter filter) throws DataAccessException {
+	public List<Value> getFilterValues(Class<? extends Entity> type, Attribute attribute, Filter filter) throws DataAccessException {
 		return findSearchQuery(type).getFilterValues(attribute, filter);
 	}
 
 	@Override
-	public <T extends DataItem> Map<T, List<Record>> fetchComplete(Class<T> type, List<EntityType> entityTypes, Filter filter) throws DataAccessException {
+	public <T extends Entity> Map<T, List<Record>> fetchComplete(Class<T> type, List<EntityType> entityTypes, Filter filter) throws DataAccessException {
 		return createResult(type, findSearchQuery(type).fetchComplete(entityTypes, filter));
 	}
 
 	@Override
-	public <T extends DataItem> Map<T, List<Record>> fetch(Class<T> type, List<Attribute> attributes, Filter filter) throws DataAccessException {
+	public <T extends Entity> Map<T, List<Record>> fetch(Class<T> type, List<Attribute> attributes, Filter filter) throws DataAccessException {
 		return createResult(type, findSearchQuery(type).fetch(attributes, filter));
 	}
 
-	private <T extends DataItem> Map<T, List<Record>> createResult(Class<T> type, List<Result> results) throws DataAccessException {
+	private <T extends Entity> Map<T, List<Record>> createResult(Class<T> type, List<Result> results) throws DataAccessException {
 		List<EntityType> relatedEntityTypes = modelManager.getImplicitEntityTypes(type);
 		Map<T, List<Record>> resultMap = new HashMap<>();
 		for(Result result : results) {
 			/**
-			 * TODO this should be refactored as soon as a data item factory is implemented
+			 * TODO this should be refactored as soon as an entity factory is implemented
 			 */
 			List<Record> relatedRecords = result.retainAll(relatedEntityTypes);
-			resultMap.put(dataItemFactory.createDataItem(type, result), relatedRecords);
+			resultMap.put(dataItemFactory.createEntity(type, result), relatedRecords);
 		}
 
 		return resultMap;
 	}
 
-	private SearchQuery findSearchQuery(Class<? extends DataItem> type) {
+	private SearchQuery findSearchQuery(Class<? extends Entity> type) {
 		SearchQuery searchQuery = searchQueriesByType.get(type);
 		if(searchQuery == null) {
 			throw new IllegalArgumentException("Search query for type '" + type.getSimpleName() + "' not found.");
@@ -102,7 +102,7 @@ public final class ODSSearchService implements SearchService {
 		return searchQuery;
 	}
 
-	private void registerMergedSearchQuery(Class<? extends DataItem> type, Function<ContextState, BaseDataItemSearchQuery> factory) {
+	private void registerMergedSearchQuery(Class<? extends Entity> type, Function<ContextState, BaseEntitySearchQuery> factory) {
 		searchQueriesByType.put(type, new MergedSearchQuery<>(type, modelManager, factory));
 	}
 

@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import org.asam.ods.AoException;
 import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.ParameterSet;
 import org.eclipse.mdm.api.base.model.TestStep;
@@ -64,7 +64,7 @@ public class DeleteStatement {
 	private Map<String, Map<String, URI>> map = new LinkedHashMap<>();
 	private List<DeleteStatement> forkedStatements = new ArrayList<>();
 
-	public <T extends DataItem> DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDeleteFeature) {
+	public <T extends Entity> DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDeleteFeature) {
 		this.transaction = transaction;
 		this.entityType = entityType;
 		this.useAutoDeleteFeature = useAutoDeleteFeature;
@@ -89,9 +89,9 @@ public class DeleteStatement {
 		}
 	}
 
-	public <T extends DataItem> void addInstances(List<T> dataItems) throws DataAccessException {
-		for(T dataItem : dataItems) {
-			addInstance(dataItem.getURI());
+	public <T extends Entity> void addInstances(List<T> entities) throws DataAccessException {
+		for(T entity : entities) {
+			addInstance(entity.getURI());
 		}
 	}
 
@@ -139,8 +139,8 @@ public class DeleteStatement {
 
 	private void addInstance(URI uri) throws DataAccessException {
 		if(!uri.getTypeName().equals(entityType.getName())) {
-			throw new DataAccessException("Unable to add data item with uri '" + uri
-					+ "' to this statement (expected data items with type: " + entityType + ").");
+			throw new DataAccessException("Unable to add entity with uri '" + uri
+					+ "' to this statement (expected entities of type: " + entityType + ").");
 		}
 
 		if(!map.get(uri.getTypeName()).containsKey(uri.toString())) {
@@ -153,14 +153,14 @@ public class DeleteStatement {
 		Query query = transaction.getModelManager().createQuery();
 		query.select(childEntityType.getIDAttribute());
 		query.join(parentEntityType, childEntityType);
-		return query.fetch(Filter.id(parentEntityType, parentURI.getID()));
+		return query.fetch(Filter.idOnly(parentEntityType, parentURI.getID()));
 	}
 
 	private Optional<Result> executeInfoQuery(EntityType entityType, URI uri, EntityType infoEntityType) throws DataAccessException {
 		return transaction.getModelManager().createQuery()
 				.selectID(infoEntityType)
 				.join(entityType, infoEntityType)
-				.fetchSingleton(Filter.id(entityType, uri.getID()));
+				.fetchSingleton(Filter.idOnly(entityType, uri.getID()));
 
 	}
 
@@ -245,7 +245,7 @@ public class DeleteStatement {
 		Query testStepQuery = transaction.getModelManager().createQuery();
 		testStepQuery.select(testStepEntityType.getIDAttribute());
 		testStepQuery.join(measurementEntityType, testStepEntityType);
-		Optional<Result> oResult = testStepQuery.fetchSingleton(Filter.id(measurementEntityType, uri.getID()));
+		Optional<Result> oResult = testStepQuery.fetchSingleton(Filter.idOnly(measurementEntityType, uri.getID()));
 		if(!oResult.isPresent()) {
 			throw new DataAccessException("Measurement with no parent TestStep found "
 					+ "(should not occur - DB constraint)");
@@ -256,7 +256,7 @@ public class DeleteStatement {
 		Query measurementsQuery = transaction.getModelManager().createQuery();
 		measurementsQuery.select(measurementEntityType.getIDAttribute());
 		measurementsQuery.join(measurementEntityType, testStepEntityType);
-		List<Result> results = measurementsQuery.fetch(Filter.id(testStepEntityType, testStepID));
+		List<Result> results = measurementsQuery.fetch(Filter.idOnly(testStepEntityType, testStepID));
 
 		return results.stream().map(r -> r.getRecord(measurementEntityType)).map(Record::createURI)
 				.collect(Collectors.toList());

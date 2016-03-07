@@ -25,18 +25,19 @@ import java.util.stream.Collectors;
 import org.asam.ods.AoException;
 import org.asam.ods.AoSession;
 import org.asam.ods.InstanceElement;
-import org.eclipse.mdm.api.base.BaseDataProvider;
-import org.eclipse.mdm.api.base.DataProviderException;
+import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.EntityManager;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
+import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextDescribable;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Core;
-import org.eclipse.mdm.api.base.model.DataItem;
 import org.eclipse.mdm.api.base.model.Deletable;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
 import org.eclipse.mdm.api.base.model.Parameter;
@@ -48,8 +49,8 @@ import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.User;
-import org.eclipse.mdm.api.base.model.factory.BaseEntityFactory;
 import org.eclipse.mdm.api.base.model.factory.EntityCore;
+import org.eclipse.mdm.api.base.model.factory.EntityFactory;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
@@ -72,25 +73,24 @@ import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
-public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
+public class ODSEntityManager implements EntityManager, DataItemFactory {
 
 	/**
 	 * TODO another write method: Copyable copy(Copyable copyable, String name);
 	 * TODO another write method Versionable newVersion(Versionable);
 	 */
 
-	private final Map<Class<? extends DataItem>, DataItemCache<? extends DataItem>> dataItemCacheByType = new HashMap<>();
-	private final Set<Class<? extends DataItem>> cachedTypes = new HashSet<>();
+	private final Map<Class<? extends Entity>, EntityCache<? extends Entity>> entityCacheByType = new HashMap<>();
+	private final Set<Class<? extends Entity>> cachedTypes = new HashSet<>();
 
 	private final Map<String, ODSTransaction> transactions = new HashMap<>();
 
 	private final SearchService searchService;
 	private final ODSModelManager modelManager;
 
-	private final Environment env;
 	private final User loggedOnUser;
 
-	public ODSDataProvider(AoSession aoSession) throws DataProviderException {
+	public ODSEntityManager(AoSession aoSession) throws ConnectionException {
 		try {
 			modelManager = new ODSModelManager(aoSession, this);
 			searchService = new ODSSearchService(modelManager, this);
@@ -100,21 +100,20 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 			cachedTypes.add(Unit.class);
 			cachedTypes.add(Quantity.class);
 
-			env = resolveEnvironment();
 			loggedOnUser = resolveLoggedOnUser(aoSession);
 
 			/**
 			 * TODO provide context properties from AoSession!
 			 */
 		} catch (AoException e) {
-			throw new DataProviderException("Unable to load application model due to: " + e.reason);
+			throw new ConnectionException("Unable to load application model due to: " + e.reason);
 		} catch (DataAccessException e) {
-			throw new DataProviderException("Unable to initialize data provider.", e);
+			throw new ConnectionException("Unable to initialize the entity manager.", e);
 		}
 	}
 
 	@Override
-	public Optional<BaseEntityFactory> getEntityFactory(String transactionID) throws DataAccessException {
+	public Optional<EntityFactory> getEntityFactory(String transactionID) throws DataAccessException {
 		ODSTransaction transaction = transactions.get(transactionID);
 		if(transaction == null) {
 			// TODO this is an implementation error -> runtime based exception should be thrown
@@ -135,65 +134,91 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 	}
 
 	@Override
-	public Environment getEnvironment() {
-		return env;
+	public Environment loadEnvironment() throws DataAccessException {
+		// this one could be declared as cached...
+		return createEntity(Environment.class, modelManager.createQuery(Environment.class).fetchSingleton().get());
 	}
 
 	@Override
-	public Optional<User> getLoggedOnUser() {
+	public Optional<User> loadLoggedOnUser() {
 		return Optional.of(loggedOnUser);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends DataItem> Optional<T> findByURI(URI uri) throws DataAccessException {
+	public <T extends Entity> Optional<T> load(URI uri) throws DataAccessException {
 		Class<T> type = (Class<T>) ODSUtils.getClass(uri.getTypeName());
 		EntityType entityType = modelManager.getEntityType(type);
 		if(isCached(type)) {
 			return Optional.of(getCached(type, uri.getID()));
 		}
 
-		Optional<Result> result = modelManager.createQuery(type).fetchSingleton(Filter.id(entityType, uri.getID()));
-		return result.isPresent() ? Optional.of(createDataItem(type, result.get())) : Optional.empty();
+		Optional<Result> result = modelManager.createQuery(type).fetchSingleton(Filter.idOnly(entityType, uri.getID()));
+		return result.isPresent() ? Optional.of(createEntity(type, result.get())) : Optional.empty();
 	}
 
 	@Override
-	public <T extends DataItem> Optional<T> findParent(DataItem child, Class<T> parentType) throws DataAccessException {
-		// TODO add a check to ensure that a parent relation really exists?!
+	public <T extends Entity> Optional<T> loadParent(Entity child, Class<T> parentType) throws DataAccessException {
 		EntityType parentEntityType = modelManager.getEntityType(parentType);
+		EntityType childEntityType = modelManager.getEntityType(child);
 		Query query = modelManager.createQuery(parentType);
 
-		EntityType childEntityType = modelManager.getEntityType(child);
-		query.join(parentEntityType, childEntityType);
-		Optional<Result> result = query.fetchSingleton(Filter.id(childEntityType, child.getURI().getID()));
-		return result.isPresent() ? Optional.of(createDataItem(parentType, result.get())) : Optional.empty();
+		if(child instanceof Channel && ChannelGroup.class.equals(parentType)) {
+			// this covers the gap between channel and channel group via local column
+			EntityType localColumnEntityType = modelManager.getEntityType("LocalColumn");
+			query.join(parentEntityType, localColumnEntityType).join(localColumnEntityType, childEntityType);
+		} else {
+			// TODO add a check to ensure that a parent relation really exists?!
+			query.join(parentEntityType, childEntityType);
+		}
+
+		Optional<Result> result = query.fetchSingleton(Filter.idOnly(childEntityType, child.getURI().getID()));
+		return result.isPresent() ? Optional.of(createEntity(parentType, result.get())) : Optional.empty();
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends DataItem> List<T> get(Class<T> type) throws DataAccessException {
-		if(!isCached(type) || !dataItemCacheByType.containsKey(type)) {
-			List<T> dataItems = createDataItemResults(type, modelManager.createQuery(type).fetch());
+	public <T extends Entity> List<T> load(Class<T> type) throws DataAccessException {
+		if(!isCached(type) || !entityCacheByType.containsKey(type)) {
+			List<T> entities = createEntities(type, modelManager.createQuery(type).fetch());
 			if(isCached(type)) {
-				dataItemCacheByType.put(type, new DataItemCache<>(dataItems));
+				entityCacheByType.put(type, new EntityCache<>(entities));
 			}
 
-			return dataItems;
+			return entities;
 		}
 
-		return (List<T>) dataItemCacheByType.get(type).getAll();
+		return (List<T>) entityCacheByType.get(type).getAll();
 	}
 
 	@Override
-	public <T extends DataItem> List<T> getChildren(DataItem parent, Class<T> type) throws DataAccessException {
-		// TODO add a check to ensure a child relation really exists?!
+	public <T extends Entity> List<T> load(Class<T> type, String pattern) throws DataAccessException {
+		EntityType entityType = modelManager.getEntityType(type);
+		return createEntities(type, modelManager.createQuery(type).fetch(Filter.nameOnly(entityType, pattern)));
+	}
+
+	@Override
+	public <T extends Entity> List<T> loadChildren(Entity parent, Class<T> type, String pattern) throws DataAccessException {
 		EntityType parentEntityType = modelManager.getEntityType(parent);
-		Query query = modelManager.createQuery(type).join(parentEntityType, modelManager.getEntityType(type));
-		return createDataItemResults(type, query.fetch(Filter.id(parentEntityType, parent.getURI().getID())));
+		EntityType childEntityType = modelManager.getEntityType(type);
+		Query query = modelManager.createQuery(type);
+
+		if(parent instanceof ChannelGroup && Channel.class.equals(type)) {
+			// this covers the gap between channel and channel group via local column
+			EntityType localColumnEntityType = modelManager.getEntityType("LocalColumn");
+			query.join(childEntityType, localColumnEntityType).join(localColumnEntityType, parentEntityType);
+		} else {
+			// TODO add a check to ensure a child relation really exists?!
+			query.join(childEntityType, parentEntityType);
+		}
+
+		return createEntities(type, query.fetch(Filter.and()
+				.id(parentEntityType, parent.getURI().getID())
+				.name(childEntityType, pattern)));
 	}
 
 	@Override
-	public Map<ContextType, ContextRoot> getContexts(ContextDescribable contextDescribable, ContextType... contextTypes)
+	public Map<ContextType, ContextRoot> loadContexts(ContextDescribable contextDescribable, ContextType... contextTypes)
 			throws DataAccessException {
 		EntityType parentEntityType = modelManager.getEntityType(contextDescribable);
 		Query query = modelManager.createQuery();
@@ -208,14 +233,15 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 		 */
 
 		Map<EntityType, List<EntityType>> genericModelMap = new HashMap<>();
-		for(ContextType contextType : contextTypes.length == 0 ? ContextType.values() : contextTypes) {
+		ContextType[] types = contextTypes.length == 0 || contextTypes.length > 3 ? ContextType.values() : contextTypes;
+		for(ContextType contextType : types) {
 			EntityType entityContextRootType = modelManager.getEntityType(contextType);
-			query.selectAll(entityContextRootType).join(parentEntityType, entityContextRootType);
+			query.selectAll(entityContextRootType)
+			.join(parentEntityType.getRelation(entityContextRootType), Join.OUTER);
 
 			List<EntityType> genericEntityTypes = new ArrayList<>();
 			for(Relation relation : entityContextRootType.getChildRelations()) {
-				query.selectAll(relation.getTarget());
-				query.join(relation, Join.OUTER);
+				query.selectAll(relation.getTarget()).join(relation, Join.OUTER);
 				genericEntityTypes.add(relation.getTarget());
 			}
 			genericModelMap.put(entityContextRootType, genericEntityTypes);
@@ -225,12 +251,12 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 			 */
 		}
 
-		List<Result> results = query.fetch(Filter.id(parentEntityType, contextDescribable.getURI().getID()));
-		return generateGenericDataItemStructure(results, genericModelMap);
+		List<Result> results = query.fetch(Filter.idOnly(parentEntityType, contextDescribable.getURI().getID()));
+		return generateGenericEntityStructure(results, genericModelMap);
 	}
 
 	@Override
-	public List<ParameterSet> getParameterSets(Parameterizable parameterizable) throws DataAccessException {
+	public List<ParameterSet> loadParameterSets(Parameterizable parameterizable, String pattern) throws DataAccessException {
 		EntityType parameterizableEntityType = modelManager.getEntityType(parameterizable);
 		EntityType parameterSetEntityType = modelManager.getEntityType(ParameterSet.class);
 		EntityType parameterEntityType = modelManager.getEntityType(Parameter.class);
@@ -242,7 +268,10 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 				.join(parameterizableEntityType, parameterSetEntityType)
 				.join(parameterSetEntityType.getRelation(parameterEntityType), Join.OUTER)
 				.join(parameterEntityType.getRelation(unitEntityType), Join.OUTER);
-		List<Result> results = query.fetch(Filter.id(parameterizableEntityType, parameterizable.getURI().getID()));
+
+		List<Result> results = query.fetch(Filter.and()
+				.id(parameterizableEntityType, parameterizable.getURI().getID())
+				.name(parameterSetEntityType, pattern));
 
 		Map<Long, ParameterSet> parameterSetsByID = new HashMap<>();
 		List<ParameterSet> parameterSets = new ArrayList<>();
@@ -251,31 +280,32 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 			Long id = parameterSetRecord.getID();
 			ParameterSet parameterSet = parameterSetsByID.get(id);
 			if(parameterSet == null) {
-				parameterSet = createDataItem(ParameterSet.class, new EntityCore(parameterSetRecord));
+				parameterSet = createEntity(ParameterSet.class, new EntityCore(parameterSetRecord));
 				parameterSetsByID.put(id, parameterSet);
 				parameterSets.add(parameterSet);
 			}
 
 			Record parameterRecord = result.getRecord(parameterEntityType);
-			if(parameterRecord.getValues().get(DataItem.ATTR_ID).isValid()) {
+			if(parameterRecord.getValues().get(Entity.ATTR_ID).isValid()) {
 				Core parameterCore = new EntityCore(parameterRecord);
 				Record unitRecord = result.getRecord(unitEntityType);
-				if(unitRecord.getValues().get(DataItem.ATTR_ID).isValid()) {
+				if(unitRecord.getValues().get(Entity.ATTR_ID).isValid()) {
 					parameterCore.setInfoRelation(getCached(Unit.class, unitRecord.getID()));
 				}
 
-				parameterSet.getCore().addChild(createDataItem(Parameter.class, parameterCore));
+				parameterSet.getCore().addChild(createEntity(Parameter.class, parameterCore));
 			}
 		}
 
 		return parameterSets;
 	}
 
-	public void close() throws DataProviderException {
+	@Override
+	public void close() throws ConnectionException {
 		try {
 			modelManager.close();
 		} catch (AoException e) {
-			throw new DataProviderException("TODO", e); // TODO
+			throw new ConnectionException("TODO", e); // TODO
 		} finally {
 			for(ODSTransaction transaction : transactions.values()) {
 				try {
@@ -288,28 +318,24 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 	}
 
 	@Override
-	public boolean isCached(Class<? extends DataItem> type) {
+	public boolean isCached(Class<? extends Entity> type) {
 		return cachedTypes.contains(type);
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T extends DataItem> T getCached(Class<? extends DataItem> type, Long id) throws DataAccessException {
-		DataItemCache<T> dataItemCache = (DataItemCache<T>) dataItemCacheByType.get(type);
-		if(dataItemCache == null) {
-			get(type);
-			dataItemCache = (DataItemCache<T>) dataItemCacheByType.get(type);
+	private <T extends Entity> T getCached(Class<? extends Entity> type, Long id) throws DataAccessException {
+		EntityCache<T> entityCache = (EntityCache<T>) entityCacheByType.get(type);
+		if(entityCache == null) {
+			load(type);
+			entityCache = (EntityCache<T>) entityCacheByType.get(type);
 		}
 
-		DataItem dataItem = dataItemCache.get(id);
-		if(dataItem == null) {
-			throw new DataAccessException("Data item with id '" + id + "' of type '" + type.getSimpleName() + "'not found.");
+		Entity entity = entityCache.get(id);
+		if(entity == null) {
+			throw new DataAccessException("Entity with id '" + id + "' of type '" + type.getSimpleName() + "'not found.");
 		}
 
-		return (T) dataItem;
-	}
-
-	private Environment resolveEnvironment() throws DataAccessException {
-		return createDataItem(Environment.class, modelManager.createQuery(Environment.class).fetchSingleton().get());
+		return (T) entity;
 	}
 
 	private User resolveLoggedOnUser(AoSession aoSession) throws DataAccessException {
@@ -330,7 +356,7 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 		}
 	}
 
-	private Map<ContextType, ContextRoot> generateGenericDataItemStructure(List<Result> results, Map<EntityType,
+	private Map<ContextType, ContextRoot> generateGenericEntityStructure(List<Result> results, Map<EntityType,
 			List<EntityType>> map) throws DataAccessException {
 		if(results.isEmpty()) {
 			return Collections.emptyMap();
@@ -341,12 +367,12 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 		for(Entry<EntityType, List<EntityType>> entry : map.entrySet()) {
 			Record rootRecord = result.getRecord(entry.getKey());
 			Core contextRootCore = new EntityCore(rootRecord);
-			ContextRoot contextRoot = createDataItem(ContextRoot.class, contextRootCore);
+			ContextRoot contextRoot = createEntity(ContextRoot.class, contextRootCore);
 
 			for(EntityType contextComp : entry.getValue()) {
 				Record contextCompRecord = result.getRecord(contextComp);
-				if(contextCompRecord.getValues().get(DataItem.ATTR_ID).isValid()) {
-					contextRootCore.addChild(createDataItem(ContextComponent.class, new EntityCore(contextCompRecord)));
+				if(contextCompRecord.getValues().get(Entity.ATTR_ID).isValid()) {
+					contextRootCore.addChild(createEntity(ContextComponent.class, new EntityCore(contextCompRecord)));
 				}
 			}
 
@@ -355,34 +381,34 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 		return contextResults;
 	}
 
-	private <T extends DataItem> List<T> createDataItemResults(Class<T> type, List<Result> results)
+	private <T extends Entity> List<T> createEntities(Class<T> type, List<Result> results)
 			throws DataAccessException {
-		List<T> dataItems = new ArrayList<>();
+		List<T> entities = new ArrayList<>();
 		for(Result result : results) {
-			dataItems.add(createDataItem(type, result));
+			entities.add(createEntity(type, result));
 		}
 
-		return dataItems;
+		return entities;
 	}
 
 	@Override
-	public <T extends DataItem> T createDataItem(Class<T> type, Result result) throws DataAccessException {
+	public <T extends Entity> T createEntity(Class<T> type, Result result) throws DataAccessException {
 		Record record = result.removeRecord(modelManager.getEntityType(type));
 		Core core = new EntityCore(record);
 		for(Record relatedRecord : result) {
-			Class<? extends DataItem> clazz = ODSUtils.getClass(relatedRecord.getEntityType().getName());
+			Class<? extends Entity> clazz = ODSUtils.getClass(relatedRecord.getEntityType().getName());
 
 			if(isCached(clazz)) {
 				core.setInfoRelation(getCached(clazz, relatedRecord.getID()));
 			} else {
-				core.setInfoRelation(createDataItem(clazz, new EntityCore(relatedRecord)));
+				core.setInfoRelation(createEntity(clazz, new EntityCore(relatedRecord)));
 			}
 		}
 
-		return createDataItem(type, core);
+		return createEntity(type, core);
 	}
 
-	private <T extends DataItem> T createDataItem(Class<T> type, Core core) throws DataAccessException {
+	private <T extends Entity> T createEntity(Class<T> type, Core core) throws DataAccessException {
 		try {
 			return type.getDeclaredConstructor(Core.class).newInstance(core);
 		} catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
@@ -391,54 +417,36 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 	}
 
 	@Override
-	public <T extends DataItem> void update(String transactionID, List<T> dataItems) throws DataAccessException {
+	public <T extends Entity> void update(String transactionID, List<T> entities) throws DataAccessException {
 		ODSTransaction transaction = transactions.get(transactionID);
 		if(transaction == null) {
 			// TODO this is an implementation error -> runtime based exception should be thrown
 			throw new DataAccessException("Transaction with given ID not found.");
-		} else if(dataItems.isEmpty()) {
+		} else if(entities.isEmpty()) {
 			return;
 		}
 
-		Map<EntityType, List<DataItem>> dataItemGroups = dataItems.stream().collect(Collectors.groupingBy(transaction.getModelManager()::getEntityType));
-		for(Entry<EntityType, List<DataItem>> entry : dataItemGroups.entrySet()) {
+		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(transaction.getModelManager()::getEntityType));
+		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
 			UpdateStatement updateStatement = new UpdateStatement(transaction, entry.getKey());
-			entry.getValue().stream().forEach(d -> updateStatement.add(d.getCore()));
+			entry.getValue().forEach(d -> updateStatement.add(d.getCore()));
 			updateStatement.execute();
 		}
 	}
 
 	@Override
-	public <T extends Deletable> List<URI> delete(String transactionID, List<T> dataItems) throws DataAccessException {
+	public <T extends Deletable> List<URI> delete(String transactionID, List<T> entities) throws DataAccessException {
 		ODSTransaction transaction = transactions.get(transactionID);
 		if(transaction == null) {
 			// TODO this is an implementation error -> runtime based exception should be thrown
 			throw new DataAccessException("Transaction with given ID not found.");
-		} else if(dataItems.isEmpty()) {
+		} else if(entities.isEmpty()) {
 			return Collections.emptyList();
 		}
 
-		// TODO do we have to group data items by their type?!?
-		// - group by entity type
-		// - sort according hierarchy
-		//		- project before pool
-		//		- pool before test etc.
-		// - process each group in an own delete statement
-		// 		- filter next group and remove all instances that have been deleted in the previous delete statement(s)
-
-		//		List<URI> removedURIs = new ArrayList<>();
-		//		Map<Entity, List<DataItem>> dataItemGroups = dataItems.stream().collect(Collectors.groupingBy(modelManager::getEntity));
-		//		for(Entry<Entity, List<DataItem>> entry : dataItemGroups.entrySet()) {
-		//			List<URI> affectedURIs = entry.getValue().stream().map(DataItem::getURI).collect(Collectors.toList());
-		//			removedURIs.stream().forEach(u -> affectedURIs.removeIf(u2 -> u.getTypeName().equals(u2.getTypeName()) && u.getID().longValue() == u2.getID().longValue()));
-		//			DeleteStatement deleteStatement = new DeleteStatement(modelManager, entry.getKey(), true);
-		//			deleteStatement.addInstances(entry.getValue());
-		//			removedURIs.addAll(deleteStatement.execute());
-		//		}
-
-		EntityType rootEntityType = transaction.getModelManager().getEntityType(dataItems.get(0).getClass());
+		EntityType rootEntityType = transaction.getModelManager().getEntityType(entities.get(0).getClass());
 		DeleteStatement deleteStatement = new DeleteStatement(transaction, rootEntityType, true);
-		deleteStatement.addInstances(dataItems);
+		deleteStatement.addInstances(entities);
 		return deleteStatement.execute();
 	}
 
@@ -522,24 +530,24 @@ public class ODSDataProvider implements BaseDataProvider, DataItemFactory {
 		}
 	}
 
-	private static final class DataItemCache<T extends DataItem> {
+	private static final class EntityCache<T extends Entity> {
 
-		private final Map<Long, T> dataItemsByID;
-		private final List<T> dataItems;
+		private final Map<Long, T> entitiesByID;
+		private final List<T> entities;
 
-		private DataItemCache(List<T> dataItems) {
-			this.dataItems = new ArrayList<>(dataItems);
-			dataItemsByID = dataItems.stream().collect(Collectors.toMap(d -> d.getURI().getID(), Function.identity()));
+		private EntityCache(List<T> entities) {
+			this.entities = new ArrayList<>(entities);
+			entitiesByID = entities.stream().collect(Collectors.toMap(d -> d.getURI().getID(), Function.identity()));
 		}
 
 		private T get(Long id) {
 			// TODO create deep copy!!
-			return dataItemsByID.get(id);
+			return entitiesByID.get(id);
 		}
 
 		private List<T> getAll() {
-			// TODO create deep copy for each data item!!
-			return new ArrayList<>(dataItems);
+			// TODO create deep copy for each entity!!
+			return new ArrayList<>(entities);
 		}
 
 	}

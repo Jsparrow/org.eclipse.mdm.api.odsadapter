@@ -130,7 +130,7 @@ public class ODSQuery implements Query {
 				if(conditionItem.isCondition()) {
 					selItem.value(createCondition(conditionItem.getCondition()));
 				} else if(conditionItem.isOperator()) {
-					selItem.operator(ODSUtils.OPERATORS.convert(conditionItem.getOperator()));
+					selItem._operator(ODSUtils.OPERATORS.convert(conditionItem.getOperator()));
 				} else {
 					throw new IllegalArgumentException("Passed filter item is neither an operator nor a condition.");
 				}

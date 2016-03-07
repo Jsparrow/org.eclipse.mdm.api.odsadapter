@@ -18,9 +18,9 @@ import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
 import org.asam.ods.AoSession;
-import org.eclipse.mdm.api.base.BaseDataProvider;
-import org.eclipse.mdm.api.base.DataProviderException;
-import org.eclipse.mdm.api.base.DataProviderFactory;
+import org.eclipse.mdm.api.base.EntityManager;
+import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.EntityManagerFactory;
 import org.eclipse.mdm.api.base.model.Value;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NameComponent;
@@ -30,7 +30,7 @@ import org.omg.CosNaming.NamingContextPackage.CannotProceed;
 import org.omg.CosNaming.NamingContextPackage.InvalidName;
 import org.omg.CosNaming.NamingContextPackage.NotFound;
 
-public class ODSDataProviderFactory implements DataProviderFactory<BaseDataProvider> {
+public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
 	private static final String ARG_ODS_NAMESERVICE = "ods_nameservice";
 	private static final String ARG_ODS_SERVICENAME = "ods_servicename";
@@ -40,23 +40,17 @@ public class ODSDataProviderFactory implements DataProviderFactory<BaseDataProvi
 	private ORB orb = null;
 
 	@Override
-	public BaseDataProvider connect(List<Value> parameters) throws DataProviderException {
+	public EntityManager connect(List<Value> parameters) throws ConnectionException {
 		String odsNameService = getConnectionParameter(parameters, ARG_ODS_NAMESERVICE);
 		String odsServiceName = getConnectionParameter(parameters, ARG_ODS_SERVICENAME);
 		String odsUser = getConnectionParameter(parameters, ARG_ODS_USER);
 		String odsPassword = getConnectionParameter(parameters, ARG_ODS_PASSWORD);
 
-		return new ODSDataProvider(connect2ODS(odsNameService, odsServiceName, odsUser, odsPassword));
-	}
-
-	@Override
-	public void disconnect(BaseDataProvider mdmDataProvider) throws DataProviderException {
-		ODSDataProvider impl = (ODSDataProvider)mdmDataProvider;
-		impl.close();
+		return new ODSEntityManager(connect2ODS(odsNameService, odsServiceName, odsUser, odsPassword));
 	}
 
 	private AoSession connect2ODS(String odsNameService, String odsServiceName, String odsUser,
-			String odsPassword) throws DataProviderException {
+			String odsPassword) throws ConnectionException {
 		try {
 			NamingContextExt nameService = resolveNameService(odsNameService);
 			AoFactory aoFactory = resolveAoFactorysService(odsServiceName, nameService);
@@ -75,7 +69,7 @@ public class ODSDataProviderFactory implements DataProviderFactory<BaseDataProvi
 			return aoSession;
 		} catch(AoException aoe) {
 			System.out.println(aoe.reason);
-			throw new DataProviderException(aoe.reason, aoe);
+			throw new ConnectionException(aoe.reason, aoe);
 		}
 	}
 
@@ -87,7 +81,7 @@ public class ODSDataProviderFactory implements DataProviderFactory<BaseDataProvi
 	}
 
 	private AoFactory resolveAoFactorysService(String odsServiceName, NamingContextExt nameService)
-			throws DataProviderException {
+			throws ConnectionException {
 		try {
 			if(odsServiceName.contains("/")) {
 				String[] ncsStrings = odsServiceName.split("/");
@@ -114,19 +108,19 @@ public class ODSDataProviderFactory implements DataProviderFactory<BaseDataProvi
 			return AoFactoryHelper.narrow(o);
 		} catch (NotFound e) {
 			System.out.println(e.getMessage());
-			throw new DataProviderException(e.getMessage(), e);
+			throw new ConnectionException(e.getMessage(), e);
 		} catch (CannotProceed e) {
 			System.out.println(e.getMessage());
-			throw new DataProviderException(e.getMessage(), e);
+			throw new ConnectionException(e.getMessage(), e);
 		} catch (InvalidName e) {
 			System.out.println(e.getMessage());
-			throw new DataProviderException(e.getMessage(), e);
+			throw new ConnectionException(e.getMessage(), e);
 		}
 	}
 
-	private String getConnectionParameter(List<Value> parameters, String parameterName) throws DataProviderException {
+	private String getConnectionParameter(List<Value> parameters, String parameterName) throws ConnectionException {
 		Optional<Value> parameter = parameters.stream().filter(p -> p.getName().equalsIgnoreCase(parameterName)).findFirst();
-		return parameter.orElseThrow(() -> new DataProviderException("mandatory connection parameter with name '" +
+		return parameter.orElseThrow(() -> new ConnectionException("mandatory connection parameter with name '" +
 				parameterName + "' is missing")).extract();
 	}
 

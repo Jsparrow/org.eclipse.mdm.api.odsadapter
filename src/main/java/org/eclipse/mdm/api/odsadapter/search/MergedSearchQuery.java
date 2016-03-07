@@ -17,7 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -28,15 +28,15 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 import org.eclipse.mdm.api.base.query.Searchable;
 
-final class MergedSearchQuery<T extends BaseDataItemSearchQuery> implements SearchQuery {
+final class MergedSearchQuery<T extends BaseEntitySearchQuery> implements SearchQuery {
 
-	private final Class<? extends DataItem> type;
+	private final Class<? extends Entity> type;
 	private final ModelManager modelManager;
 
 	private final T byResult;
 	private final T byOrder;
 
-	public MergedSearchQuery(Class<? extends DataItem> type, ModelManager modelManager, Function<ContextState, T> factory) {
+	public MergedSearchQuery(Class<? extends Entity> type, ModelManager modelManager, Function<ContextState, T> factory) {
 		this.type = type;
 		this.modelManager = modelManager;
 

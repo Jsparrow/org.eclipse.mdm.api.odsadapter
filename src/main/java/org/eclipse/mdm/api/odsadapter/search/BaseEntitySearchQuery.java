@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.mdm.api.base.model.ContextDescribable;
 import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Aggregation;
 import org.eclipse.mdm.api.base.query.Attribute;
@@ -40,18 +40,18 @@ import org.eclipse.mdm.api.base.query.Searchable;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
-abstract class BaseDataItemSearchQuery implements SearchQuery {
+abstract class BaseEntitySearchQuery implements SearchQuery {
 
 	private final Map<String, DependencyRelation> dependencyRelations = new HashMap<>();
 
 	private final Map<String, List<String>> dependencyMap = new HashMap<>();
 	private final ODSModelManager modelManager;
 
-	private final Class<? extends DataItem> root;
-	private final Class<? extends DataItem> type;
+	private final Class<? extends Entity> root;
+	private final Class<? extends Entity> type;
 
-	protected BaseDataItemSearchQuery(ODSModelManager modelManager, Class<? extends DataItem> type,
-			Class<? extends DataItem> root, Optional<ContextState> contextState) {
+	protected BaseEntitySearchQuery(ODSModelManager modelManager, Class<? extends Entity> type,
+			Class<? extends Entity> root, Optional<ContextState> contextState) {
 		this.modelManager = modelManager;
 		this.root = root;
 		this.type = type;
@@ -91,7 +91,7 @@ abstract class BaseDataItemSearchQuery implements SearchQuery {
 	@Override
 	public final List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) throws DataAccessException {
 		Query query = modelManager.createQuery(type);
-		entityTypes.stream().forEach(e -> addJoins(query, e));
+		entityTypes.forEach(e -> addJoins(query, e));
 		/**
 		 * TODO remove implicit selected / related entity types? e.g.: Test & User
 		 */
@@ -102,7 +102,7 @@ abstract class BaseDataItemSearchQuery implements SearchQuery {
 	@Override
 	public final List<Result> fetch(List<Attribute> attributes, Filter filter) throws DataAccessException {
 		Query query = modelManager.createQuery(type);
-		attributes.stream().forEach(a -> addJoins(query, a.getEntityType()));
+		attributes.forEach(a -> addJoins(query, a.getEntityType()));
 		/**
 		 * TODO remove implicit selected / related attributes? e.g.: Test & User
 		 */
@@ -110,7 +110,7 @@ abstract class BaseDataItemSearchQuery implements SearchQuery {
 		return fetch(query, filter);
 	}
 
-	protected final void addDependency(Class<? extends DataItem> targetType, Class<? extends DataItem> sourceType,
+	protected final void addDependency(Class<? extends Entity> targetType, Class<? extends Entity> sourceType,
 			boolean viaParent, Join join) {
 		addDependency(ODSUtils.getAEName(targetType), ODSUtils.getAEName(sourceType), viaParent, join);
 	}

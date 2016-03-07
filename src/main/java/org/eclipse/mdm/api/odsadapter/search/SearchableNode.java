@@ -48,7 +48,10 @@ final class SearchableNode implements Searchable {
 		sb.append(", implicit = ").append(isImplicit());
 
 		if(!isLeaf()) {
-			sb.append(", relatedSearchables = ").append(relatedSearchables.stream().map(n -> n.getEntityType()).collect(Collectors.toList()));
+			sb.append(", relatedSearchables = ").append(
+					relatedSearchables.stream()
+					.map(Searchable::getEntityType)
+					.collect(Collectors.toList()));
 		}
 
 		return sb.append(')').toString();

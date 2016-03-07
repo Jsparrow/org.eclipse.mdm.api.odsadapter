@@ -34,7 +34,7 @@ import org.asam.ods.ApplicationStructureValue;
 import org.asam.ods.EnumerationAttributeStructure;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
 import org.eclipse.mdm.api.base.model.Test;
@@ -55,7 +55,7 @@ public class ODSModelManager implements ModelManager {
 	// do not know when it is safe to so
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-	private final Map<Class<? extends DataItem>, DataItemQueryConfig> dataItemQueryConfigs = new HashMap<>();
+	private final Map<Class<? extends Entity>, EntityQueryConfig> entityQueryConfigs = new HashMap<>();
 
 	private final Map<String, ODSEntityType> entityTypesByName = new HashMap<>();
 	private final Map<Long, ODSEntityType> entityTypesByID = new HashMap<>();
@@ -76,22 +76,22 @@ public class ODSModelManager implements ModelManager {
 		loadApplicationModel();
 
 		// NOTE: Relations are expected to have 1:1 cardinality!
-		configureDataItemQuery(Unit.class, PhysicalDimension.class);
-		configureDataItemQuery(Quantity.class, Unit.class);
-		configureDataItemQuery(Test.class, User.class);
+		configureEntityQuery(Unit.class, PhysicalDimension.class);
+		configureEntityQuery(Quantity.class, Unit.class);
+		configureEntityQuery(Test.class, User.class);
 
 		// TODO Channel has an optional relation to sensors!!! -> add outer joins to each sensor?!
-		configureDataItemQuery(Channel.class, Unit.class, Quantity.class);
+		configureEntityQuery(Channel.class, Unit.class, Quantity.class);
 
 		sessionRefresh = scheduler.scheduleAtFixedRate(this::refreshSession, 5, 5, TimeUnit.MINUTES);
 	}
 
-	public Query createQuery(Class<? extends DataItem> type) {
-		DataItemQueryConfig dataItemQueryConfig = dataItemQueryConfigs.getOrDefault(type, new DataItemQueryConfig(type));
-		EntityType entityType = dataItemQueryConfig.getEntityType();
+	public Query createQuery(Class<? extends Entity> type) {
+		EntityQueryConfig entityQueryConfig = entityQueryConfigs.getOrDefault(type, new EntityQueryConfig(type));
+		EntityType entityType = entityQueryConfig.getEntityType();
 
 		Query query = createQuery().selectAll(entityType);
-		for(Class<? extends DataItem> relatedType : dataItemQueryConfig) {
+		for(Class<? extends Entity> relatedType : entityQueryConfig) {
 			EntityType relatedEntityType = getEntityType(relatedType);
 			if(dataItemFactory.isCached(relatedType)) {
 				query.selectID(relatedEntityType);
@@ -110,17 +110,17 @@ public class ODSModelManager implements ModelManager {
 	}
 
 	@Override
-	public EntityType getEntityType(Class<? extends DataItem> type) {
+	public EntityType getEntityType(Class<? extends Entity> type) {
 		return getEntityType(ODSUtils.getAEName(type));
 	}
 
 	@Override
 	public EntityType getEntityType(ContextType contextType) {
-		if(ContextType.UNITUNDERTEST.equals(contextType)) {
+		if(contextType.isUnitUnderTest()) {
 			return getEntityType("UnitUnderTest");
-		} else if(ContextType.TESTSEQUENCE.equals(contextType)) {
+		} else if(contextType.isTestSequence()) {
 			return getEntityType("TestSequence");
-		} else if(ContextType.TESTEQUIPMENT.equals(contextType)) {
+		} else if(contextType.isTestEquipment()) {
 			return getEntityType("TestEquipment");
 		}
 
@@ -156,8 +156,8 @@ public class ODSModelManager implements ModelManager {
 	}
 
 	@Deprecated
-	public List<EntityType> getImplicitEntityTypes(Class<? extends DataItem> type) {
-		return dataItemQueryConfigs.getOrDefault(type, new DataItemQueryConfig(type)).getEntityTypes();
+	public List<EntityType> getImplicitEntityTypes(Class<? extends Entity> type) {
+		return entityQueryConfigs.getOrDefault(type, new EntityQueryConfig(type)).getEntityTypes();
 	}
 
 	public void close() throws AoException {
@@ -170,14 +170,14 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
-	private void configureDataItemQuery(Class<? extends DataItem> type, Class<?>... relatedTypes) {
-		dataItemQueryConfigs.put(type, new DataItemQueryConfig(type, collectEntityTypes(relatedTypes)));
+	private void configureEntityQuery(Class<? extends Entity> type, Class<?>... relatedTypes) {
+		entityQueryConfigs.put(type, new EntityQueryConfig(type, collectEntityTypes(relatedTypes)));
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<Class<? extends DataItem>> collectEntityTypes(Class<?>... types) {
-		return Arrays.stream(types).filter(DataItem.class::isAssignableFrom)
-				.map(t -> (Class<? extends DataItem>) t).collect(toList());
+	private List<Class<? extends Entity>> collectEntityTypes(Class<?>... types) {
+		return Arrays.stream(types).filter(Entity.class::isAssignableFrom)
+				.map(t -> (Class<? extends Entity>) t).collect(toList());
 	}
 
 	private void loadApplicationModel() throws AoException {
@@ -220,21 +220,21 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
-	private final class DataItemQueryConfig implements Iterable<Class<? extends DataItem>> {
+	private final class EntityQueryConfig implements Iterable<Class<? extends Entity>> {
 
 		/*
 		 * TODO It might be required to define a join definition -> current implementation produces only INNER joins!
 		 */
 
-		private final List<Class<? extends DataItem>> relatedTypes;
-		private final Class<? extends DataItem> type;
+		private final List<Class<? extends Entity>> relatedTypes;
+		private final Class<? extends Entity> type;
 
-		private DataItemQueryConfig(Class<? extends DataItem> type, List<Class<? extends DataItem>> relatedTypes) {
+		private EntityQueryConfig(Class<? extends Entity> type, List<Class<? extends Entity>> relatedTypes) {
 			this.relatedTypes = relatedTypes;
 			this.type = type;
 		}
 
-		private DataItemQueryConfig(Class<? extends DataItem> type) {
+		private EntityQueryConfig(Class<? extends Entity> type) {
 			relatedTypes = Collections.emptyList();
 			this.type = type;
 		}
@@ -251,7 +251,7 @@ public class ODSModelManager implements ModelManager {
 		}
 
 		@Override
-		public Iterator<Class<? extends DataItem>> iterator() {
+		public Iterator<Class<? extends Entity>> iterator() {
 			return relatedTypes.iterator();
 		}
 

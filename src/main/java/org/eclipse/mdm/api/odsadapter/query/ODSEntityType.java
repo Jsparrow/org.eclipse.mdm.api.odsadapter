@@ -76,8 +76,8 @@ public final class ODSEntityType implements EntityType {
 	public Attribute getAttribute(String name) {
 		Attribute attribute = attributeByName.get(name);
 		if(attribute == null) {
-			throw new IllegalArgumentException("attribute with name '" + name
-					+ "' not found at entity '" + getName() + "'");
+			throw new IllegalArgumentException("Attribute with name '" + name
+					+ "' not found at entity type '" + getName() + "'");
 		}
 		return attribute;
 	}
@@ -153,7 +153,7 @@ public final class ODSEntityType implements EntityType {
 			List<Relation> entityTypeRelations = entry.getValue();
 			EntityType target = entry.getKey();
 
-			entityTypeRelations.stream().forEach(this::addRelation);
+			entityTypeRelations.forEach(this::addRelation);
 
 			if(entityTypeRelations.size() > 1) {
 				relationsByEntityName.put(target, entityTypeRelations.stream().collect(toMap(Relation::getName, identity())));

@@ -14,10 +14,10 @@ import java.util.Map;
 
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Core;
-import org.eclipse.mdm.api.base.model.DataItem;
-import org.eclipse.mdm.api.base.model.MeasuredValues;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.model.factory.EntityCore;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -62,26 +62,26 @@ public final class WriteRequestHandler {
 		core.setInfoRelation(writeRequest.getChannel());
 
 		Map<String, Value> values = core.getValues();
-		values.get(DataItem.ATTR_NAME).set(writeRequest.getChannel().getName());
-		values.get(DataItem.ATTR_MIMETYPE).set(ODSUtils.DEFAULT_MIMETYPES.get(localColumnEntityType.getName()));
+		values.get(Entity.ATTR_NAME).set(writeRequest.getChannel().getName());
+		values.get(Entity.ATTR_MIMETYPE).set(ODSUtils.DEFAULT_MIMETYPES.get(localColumnEntityType.getName()));
 		values.get(AE_LC_ATTR_INDEPENDENT).set(ODSConverter.toODSValidFlag(writeRequest.isIndependent()));
 		values.get(AE_LC_ATTR_RAWDATATYPE).set(writeRequest.getRawScalarType());
 		values.get(AE_LC_ATTR_REPRESENTATION).set(writeRequest.getSequenceRepresentation());
 		values.get(AE_LC_ATTR_AXISTYPE).set(writeRequest.getAxisType());
 		values.get(AE_LC_ATTR_PARAMETERS).set(writeRequest.getGenerationParameters());
 
-		if(writeRequest.hasMeasuredValues()) {
-			MeasuredValues measuredValues = writeRequest.getMeasuredValues();
-			values.put(AE_LC_ATTR_VALUES, measuredValues.createMeasuredValuesValue(AE_LC_ATTR_VALUES));
+		if(writeRequest.hasValues()) {
+			ValueType valueType = writeRequest.getRawScalarType().toValueType();
+			String unitName = writeRequest.getChannel().getUnit().getName();
+			values.put(AE_LC_ATTR_VALUES, valueType.create(AE_LC_ATTR_VALUES, unitName, true, writeRequest.getValues()));
 
 			//flags
 			if(writeRequest.areAllValid()) {
 				values.get(AE_LC_ATTR_GLOBAL_FLAG).set((short) 15);
 			} else {
-				short[] flags = ODSConverter.toODSValidFlagSeq(measuredValues.getFlags());
+				short[] flags = ODSConverter.toODSValidFlagSeq(writeRequest.getFlags());
 				values.get(AE_LC_ATTR_FLAGS).set(flags);
 			}
-
 		} else if(writeRequest.hasExternalComponents()) {
 			// TODO
 			throw new DataAccessException("Not implemented yet.");
@@ -89,6 +89,28 @@ public final class WriteRequestHandler {
 			// TODO this indicates a not valid write request!!
 			throw new DataAccessException("");
 		}
+
+
+		// TODO remove...
+		//		if(writeRequest.hasMeasuredValues()) {
+		//			MeasuredValues measuredValues = writeRequest.getMeasuredValues();
+		//			values.put(AE_LC_ATTR_VALUES, measuredValues.createMeasuredValuesValue(AE_LC_ATTR_VALUES));
+		//
+		//			//flags
+		//			if(writeRequest.areAllValid()) {
+		//				values.get(AE_LC_ATTR_GLOBAL_FLAG).set((short) 15);
+		//			} else {
+		//				short[] flags = ODSConverter.toODSValidFlagSeq(measuredValues.getFlags());
+		//				values.get(AE_LC_ATTR_FLAGS).set(flags);
+		//			}
+		//
+		//		} else if(writeRequest.hasExternalComponents()) {
+		//			// TODO
+		//			throw new DataAccessException("Not implemented yet.");
+		//		} else {
+		//			// TODO this indicates a not valid write request!!
+		//			throw new DataAccessException("");
+		//		}
 
 		return core;
 	}

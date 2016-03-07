@@ -11,6 +11,7 @@ package org.eclipse.mdm.api.odsadapter.massdata;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.asam.ods.AoException;
 import org.asam.ods.Column;
@@ -21,8 +22,9 @@ import org.asam.ods.ValueMatrix;
 import org.asam.ods.ValueMatrixMode;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
 import org.eclipse.mdm.api.base.model.Channel;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
+import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -42,11 +44,7 @@ public final class ReadRequestHandler {
 
 		try {
 			vm = getODSValueMatrix(readRequest);
-			if(readRequest.getNumberOfValues() == 0) {
-				readRequest.setNumberOfValues(vm.getRowCount());
-			}
-
-			columns = getODSColumns(readRequest.getChannels(), vm);
+			columns = getODSColumns(readRequest, vm);
 			NameValueSeqUnit[] nvsus = vm.getValue(columns, readRequest.getStartIndex(), readRequest.getRequestSize());
 			return ODSConverter.fromODSMeasuredValuesSeq(nvsus);
 		} catch(AoException aoe) {
@@ -57,22 +55,37 @@ public final class ReadRequestHandler {
 		}
 	}
 
-	private Column[] getODSColumns(List<Channel> channels, ValueMatrix vm) throws AoException, DataAccessException {
-		if(channels.isEmpty()) {
+	private Column[] getODSColumns(ReadRequest readRequest, ValueMatrix vm) throws AoException, DataAccessException {
+		if(readRequest.isLoadAllChannels()) {
+			// TODO should it be possible to overwrite the unit of some channels?!
+			// -> this results in a performance issue since we need to call getName()
+			// on each column for mapping!
 			return vm.getColumns("*");
 		}
 
 		List<Column> columnList = new ArrayList<>();
-		for(Channel channel : channels) {
-			columnList.add(uniqueColumn(channel.getName(), vm.getColumns(channel.getName())));
+		try {
+			for(Entry<Channel, Unit> entry : readRequest.getChannels().entrySet()) {
+				Channel channel = entry.getKey();
+				Unit unit = entry.getValue();
+				Column column = uniqueColumn(channel.getName(), vm.getColumns(channel.getName()));
+				if(!unit.getName().equals(channel.getUnit().getName())) {
+					column.setUnit(unit.getName());
+				}
+				columnList.add(column);
+			}
+			return columnList.toArray(new Column[columnList.size()]);
+		} catch(AoException e) {
+			unremoteColumns(columnList.toArray(new Column[columnList.size()]));
+			// TODO logging
+			throw new DataAccessException("Unable to load column due to: " + e.reason, e);
 		}
-		return columnList.toArray(new Column[columnList.size()]);
 	}
 
 	private ValueMatrix getODSValueMatrix(ReadRequest readRequest) throws AoException, DataAccessException {
-		DataItem dataItem = readRequest.getChannelGroup();
-		T_LONGLONG iid = ODSConverter.toODSLong(dataItem.getURI().getID());
-		T_LONGLONG aid  = ((ODSEntityType) modelManager.getEntityType(dataItem)).getODSID();
+		Entity entity = readRequest.getChannelGroup();
+		T_LONGLONG iid = ODSConverter.toODSLong(entity.getURI().getID());
+		T_LONGLONG aid  = ((ODSEntityType) modelManager.getEntityType(entity)).getODSID();
 		return modelManager.getApplElemAccess().getValueMatrixInMode(new ElemId(aid, iid), ValueMatrixMode.CALCULATED);
 	}
 
@@ -84,6 +97,7 @@ public final class ReadRequestHandler {
 		}
 
 		if(columns.length > 1) {
+			unremoteColumns(columns);
 			throw new DataAccessException("mulitple columns with name '" + columnName
 					+ "' found at generated ValueMatrix (expected 1)!");
 		}
@@ -92,13 +106,16 @@ public final class ReadRequestHandler {
 	}
 
 	private void unremoteValueMatrix(ValueMatrix vm) throws DataAccessException {
+		if(vm == null) {
+			return;
+		}
+
 		try {
-			if(vm != null) {
-				vm.destroy();
-				vm._release();
-			}
+			vm.destroy();
 		} catch(AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);
+		} finally {
+			vm._release();
 		}
 	}
 
@@ -107,14 +124,13 @@ public final class ReadRequestHandler {
 			return;
 		}
 
-		for(int i = 0; i < columns.length; i++) {
+		for (Column column : columns) {
 			try {
-				columns[i].destroy();
-				columns[i]._release();
-				columns[i] = null;
-			} catch(AoException aoe) {
-				// TODO log instead of throwing
-				throw new DataAccessException(aoe.reason, aoe);
+				column.destroy();
+			} catch(AoException e) {
+				// TODO logging
+			} finally {
+				column._release();
 			}
 		}
 	}

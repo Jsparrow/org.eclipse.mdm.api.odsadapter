@@ -19,7 +19,7 @@ import org.asam.ods.SelOpcode;
 import org.asam.ods.SelOperator;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Parameter;
@@ -51,12 +51,12 @@ public final class ODSUtils {
 	public static final BiDiMapper<Join, JoinType> JOINS = new BiDiMapper<>();
 
 	/*
-	 * TODO: Since modules will introduce new data item types it must be possible
+	 * TODO: Since modules will introduce new entity types it must be possible
 	 * to extend the mappings of DEFAULT_MIMETYPES and AE_NAME_MAPPING!
 	 * In either case on miss matches a checked exception should be thrown ?!
 	 */
 	public static final Map<String, String> DEFAULT_MIMETYPES = new HashMap<>();
-	private static final BiDiMapper<Class<? extends DataItem>, String> AE_NAME_MAPPING = new BiDiMapper<>();
+	private static final BiDiMapper<Class<? extends Entity>, String> AE_NAME_MAPPING = new BiDiMapper<>();
 
 	static {
 		RELATIONSHIPS.addMappings(Relationship.FATHER_CHILD, RelationType.FATHER_CHILD);
@@ -174,11 +174,11 @@ public final class ODSUtils {
 		DEFAULT_MIMETYPES.put("TESTEQUIPMENT", "application/x-asam.aotestequipment.testequipment");
 	}
 
-	public static String getAEName(Class<? extends DataItem> clazz) {
+	public static String getAEName(Class<? extends Entity> clazz) {
 		return AE_NAME_MAPPING.convert(clazz);
 	}
 
-	public static Class<? extends DataItem> getClass(String aeName) {
+	public static Class<? extends Entity> getClass(String aeName) {
 		return AE_NAME_MAPPING.revert(aeName);
 	}
 

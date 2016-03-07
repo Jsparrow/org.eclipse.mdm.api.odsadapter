@@ -24,7 +24,7 @@ import org.asam.ods.AoException;
 import org.asam.ods.ElemId;
 import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.Core;
-import org.eclipse.mdm.api.base.model.DataItem;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -45,24 +45,24 @@ public final class InsertStatement {
 
 	/*
 	 *  TODO add further utility methods
-	 *  - add(List<DataItem>)
+	 *  - add(List<Entity>)
 	 *  - add(List<Core>)
 	 *
 	 *
 	 *  we should omit the usage of Core in public methods, since we have to check instanceof Sortable...
 	 */
 
-	public void add(Core core, DataItem... implicitlyRelated) {
+	public void add(Core core, Entity... implicitlyRelated) {
 		if(!core.getTypeName().equals(entityType.getName())) {
-			throw new IllegalArgumentException("Given data item core '" + core.getTypeName()
+			throw new IllegalArgumentException("Given entity core '" + core.getTypeName()
 			+ "' is incompatible with current insert statement for entity type '" + entityType + "'.");
 		}
 
-		// TODO we need custom behavior for sortable data items
+		// TODO we need custom behavior for sortable entities
 		// - if sortable has parent -> find max sort index out of sibling entities
 		// - if parent does not exist -> find max sort index of all entities
 
-		// add all data item values
+		// add all entity values
 		for(Value value : core.getValues().values()) {
 			// TODO scan for values with file links and collect them!
 			insertMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
@@ -111,20 +111,20 @@ public final class InsertStatement {
 
 		/*
 		 * TODO exceptional cases:
-		 * - instance ID of created ContextRoot data items must be updated in ContextRoot.Version! MDM4...
+		 * - instance ID of created ContextRoot entities must be updated in ContextRoot.Version! MDM4...
 		 * - others?
 		 */
 	}
 
 	// TODO duplicate of UpdateStatement.setRelationIDs
-	private void setRelationIDs(Collection<DataItem> relatedDataItems) {
-		for(DataItem relatedDataItem : relatedDataItems) {
-			Relation relation = entityType.getRelation(transaction.getModelManager().getEntityType(relatedDataItem));
+	private void setRelationIDs(Collection<Entity> relatedEntities) {
+		for(Entity relatedEntity : relatedEntities) {
+			Relation relation = entityType.getRelation(transaction.getModelManager().getEntityType(relatedEntity));
 			List<Value> relationValues = insertMap.get(relation.getName());
 			if(relationValues == null) {
 				throw new IllegalStateException("Relation '" + relation + "' is incompatible with insert statement for entity type '" + entityType + "'");
 			}
-			relationValues.get(relationValues.size() - 1).set(relatedDataItem.getURI().getID());
+			relationValues.get(relationValues.size() - 1).set(relatedEntity.getURI().getID());
 		}
 	}
 
