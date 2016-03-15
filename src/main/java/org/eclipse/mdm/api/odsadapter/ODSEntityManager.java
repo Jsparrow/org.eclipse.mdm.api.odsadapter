@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,17 +28,17 @@ import org.asam.ods.AoSession;
 import org.asam.ods.InstanceElement;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.EntityManager;
+import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
-import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextDescribable;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.Core;
-import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EntityCore;
+import org.eclipse.mdm.api.base.model.EntityFactory;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
 import org.eclipse.mdm.api.base.model.Parameter;
@@ -45,13 +46,11 @@ import org.eclipse.mdm.api.base.model.ParameterSet;
 import org.eclipse.mdm.api.base.model.Parameterizable;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
-import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.User;
-import org.eclipse.mdm.api.base.model.factory.EntityCore;
-import org.eclipse.mdm.api.base.model.factory.EntityFactory;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.base.query.DefaultEntityCore;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.Join;
@@ -61,15 +60,11 @@ import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
-import org.eclipse.mdm.api.odsadapter.massdata.ReadRequestHandler;
-import org.eclipse.mdm.api.odsadapter.massdata.WriteRequestHandler;
 import org.eclipse.mdm.api.odsadapter.query.DataItemFactory;
-import org.eclipse.mdm.api.odsadapter.query.DeleteStatement;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
-import org.eclipse.mdm.api.odsadapter.query.ODSTransaction;
-import org.eclipse.mdm.api.odsadapter.query.UpdateStatement;
 import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
+import org.eclipse.mdm.api.odsadapter.transaction.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
@@ -83,10 +78,9 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 	private final Map<Class<? extends Entity>, EntityCache<? extends Entity>> entityCacheByType = new HashMap<>();
 	private final Set<Class<? extends Entity>> cachedTypes = new HashSet<>();
 
-	private final Map<String, ODSTransaction> transactions = new HashMap<>();
-
 	private final SearchService searchService;
 	private final ODSModelManager modelManager;
+	private final ODSEntityFactory entityFactory;
 
 	private final User loggedOnUser;
 
@@ -94,6 +88,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		try {
 			modelManager = new ODSModelManager(aoSession, this);
 			searchService = new ODSSearchService(modelManager, this);
+			entityFactory = new ODSEntityFactory(modelManager);
 
 			cachedTypes.add(User.class);
 			cachedTypes.add(PhysicalDimension.class);
@@ -113,14 +108,8 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 	}
 
 	@Override
-	public Optional<EntityFactory> getEntityFactory(String transactionID) throws DataAccessException {
-		ODSTransaction transaction = transactions.get(transactionID);
-		if(transaction == null) {
-			// TODO this is an implementation error -> runtime based exception should be thrown
-			throw new DataAccessException("Transaction with given ID not found.");
-		}
-
-		return Optional.of(new ODSEntityFactory(transaction));
+	public Optional<EntityFactory> getEntityFactory() {
+		return Optional.of(entityFactory);
 	}
 
 	@Override
@@ -178,7 +167,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> List<T> load(Class<T> type) throws DataAccessException {
+	public <T extends Entity> List<T> loadAll(Class<T> type) throws DataAccessException {
 		if(!isCached(type) || !entityCacheByType.containsKey(type)) {
 			List<T> entities = createEntities(type, modelManager.createQuery(type).fetch());
 			if(isCached(type)) {
@@ -192,7 +181,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 	}
 
 	@Override
-	public <T extends Entity> List<T> load(Class<T> type, String pattern) throws DataAccessException {
+	public <T extends Entity> List<T> loadAll(Class<T> type, String pattern) throws DataAccessException {
 		EntityType entityType = modelManager.getEntityType(type);
 		return createEntities(type, modelManager.createQuery(type).fetch(Filter.nameOnly(entityType, pattern)));
 	}
@@ -273,27 +262,27 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 				.id(parameterizableEntityType, parameterizable.getURI().getID())
 				.name(parameterSetEntityType, pattern));
 
-		Map<Long, ParameterSet> parameterSetsByID = new HashMap<>();
+		Map<Long, EntityCore> parameterSetCoresByID = new HashMap<>();
 		List<ParameterSet> parameterSets = new ArrayList<>();
 		for (Result result : results) {
 			Record parameterSetRecord = result.removeRecord(parameterSetEntityType);
 			Long id = parameterSetRecord.getID();
-			ParameterSet parameterSet = parameterSetsByID.get(id);
-			if(parameterSet == null) {
-				parameterSet = createEntity(ParameterSet.class, new EntityCore(parameterSetRecord));
-				parameterSetsByID.put(id, parameterSet);
-				parameterSets.add(parameterSet);
+			EntityCore parameterSetCore = parameterSetCoresByID.get(id);
+			if(parameterSetCore == null) {
+				parameterSetCore = new DefaultEntityCore(parameterSetRecord);
+				parameterSetCoresByID.put(id, parameterSetCore);
+				parameterSets.add(createEntity(ParameterSet.class, parameterSetCore));
 			}
 
 			Record parameterRecord = result.getRecord(parameterEntityType);
 			if(parameterRecord.getValues().get(Entity.ATTR_ID).isValid()) {
-				Core parameterCore = new EntityCore(parameterRecord);
+				EntityCore parameterCore = new DefaultEntityCore(parameterRecord);
 				Record unitRecord = result.getRecord(unitEntityType);
 				if(unitRecord.getValues().get(Entity.ATTR_ID).isValid()) {
 					parameterCore.setInfoRelation(getCached(Unit.class, unitRecord.getID()));
 				}
 
-				parameterSet.getCore().addChild(createEntity(Parameter.class, parameterCore));
+				parameterSetCore.addChild(createEntity(Parameter.class, parameterCore));
 			}
 		}
 
@@ -301,19 +290,26 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 	}
 
 	@Override
+	public List<MeasuredValues> readMeasuredValues(ReadRequest readRequest) throws DataAccessException {
+		return new ReadRequestHandler(modelManager).execute(readRequest);
+	}
+
+	@Override
+	public Transaction startTransaction() throws DataAccessException {
+		try {
+			return new ODSTransaction(modelManager);
+		} catch (AoException e) {
+			throw new DataAccessException("Unable to start transaction due to: " + e.reason, e);
+		}
+	}
+
+	@Override
 	public void close() throws ConnectionException {
 		try {
 			modelManager.close();
 		} catch (AoException e) {
-			throw new ConnectionException("TODO", e); // TODO
-		} finally {
-			for(ODSTransaction transaction : transactions.values()) {
-				try {
-					transaction.abortTransaction();
-				} catch(AoException e) {
-					// TODO log...
-				}
-			}
+			throw new ConnectionException("TODO", e);
+			// TODO
 		}
 	}
 
@@ -326,7 +322,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 	private <T extends Entity> T getCached(Class<? extends Entity> type, Long id) throws DataAccessException {
 		EntityCache<T> entityCache = (EntityCache<T>) entityCacheByType.get(type);
 		if(entityCache == null) {
-			load(type);
+			loadAll(type);
 			entityCache = (EntityCache<T>) entityCacheByType.get(type);
 		}
 
@@ -366,13 +362,13 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		Result result = results.get(0);
 		for(Entry<EntityType, List<EntityType>> entry : map.entrySet()) {
 			Record rootRecord = result.getRecord(entry.getKey());
-			Core contextRootCore = new EntityCore(rootRecord);
+			EntityCore contextRootCore = new DefaultEntityCore(rootRecord);
 			ContextRoot contextRoot = createEntity(ContextRoot.class, contextRootCore);
 
 			for(EntityType contextComp : entry.getValue()) {
 				Record contextCompRecord = result.getRecord(contextComp);
 				if(contextCompRecord.getValues().get(Entity.ATTR_ID).isValid()) {
-					contextRootCore.addChild(createEntity(ContextComponent.class, new EntityCore(contextCompRecord)));
+					contextRootCore.addChild(createEntity(ContextComponent.class, new DefaultEntityCore(contextCompRecord)));
 				}
 			}
 
@@ -394,139 +390,34 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 	@Override
 	public <T extends Entity> T createEntity(Class<T> type, Result result) throws DataAccessException {
 		Record record = result.removeRecord(modelManager.getEntityType(type));
-		Core core = new EntityCore(record);
+		EntityCore core = new DefaultEntityCore(record);
 		for(Record relatedRecord : result) {
 			Class<? extends Entity> clazz = ODSUtils.getClass(relatedRecord.getEntityType().getName());
 
 			if(isCached(clazz)) {
 				core.setInfoRelation(getCached(clazz, relatedRecord.getID()));
 			} else {
-				core.setInfoRelation(createEntity(clazz, new EntityCore(relatedRecord)));
+				core.setInfoRelation(createEntity(clazz, new DefaultEntityCore(relatedRecord)));
 			}
 		}
 
 		return createEntity(type, core);
 	}
 
-	private <T extends Entity> T createEntity(Class<T> type, Core core) throws DataAccessException {
+	private <T extends Entity> T createEntity(Class<T> type, EntityCore core) throws DataAccessException {
+		Constructor<?> entityConstructor = null;
+		boolean isAccessible = false;
 		try {
-			return type.getDeclaredConstructor(Core.class).newInstance(core);
+			entityConstructor = type.getDeclaredConstructor(EntityCore.class);
+			isAccessible = entityConstructor.isAccessible();
+			entityConstructor.setAccessible(true);
+			return (T) entityConstructor.newInstance(core);
 		} catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
 			throw new DataAccessException(e.getMessage(), e);
-		}
-	}
-
-	@Override
-	public <T extends Entity> void update(String transactionID, List<T> entities) throws DataAccessException {
-		ODSTransaction transaction = transactions.get(transactionID);
-		if(transaction == null) {
-			// TODO this is an implementation error -> runtime based exception should be thrown
-			throw new DataAccessException("Transaction with given ID not found.");
-		} else if(entities.isEmpty()) {
-			return;
-		}
-
-		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(transaction.getModelManager()::getEntityType));
-		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
-			UpdateStatement updateStatement = new UpdateStatement(transaction, entry.getKey());
-			entry.getValue().forEach(d -> updateStatement.add(d.getCore()));
-			updateStatement.execute();
-		}
-	}
-
-	@Override
-	public <T extends Deletable> List<URI> delete(String transactionID, List<T> entities) throws DataAccessException {
-		ODSTransaction transaction = transactions.get(transactionID);
-		if(transaction == null) {
-			// TODO this is an implementation error -> runtime based exception should be thrown
-			throw new DataAccessException("Transaction with given ID not found.");
-		} else if(entities.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		EntityType rootEntityType = transaction.getModelManager().getEntityType(entities.get(0).getClass());
-		DeleteStatement deleteStatement = new DeleteStatement(transaction, rootEntityType, true);
-		deleteStatement.addInstances(entities);
-		return deleteStatement.execute();
-	}
-
-	@Override
-	public List<MeasuredValues> readMeasuredValues(ReadRequest readRequest) throws DataAccessException {
-		return new ReadRequestHandler(modelManager).execute(readRequest);
-	}
-
-	@Override
-	public void writeMeasuredValues(String transactionID, List<WriteRequest> writeRequests) throws DataAccessException {
-		ODSTransaction transaction = transactions.get(transactionID);
-		if(transaction == null) {
-			// TODO this is an implementation error -> runtime based exception should be thrown
-			throw new DataAccessException("Transaction with given ID not found.");
-		}
-
-		if(writeRequests.isEmpty()) {
-			return;
-		}
-
-		Map<ScalarType, List<WriteRequest>> writeRequestsByRawType = writeRequests.
-				stream().collect(Collectors.groupingBy(WriteRequest::getRawScalarType));
-
-		for(List<WriteRequest> writeRequestGroup : writeRequestsByRawType.values()) {
-			WriteRequestHandler writeRequestHandler = new WriteRequestHandler(transaction);
-			List<Channel> channels = new ArrayList<>();
-
-			for(WriteRequest writeRequest : writeRequestGroup) {
-				Channel channel = writeRequest.getChannel();
-				channel.setScalarType(writeRequest.getCalculatedScalarType());
-				// TODO it might be required to change relation to another unit?!??
-				channels.add(channel);
-				writeRequestHandler.addRequest(writeRequest);
+		} finally {
+			if(entityConstructor != null) {
+				entityConstructor.setAccessible(isAccessible);
 			}
-
-			update(transactionID, channels);
-
-			writeRequestHandler.execute();
-		}
-	}
-
-	@Override
-	public String startTransaction() throws DataAccessException {
-		try {
-			ODSTransaction transaction = new ODSTransaction(modelManager);
-			transactions.put(transaction.getID(), transaction);
-			return transaction.getID();
-		} catch (AoException e) {
-			throw new DataAccessException("Unable to initialize a transaction due to: " + e.reason);
-		}
-	}
-
-	@Override
-	public void commitTransaction(String transactionID) throws DataAccessException {
-		ODSTransaction transaction = transactions.get(transactionID);
-		if(transaction == null) {
-			// TODO this is an implementation error -> runtime based exception should be thrown
-			throw new DataAccessException("Transaction with given ID not found.");
-		}
-
-		try {
-			transaction.commitTransaction();
-			transactions.remove(transactionID);
-		} catch (AoException e) {
-			throw new DataAccessException("Unable to commit transaction due to: " + e.reason);
-		}
-	}
-
-	@Override
-	public void abortTransaction(String transactionID) throws DataAccessException {
-		ODSTransaction transaction = transactions.remove(transactionID);
-		if(transaction == null) {
-			// TODO this is an implementation error -> runtime based exception should be thrown
-			throw new DataAccessException("Transaction with given ID not found.");
-		}
-
-		try {
-			transaction.abortTransaction();
-		} catch (AoException e) {
-			throw new DataAccessException("Unable to commit transaction due to: " + e.reason);
 		}
 	}
 

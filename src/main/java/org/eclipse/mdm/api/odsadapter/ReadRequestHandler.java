@@ -6,7 +6,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.eclipse.mdm.api.odsadapter.massdata;
+package org.eclipse.mdm.api.odsadapter;
 
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 
-public final class ReadRequestHandler {
+final class ReadRequestHandler {
 
 	private final ODSModelManager modelManager;
 

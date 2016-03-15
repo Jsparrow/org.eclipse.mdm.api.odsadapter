@@ -11,17 +11,16 @@ package org.eclipse.mdm.api.odsadapter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Properties;
 
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
 import org.asam.ods.AoSession;
-import org.eclipse.mdm.api.base.EntityManager;
 import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.EntityManager;
 import org.eclipse.mdm.api.base.EntityManagerFactory;
-import org.eclipse.mdm.api.base.model.Value;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContextExt;
@@ -32,19 +31,35 @@ import org.omg.CosNaming.NamingContextPackage.NotFound;
 
 public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
-	private static final String ARG_ODS_NAMESERVICE = "ods_nameservice";
-	private static final String ARG_ODS_SERVICENAME = "ods_servicename";
-	private static final String ARG_ODS_USER 		= "ods_user";
-	private static final String ARG_ODS_PASSWORD    = "ods_password";
+	public static final String PARAM_NAMESERVICE = "nameservice";
+	public static final String PARAM_SERVICENAME = "servicename";
+	public static final String PARAM_USER = "user";
+	public static final String PARAM_PASSWORD = "password";
 
 	private ORB orb = null;
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p><b>Note:</b> Given parameters {@code Map} must contain values for
+	 * each of the following keys:
+	 *
+	 * <ul>
+	 * 	<li>{@value #PARAM_NAMESERVICE}</li>
+	 * 	<li>{@value #PARAM_SERVICENAME}</li>
+	 * 	<li>{@value #PARAM_USER}</li>
+	 * 	<li>{@value #PARAM_PASSWORD}</li>
+	 * </ul>
+	 *
+	 * Listed names are available via public fields of this class.
+	 * <p>
+	 */
 	@Override
-	public EntityManager connect(List<Value> parameters) throws ConnectionException {
-		String odsNameService = getConnectionParameter(parameters, ARG_ODS_NAMESERVICE);
-		String odsServiceName = getConnectionParameter(parameters, ARG_ODS_SERVICENAME);
-		String odsUser = getConnectionParameter(parameters, ARG_ODS_USER);
-		String odsPassword = getConnectionParameter(parameters, ARG_ODS_PASSWORD);
+	public EntityManager connect(Map<String, String> parameters) throws ConnectionException {
+		String odsNameService = getParameter(parameters, PARAM_NAMESERVICE);
+		String odsServiceName = getParameter(parameters, PARAM_SERVICENAME);
+		String odsUser = getParameter(parameters, PARAM_USER);
+		String odsPassword = getParameter(parameters, PARAM_PASSWORD);
 
 		return new ODSEntityManager(connect2ODS(odsNameService, odsServiceName, odsUser, odsPassword));
 	}
@@ -55,20 +70,11 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			NamingContextExt nameService = resolveNameService(odsNameService);
 			AoFactory aoFactory = resolveAoFactorysService(odsServiceName, nameService);
 
-			System.out.println("connecting to ODS Server ...");
-
-			System.out.println("AoFactory name: " + aoFactory.getName());
-			System.out.println("AoFactory description: " + aoFactory.getDescription());
-			System.out.println("AoFactory interface version: " + aoFactory.getInterfaceVersion());
-			System.out.println("AoFactory type: " + aoFactory.getType());
-
 			String connectionString = "USER=" + odsUser + ",PASSWORD=" + odsPassword  + ",CREATE_COSESSION_ALLOWED=TRUE";
 			AoSession aoSession = aoFactory.newSession(connectionString);
 
-			System.out.println("connecting to ODS Server ... done!");
 			return aoSession;
 		} catch(AoException aoe) {
-			System.out.println(aoe.reason);
 			throw new ConnectionException(aoe.reason, aoe);
 		}
 	}
@@ -107,21 +113,21 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 
 			return AoFactoryHelper.narrow(o);
 		} catch (NotFound e) {
-			System.out.println(e.getMessage());
 			throw new ConnectionException(e.getMessage(), e);
 		} catch (CannotProceed e) {
-			System.out.println(e.getMessage());
 			throw new ConnectionException(e.getMessage(), e);
 		} catch (InvalidName e) {
-			System.out.println(e.getMessage());
 			throw new ConnectionException(e.getMessage(), e);
 		}
 	}
 
-	private String getConnectionParameter(List<Value> parameters, String parameterName) throws ConnectionException {
-		Optional<Value> parameter = parameters.stream().filter(p -> p.getName().equalsIgnoreCase(parameterName)).findFirst();
-		return parameter.orElseThrow(() -> new ConnectionException("mandatory connection parameter with name '" +
-				parameterName + "' is missing")).extract();
+	private String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
+		String value = parameters.get(name);
+		if(value == null || value.isEmpty()) {
+			throw new ConnectionException("Connection parameter with name '" + name + "' is either missing or empty.");
+		}
+
+		return value;
 	}
 
 	private ORB getORB() {

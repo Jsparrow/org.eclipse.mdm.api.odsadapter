@@ -6,41 +6,57 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.eclipse.mdm.api.odsadapter.query;
+package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.asam.ods.AIDName;
 import org.asam.ods.AIDNameValueSeqUnitId;
 import org.asam.ods.AoException;
 import org.asam.ods.ElemId;
 import org.asam.ods.T_LONGLONG;
-import org.eclipse.mdm.api.base.model.Core;
+import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EntityCore;
+import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
+import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 
 public final class InsertStatement {
 
 	private final ODSTransaction transaction;
+
 	private final EntityType entityType;
 
+	private final Method getCoreMethod;
+
+	private final List<EntityCore> entityCores = new ArrayList<>();
 	private Map<String, List<Value>> insertMap = new HashMap<>();
 
 	public InsertStatement(ODSTransaction transaction, EntityType entityType) {
 		this.transaction = transaction;
 		this.entityType = entityType;
+
+		try {
+			getCoreMethod = BaseEntity.class.getDeclaredMethod("getCore");
+			getCoreMethod.setAccessible(true);
+		} catch (NoSuchMethodException | SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IllegalStateException();
+		}
 	}
 
 	/*
@@ -52,18 +68,35 @@ public final class InsertStatement {
 	 *  we should omit the usage of Core in public methods, since we have to check instanceof Sortable...
 	 */
 
-	public void add(Core core, Entity... implicitlyRelated) {
-		if(!core.getTypeName().equals(entityType.getName())) {
-			throw new IllegalArgumentException("Given entity core '" + core.getTypeName()
-			+ "' is incompatible with current insert statement for entity type '" + entityType + "'.");
+	public void add(Entity entity) {
+
+		/*
+		 * TODO
+		 *
+		 * this is currently done to be able to update the uri of the persisted entities
+		 */
+		try {
+			add((EntityCore) getCoreMethod.invoke(entity));
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+	}
+
+	public void add(EntityCore entityCore) {
+		if(!entityCore.getURI().getTypeName().equals(entityType.getName())) {
+			throw new IllegalArgumentException("Given entity core '" + entityCore.getURI().getTypeName()
+					+ "' is incompatible with current insert statement for entity type '" + entityType + "'.");
+		}
+
+		entityCores.add(entityCore);
 
 		// TODO we need custom behavior for sortable entities
 		// - if sortable has parent -> find max sort index out of sibling entities
 		// - if parent does not exist -> find max sort index of all entities
 
 		// add all entity values
-		for(Value value : core.getValues().values()) {
+		for(Value value : entityCore.getValues().values()) {
 			// TODO scan for values with file links and collect them!
 			insertMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
 		}
@@ -81,8 +114,8 @@ public final class InsertStatement {
 		}
 
 		// replace "empty" relation values with corresponding instance IDs
-		setRelationIDs(core.getInfoRelations().values());
-		setRelationIDs(Arrays.asList(implicitlyRelated));
+		setRelationIDs(entityCore.getInfoRelations().values());
+		setRelationIDs(entityCore.getImplicitRelations().values());
 	}
 
 	public List<Long> execute() throws DataAccessException {
@@ -129,7 +162,15 @@ public final class InsertStatement {
 	}
 
 	private List<Long> extractInstanceIDs(ElemId[] elemIds) {
-		return Arrays.stream(elemIds).map(e -> ODSConverter.fromODSLong(e.iid)).collect(Collectors.toList());
+		List<Long> instanceIDs = new ArrayList<>();
+
+		for(int i = 0; i < elemIds.length; i++) {
+			long instanceID = ODSConverter.fromODSLong(elemIds[i].iid);
+			entityCores.get(i).setURI(new URI(entityType.getSourceName(), entityType.getName(), instanceID));
+			instanceIDs.add(instanceID);
+		}
+
+		return instanceIDs;
 	}
 
 }

@@ -52,10 +52,11 @@ public class ODSModelManager implements ModelManager {
 
 	// unfortunately we can not share this scheduler with other instances since
 	// we have to shutdown the scheduler executor service and at this point we
-	// do not know when it is safe to so
+	// do not know when it is safe to do so
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-	private final Map<Class<? extends Entity>, EntityQueryConfig> entityQueryConfigs = new HashMap<>();
+	// entity type name -> query configuration
+	private final Map<String, EntityQueryConfig> entityQueryConfigs = new HashMap<>();
 
 	private final Map<String, ODSEntityType> entityTypesByName = new HashMap<>();
 	private final Map<Long, ODSEntityType> entityTypesByID = new HashMap<>();
@@ -80,14 +81,15 @@ public class ODSModelManager implements ModelManager {
 		configureEntityQuery(Quantity.class, Unit.class);
 		configureEntityQuery(Test.class, User.class);
 
-		// TODO Channel has an optional relation to sensors!!! -> add outer joins to each sensor?!
+		// TODO Channel has an optional relation to sensors! -> add outer joins to each sensor?!
 		configureEntityQuery(Channel.class, Unit.class, Quantity.class);
 
 		sessionRefresh = scheduler.scheduleAtFixedRate(this::refreshSession, 5, 5, TimeUnit.MINUTES);
 	}
 
 	public Query createQuery(Class<? extends Entity> type) {
-		EntityQueryConfig entityQueryConfig = entityQueryConfigs.getOrDefault(type, new EntityQueryConfig(type));
+		String typeName = getEntityType(type).getName();
+		EntityQueryConfig entityQueryConfig = entityQueryConfigs.getOrDefault(typeName, new EntityQueryConfig(typeName));
 		EntityType entityType = entityQueryConfig.getEntityType();
 
 		Query query = createQuery().selectAll(entityType);
@@ -157,7 +159,13 @@ public class ODSModelManager implements ModelManager {
 
 	@Deprecated
 	public List<EntityType> getImplicitEntityTypes(Class<? extends Entity> type) {
-		return entityQueryConfigs.getOrDefault(type, new EntityQueryConfig(type)).getEntityTypes();
+		String typeName = getEntityType(type).getName();
+		return entityQueryConfigs.getOrDefault(typeName, new EntityQueryConfig(typeName)).getEntityTypes();
+	}
+
+	@Deprecated
+	public List<EntityType> getRelatedTypes(String typeName) {
+		return entityQueryConfigs.getOrDefault(typeName, new EntityQueryConfig(typeName)).getRelatedTypes();
 	}
 
 	public void close() throws AoException {
@@ -165,13 +173,13 @@ public class ODSModelManager implements ModelManager {
 			sessionRefresh.cancel(true);
 			aoSession.close();
 		} finally {
-			System.err.println("SESSION CLOSED: " + aoSession.toString());
 			scheduler.shutdown();
 		}
 	}
 
 	private void configureEntityQuery(Class<? extends Entity> type, Class<?>... relatedTypes) {
-		entityQueryConfigs.put(type, new EntityQueryConfig(type, collectEntityTypes(relatedTypes)));
+		String typeName = getEntityType(type).getName();
+		entityQueryConfigs.put(typeName, new EntityQueryConfig(typeName, collectEntityTypes(relatedTypes)));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -213,7 +221,6 @@ public class ODSModelManager implements ModelManager {
 	private void refreshSession() {
 		try {
 			// TODO add logging...
-			System.err.println("SESSION REFRESHED: " + aoSession.toString());
 			aoSession.getName();
 		} catch(AoException e) {
 			sessionRefresh.cancel(false);
@@ -227,26 +234,31 @@ public class ODSModelManager implements ModelManager {
 		 */
 
 		private final List<Class<? extends Entity>> relatedTypes;
-		private final Class<? extends Entity> type;
+		private final String typeName;
 
-		private EntityQueryConfig(Class<? extends Entity> type, List<Class<? extends Entity>> relatedTypes) {
+		private EntityQueryConfig(String typeName, List<Class<? extends Entity>> relatedTypes) {
 			this.relatedTypes = relatedTypes;
-			this.type = type;
+			this.typeName = typeName;
 		}
 
-		private EntityQueryConfig(Class<? extends Entity> type) {
+		private EntityQueryConfig(String typeName) {
 			relatedTypes = Collections.emptyList();
-			this.type = type;
+			this.typeName = typeName;
 		}
 
 		private EntityType getEntityType() {
-			return ODSModelManager.this.getEntityType(type);
+			return ODSModelManager.this.getEntityType(typeName);
 		}
 
 		private List<EntityType> getEntityTypes() {
+			List<EntityType> entityTypes = getRelatedTypes();
+			entityTypes.add(getEntityType());
+			return entityTypes;
+		}
+
+		private List<EntityType> getRelatedTypes() {
 			List<EntityType> entityTypes = StreamSupport.stream(spliterator(), false)
 					.map(ODSModelManager.this::getEntityType).collect(Collectors.toList());
-			entityTypes.add(getEntityType());
 			return entityTypes;
 		}
 

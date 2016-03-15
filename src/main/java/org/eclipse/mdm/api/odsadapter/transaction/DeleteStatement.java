@@ -6,7 +6,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.eclipse.mdm.api.odsadapter.query;
+package org.eclipse.mdm.api.odsadapter.transaction;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +34,7 @@ import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
+import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
@@ -54,6 +55,7 @@ public class DeleteStatement {
 	};
 
 	private final ODSTransaction transaction;
+
 	private final EntityType entityType;
 	private final boolean useAutoDeleteFeature;
 
@@ -89,7 +91,7 @@ public class DeleteStatement {
 		}
 	}
 
-	public <T extends Entity> void addInstances(List<T> entities) throws DataAccessException {
+	public <T extends Entity> void addInstances(Collection<T> entities) throws DataAccessException {
 		for(T entity : entities) {
 			addInstance(entity.getURI());
 		}

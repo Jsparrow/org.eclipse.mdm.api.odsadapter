@@ -6,23 +6,21 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.eclipse.mdm.api.odsadapter.massdata;
+package org.eclipse.mdm.api.odsadapter.transaction;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
-import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EntityCore;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
-import org.eclipse.mdm.api.base.model.factory.EntityCore;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.base.query.DefaultEntityCore;
 import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.odsadapter.query.InsertStatement;
-import org.eclipse.mdm.api.odsadapter.query.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
@@ -48,7 +46,7 @@ public final class WriteRequestHandler {
 
 	public void addRequest(WriteRequest writeRequest) throws DataAccessException {
 		channelURIs.add(writeRequest.getChannel().getURI());
-		insertStatement.add(createCore(writeRequest), writeRequest.getChannelGroup());
+		insertStatement.add(createCore(writeRequest));
 	}
 
 	public List<URI> execute() throws DataAccessException {
@@ -56,12 +54,13 @@ public final class WriteRequestHandler {
 		return channelURIs;
 	}
 
-	private Core createCore(WriteRequest writeRequest) throws DataAccessException {
-		Core core = new EntityCore(localColumnEntityType);
+	private EntityCore createCore(WriteRequest writeRequest) throws DataAccessException {
+		EntityCore entityCore = new DefaultEntityCore(localColumnEntityType);
 
-		core.setInfoRelation(writeRequest.getChannel());
+		entityCore.setImplicitRelation(writeRequest.getChannelGroup());
+		entityCore.setInfoRelation(writeRequest.getChannel());
 
-		Map<String, Value> values = core.getValues();
+		Map<String, Value> values = entityCore.getValues();
 		values.get(Entity.ATTR_NAME).set(writeRequest.getChannel().getName());
 		values.get(Entity.ATTR_MIMETYPE).set(ODSUtils.DEFAULT_MIMETYPES.get(localColumnEntityType.getName()));
 		values.get(AE_LC_ATTR_INDEPENDENT).set(ODSConverter.toODSValidFlag(writeRequest.isIndependent()));
@@ -112,7 +111,7 @@ public final class WriteRequestHandler {
 		//			throw new DataAccessException("");
 		//		}
 
-		return core;
+		return entityCore;
 	}
 
 }
