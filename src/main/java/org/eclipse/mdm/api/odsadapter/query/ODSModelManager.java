@@ -18,10 +18,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -47,13 +43,12 @@ import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSEnumerations;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ODSModelManager implements ModelManager {
 
-	// unfortunately we can not share this scheduler with other instances since
-	// we have to shutdown the scheduler executor service and at this point we
-	// do not know when it is safe to do so
-	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ODSModelManager.class);
 
 	// entity type name -> query configuration
 	private final Map<String, EntityQueryConfig> entityQueryConfigs = new HashMap<>();
@@ -62,8 +57,6 @@ public class ODSModelManager implements ModelManager {
 	private final Map<Long, ODSEntityType> entityTypesByID = new HashMap<>();
 
 	private final DataItemFactory dataItemFactory;
-
-	private final ScheduledFuture<?> sessionRefresh;
 
 	private final AoSession aoSession;
 
@@ -83,8 +76,6 @@ public class ODSModelManager implements ModelManager {
 
 		// TODO Channel has an optional relation to sensors! -> add outer joins to each sensor?!
 		configureEntityQuery(Channel.class, Unit.class, Quantity.class);
-
-		sessionRefresh = scheduler.scheduleAtFixedRate(this::refreshSession, 5, 5, TimeUnit.MINUTES);
 	}
 
 	public Query createQuery(Class<? extends Entity> type) {
@@ -169,12 +160,7 @@ public class ODSModelManager implements ModelManager {
 	}
 
 	public void close() throws AoException {
-		try {
-			sessionRefresh.cancel(true);
-			aoSession.close();
-		} finally {
-			scheduler.shutdown();
-		}
+		aoSession.close();
 	}
 
 	private void configureEntityQuery(Class<? extends Entity> type, Class<?>... relatedTypes) {
@@ -189,6 +175,8 @@ public class ODSModelManager implements ModelManager {
 	}
 
 	private void loadApplicationModel() throws AoException {
+		LOGGER.debug("Reading the application model...");
+		long start = System.currentTimeMillis();
 		// enumeration mappings (aeID -> (aaName -> enumClass))
 		Map<Long, Map<String, Class<? extends Enum<?>>>> enumClassMap = new HashMap<>();
 		for(EnumerationAttributeStructure eas : aoSession.getEnumerationAttributes()) {
@@ -216,15 +204,9 @@ public class ODSModelManager implements ModelManager {
 
 		// assign relations to their source entity types
 		relations.stream().collect(groupingBy(Relation::getSource)).forEach((e, r) -> ((ODSEntityType) e).setRelations(r));
-	}
 
-	private void refreshSession() {
-		try {
-			// TODO add logging...
-			aoSession.getName();
-		} catch(AoException e) {
-			sessionRefresh.cancel(false);
-		}
+		long stop = System.currentTimeMillis();
+		LOGGER.debug("{} entity types with {} relations found in {} ms.", entityTypesByName.size(), relations.size(), stop - start);
 	}
 
 	private final class EntityQueryConfig implements Iterable<Class<? extends Entity>> {

@@ -33,8 +33,12 @@ import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class InsertStatement {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(InsertStatement.class);
 
 	private final ODSTransaction transaction;
 
@@ -134,12 +138,17 @@ public final class InsertStatement {
 				anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
 				anvsuList.add(anvsu);
 			}
+
+			long start = System.currentTimeMillis();
 			ElemId[] elemIds = transaction.getApplElemAccess().insertInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
+			long stop = System.currentTimeMillis();
+
+			LOGGER.debug("{} " + entityType + " instances created in {} ms.", elemIds.length, stop - start);
 			return extractInstanceIDs(elemIds);
 			// TODO should we track given cores and replace the URIs as soon as we have instance IDs?
 			// if so, then we can change this method's return type to void!
 		} catch(AoException aoe) {
-			throw new DataAccessException(aoe.reason, aoe);
+			throw new DataAccessException("Unable to create new instances due to: " + aoe.reason, aoe);
 		}
 
 		/*

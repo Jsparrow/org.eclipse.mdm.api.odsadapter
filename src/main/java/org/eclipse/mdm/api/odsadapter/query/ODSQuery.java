@@ -46,8 +46,12 @@ import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ODSQuery implements Query {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ODSQuery.class);
 
 	private static final String GROUPE_NAME = "name";
 	private static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("\\S+\\((?<" + GROUPE_NAME + ">\\S+)\\)");
@@ -146,13 +150,16 @@ public class ODSQuery implements Query {
 			qse.orderBy = orderBy.toArray(new SelOrder[orderBy.size()]);
 
 			List<Result> results = new ArrayList<>();
-
+			long start = System.currentTimeMillis();
 			for(ResultSetExt resultSetExt : modelManager.getApplElemAccess().getInstancesExt(qse, 0)) {
 				for(Result result : new ODSResultSEQ(resultSetExt)) {
 					results.add(result);
 				}
 			}
+			long stop = System.currentTimeMillis();
 
+			LOGGER.debug("Query executed in {} ms and retrieved {} result rows ({} selections, {} conditions, "
+					+ "{} joins).", stop - start, results.size(), anuSeq.size(), condSeq.size(), joinSeq.size());
 			return results;
 		} catch(AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);

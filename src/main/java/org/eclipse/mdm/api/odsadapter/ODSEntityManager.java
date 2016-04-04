@@ -101,7 +101,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 			 * TODO provide context properties from AoSession!
 			 */
 		} catch (AoException e) {
-			throw new ConnectionException("Unable to load application model due to: " + e.reason);
+			throw new ConnectionException("Unable to load application model due to: " + e.reason, e);
 		} catch (DataAccessException e) {
 			throw new ConnectionException("Unable to initialize the entity manager.", e);
 		}
@@ -308,8 +308,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		try {
 			modelManager.close();
 		} catch (AoException e) {
-			throw new ConnectionException("TODO", e);
-			// TODO
+			throw new ConnectionException("Unable to close the connection to the data source due to: " + e.reason, e);
 		}
 	}
 
@@ -404,6 +403,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		return createEntity(type, core);
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T extends Entity> T createEntity(Class<T> type, EntityCore core) throws DataAccessException {
 		Constructor<?> entityConstructor = null;
 		boolean isAccessible = false;

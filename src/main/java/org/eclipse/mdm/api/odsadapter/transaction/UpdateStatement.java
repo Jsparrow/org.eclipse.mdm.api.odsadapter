@@ -19,8 +19,12 @@ import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class UpdateStatement {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateStatement.class);
 
 	private final ODSTransaction transaction;
 	private final EntityType entityType;
@@ -88,7 +92,11 @@ public final class UpdateStatement {
 				anvsuList.add(anvsu);
 			}
 
+			long start = System.currentTimeMillis();
 			transaction.getApplElemAccess().updateInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
+			long stop = System.currentTimeMillis();
+
+			LOGGER.debug("{} " + entityType + " instances updated in {} ms.", anvsuList.size(), stop - start);
 		} catch(AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);
 		} finally {

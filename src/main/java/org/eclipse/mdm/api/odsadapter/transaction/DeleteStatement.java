@@ -37,8 +37,12 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeleteStatement {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DeleteStatement.class);
 
 	private static final String AE_NAME_TESTSTEP = "TestStep";
 	private static final String AE_NAME_MEARESULT = "MeaResult";
@@ -66,7 +70,9 @@ public class DeleteStatement {
 	private Map<String, Map<String, URI>> map = new LinkedHashMap<>();
 	private List<DeleteStatement> forkedStatements = new ArrayList<>();
 
-	public <T extends Entity> DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDeleteFeature) {
+	private final boolean isRootStatement;
+
+	public DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDeleteFeature) {
 		this.transaction = transaction;
 		this.entityType = entityType;
 		this.useAutoDeleteFeature = useAutoDeleteFeature;
@@ -76,6 +82,20 @@ public class DeleteStatement {
 		teqEntityType = transaction.getModelManager().getEntityType(ContextType.TESTEQUIPMENT);
 
 		initialize(this.entityType);
+		isRootStatement = true;
+	}
+
+	private DeleteStatement(DeleteStatement deleteStatement, EntityType entityType) {
+		transaction = deleteStatement.transaction;
+		useAutoDeleteFeature = deleteStatement.useAutoDeleteFeature;
+		this.entityType = entityType;
+
+		uutEntityType = deleteStatement.uutEntityType;
+		tsqEntityType = deleteStatement.tsqEntityType;
+		teqEntityType = deleteStatement.teqEntityType;
+
+		initialize(entityType);
+		isRootStatement = false;
 	}
 
 	public void initialize(EntityType entityType) {
@@ -99,6 +119,7 @@ public class DeleteStatement {
 
 	public List<URI> execute() throws DataAccessException {
 		try {
+			long start = System.currentTimeMillis();
 			List<URI> list = executeForkedStatements();
 
 			List<Entry<String, Map<String, URI>>> sorted = new ArrayList<>(map.entrySet());
@@ -111,6 +132,11 @@ public class DeleteStatement {
 
 					list.addAll(instanceURIs);
 				}
+			}
+			long stop = System.currentTimeMillis();
+
+			if(isRootStatement) {
+				LOGGER.debug("{} instances deleted in {} ms.", list.size(), stop - start);
 			}
 
 			return list;
@@ -225,7 +251,7 @@ public class DeleteStatement {
 				continue;
 			}
 
-			DeleteStatement forkedStatement = new DeleteStatement(transaction, infoEntityType, useAutoDeleteFeature);
+			DeleteStatement forkedStatement = new DeleteStatement(this, infoEntityType);
 			forkedStatement.addInstance(result.get().getRecord(infoEntityType).createURI());
 			forkedStatements.add(forkedStatement);
 		}

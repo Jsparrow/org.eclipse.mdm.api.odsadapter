@@ -14,6 +14,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.ejb.LocalBean;
+import javax.ejb.Stateful;
+
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
@@ -28,13 +31,19 @@ import org.omg.CosNaming.NamingContextExtHelper;
 import org.omg.CosNaming.NamingContextPackage.CannotProceed;
 import org.omg.CosNaming.NamingContextPackage.InvalidName;
 import org.omg.CosNaming.NamingContextPackage.NotFound;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+@Stateful
+@LocalBean
 public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
 	public static final String PARAM_NAMESERVICE = "nameservice";
 	public static final String PARAM_SERVICENAME = "servicename";
 	public static final String PARAM_USER = "user";
 	public static final String PARAM_PASSWORD = "password";
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ODSEntityManagerFactory.class);
 
 	private ORB orb = null;
 
@@ -67,28 +76,32 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	private AoSession connect2ODS(String odsNameService, String odsServiceName, String odsUser,
 			String odsPassword) throws ConnectionException {
 		try {
-			NamingContextExt nameService = resolveNameService(odsNameService);
-			AoFactory aoFactory = resolveAoFactorysService(odsServiceName, nameService);
+			AoFactory aoFactory = resolveAoFactorysService(odsServiceName, odsNameService);
+
+			LOGGER.info("Connecting to ODS Server ...");
+
+			LOGGER.info("AoFactory name: {}", aoFactory.getName());
+			LOGGER.info("AoFactory description: {}", aoFactory.getDescription());
+			LOGGER.info("AoFactory interface version: {}", aoFactory.getInterfaceVersion());
+			LOGGER.info("AoFactory type: {}", aoFactory.getType());
 
 			String connectionString = "USER=" + odsUser + ",PASSWORD=" + odsPassword  + ",CREATE_COSESSION_ALLOWED=TRUE";
 			AoSession aoSession = aoFactory.newSession(connectionString);
 
+			LOGGER.info("Connection to ODS server established.");
 			return aoSession;
-		} catch(AoException aoe) {
-			throw new ConnectionException(aoe.reason, aoe);
+		} catch(AoException e) {
+			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
 		}
 	}
 
-	private NamingContextExt resolveNameService(String nameServiceString) {
-		org.omg.CORBA.Object nsObject = getORB().string_to_object(nameServiceString);
-		NamingContextExt nsReference = NamingContextExtHelper.narrow(nsObject);
-
-		return nsReference;
-	}
-
-	private AoFactory resolveAoFactorysService(String odsServiceName, NamingContextExt nameService)
-			throws ConnectionException {
+	private AoFactory resolveAoFactorysService(String odsServiceName, String odsNameService) throws ConnectionException {
 		try {
+			NamingContextExt nameService = NamingContextExtHelper.narrow(getORB().string_to_object(odsNameService));
+			if(nameService == null) {
+				throw new ConnectionException("Unable to resolve NameService '" + odsNameService + "'.");
+			}
+
 			if(odsServiceName.contains("/")) {
 				String[] ncsStrings = odsServiceName.split("/");
 				List<NameComponent> ncList = new ArrayList<>();
@@ -112,12 +125,8 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			org.omg.CORBA.Object o = nameService.resolve(new NameComponent[]{nc});
 
 			return AoFactoryHelper.narrow(o);
-		} catch (NotFound e) {
-			throw new ConnectionException(e.getMessage(), e);
-		} catch (CannotProceed e) {
-			throw new ConnectionException(e.getMessage(), e);
-		} catch (InvalidName e) {
-			throw new ConnectionException(e.getMessage(), e);
+		} catch (NotFound | CannotProceed | InvalidName e) {
+			throw new ConnectionException("Unable to resolve AoFactory.", e);
 		}
 	}
 
