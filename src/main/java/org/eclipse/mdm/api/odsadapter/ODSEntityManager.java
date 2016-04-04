@@ -8,6 +8,10 @@
 
 package org.eclipse.mdm.api.odsadapter;
 
+import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_CLASS;
+import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
+import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -46,9 +50,13 @@ import org.eclipse.mdm.api.base.model.ParameterSet;
 import org.eclipse.mdm.api.base.model.Parameterizable;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
+import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.User;
+import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.model.ValueType;
+import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.DefaultEntityCore;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -60,6 +68,8 @@ import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
+import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
+import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.odsadapter.query.DataItemFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -287,6 +297,62 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		}
 
 		return parameterSets;
+	}
+
+	@Deprecated // TODO This is a convenience implememtation to read CatalogComponent SNAPSHOTS - No Attributes or SENSORS!
+	public List<CatalogComponent> loadCatalogComponents(ContextType contextType) throws DataAccessException {
+		EntityType catalogComponentEntityType = modelManager.getEntityType("Cat" + ODSUtils.CONTEXTTYPES.convert(contextType) + "Comp");
+		Query query = modelManager.createQuery().selectAll(catalogComponentEntityType);
+
+		Map<Long, EntityCore> catalogComponentCores = new HashMap<>();
+		for (Result result : query.fetch()) {
+			Record record = result.getRecord(catalogComponentEntityType);
+			catalogComponentCores.put(record.getID(), new DefaultEntityCore(record));
+		}
+
+		EntityType catalogAttributeEntityType = modelManager.getEntityType("Cat" + ODSUtils.CONTEXTTYPES.convert(contextType) + "Attr");
+		query = modelManager.createQuery().selectAll(catalogAttributeEntityType)
+				.join(catalogAttributeEntityType.getRelation(catalogComponentEntityType))
+				.selectID(catalogComponentEntityType);
+
+		for(Result result : query.fetch()) {
+			EntityCore catalogAttributeCore = new DefaultEntityCore(result.getRecord(catalogAttributeEntityType));
+			EntityCore catalogComponentCore = catalogComponentCores.get(result.getRecord(catalogComponentEntityType).getID());
+			adjustCatalogAttributeCore(catalogComponentCore, catalogAttributeCore);
+			CatalogAttribute catalogAttribute = createEntity(CatalogAttribute.class, catalogAttributeCore);
+			catalogComponentCore.addChild(catalogAttribute);
+		}
+
+		List<CatalogComponent> catalogComponents = new ArrayList<>();
+		for(EntityCore catalogComponentCore : catalogComponentCores.values()) {
+			catalogComponents.add(createEntity(CatalogComponent.class, catalogComponentCore));
+		}
+
+		return catalogComponents;
+	}
+
+	private void adjustCatalogAttributeCore(EntityCore catalogComponentCore, EntityCore catalogAttributeCore) {
+		EntityType entityType = modelManager.getEntityType((String) catalogComponentCore.getValues().get(Entity.ATTR_NAME).extract());
+		Attribute attribute = entityType.getAttribute(catalogAttributeCore.getValues().get(Entity.ATTR_NAME).extract());
+
+		Map<String, Value> values = catalogAttributeCore.getValues();
+		Value enumerationClass = ValueType.STRING.create(VATTR_ENUMERATION_CLASS);
+		values.put(VATTR_ENUMERATION_CLASS, enumerationClass);
+		if(attribute.getValueType().isEnumerationType()) {
+			enumerationClass.set(attribute.getEnumClass().getSimpleName());
+		}
+
+		Value scalarType = ValueType.ENUMERATION.create(ScalarType.class, VATTR_SCALAR_TYPE);
+		scalarType.set(ScalarType.valueOf(attribute.getValueType().toSingleType().name()));
+		values.put(VATTR_SCALAR_TYPE, scalarType);
+
+		values.put(VATTR_SEQUENCE, ValueType.BOOLEAN.create(VATTR_SEQUENCE, attribute.getValueType().isSequence()));
+
+		// TODO relation to Unit
+		//		Unit unit = null;
+		//		if(unit != null) {
+		//			catalogAttributeCore.setInfoRelation(unit);
+		//		}
 	}
 
 	@Override

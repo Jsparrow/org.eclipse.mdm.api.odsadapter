@@ -61,6 +61,27 @@ public final class ODSEnumerations {
 		throw new IllegalStateException("Enumeration mapping for name '" + name + "' does not exist.");
 	}
 
+	public static String getEnumName(Class<? extends Enum<?>> enumClass) {
+		if(enumClass == null) {
+			throw new IllegalArgumentException("Enumeration class is not allowed to be null.");
+		} else if(ScalarType.class == enumClass) {
+			return SCALAR_TYPE_NAME;
+		} else if(VersionState.class == enumClass) {
+			return STATE_NAME;
+		} else if(Interpolation.class == enumClass) {
+			return INTERPOLATION_NAME;
+		} else if(AxisType.class == enumClass) {
+			return AXIS_TYPE_NAME;
+		} else if(TypeSpecification.class == enumClass) {
+			return TYPE_SPECIFICATION_NAME;
+		} else if(SequenceRepresentation.class == enumClass) {
+			return SEQUENCE_REPRESENTATION_NAME;
+		}
+
+		throw new IllegalStateException("Enumeration mapping for enumeration class '" +
+				enumClass.getSimpleName() + "' does not exist.");
+	}
+
 	@SuppressWarnings("unchecked")
 	static <E extends Enum<?>> E fromODSEnum(Class<E> enumClass, int value)
 			throws DataAccessException {

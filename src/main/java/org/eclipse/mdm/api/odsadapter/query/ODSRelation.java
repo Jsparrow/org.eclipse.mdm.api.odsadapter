@@ -8,6 +8,8 @@
 
 package org.eclipse.mdm.api.odsadapter.query;
 
+import java.util.Objects;
+
 import org.asam.ods.ApplRel;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
@@ -49,6 +51,23 @@ public final class ODSRelation implements Relation {
 	@Override
 	public Relationship getRelationship() {
 		return relationship;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getSource(), getTarget(), getName());
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if(object instanceof ODSRelation) {
+			Relation relation = (Relation) object;
+			return getSource().equals(relation.getSource()) &&
+					getTarget().equals(relation.getTarget()) &&
+					getName().equals(relation.getName());
+		}
+
+		return false;
 	}
 
 	@Override

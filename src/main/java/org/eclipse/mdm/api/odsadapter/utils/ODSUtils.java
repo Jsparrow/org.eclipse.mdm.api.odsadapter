@@ -19,6 +19,7 @@ import org.asam.ods.SelOpcode;
 import org.asam.ods.SelOperator;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
+import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.Measurement;
@@ -49,6 +50,7 @@ public final class ODSUtils {
 	public static final BiDiMapper<Operation, SelOpcode> OPERATIONS = new BiDiMapper<>();
 	public static final BiDiMapper<ValueType, DataType> VALUETYPES = new BiDiMapper<>();
 	public static final BiDiMapper<Join, JoinType> JOINS = new BiDiMapper<>();
+	public static final BiDiMapper<ContextType, String> CONTEXTTYPES = new BiDiMapper<>();
 
 	/*
 	 * TODO: Since modules will introduce new entity types it must be possible
@@ -136,6 +138,10 @@ public final class ODSUtils {
 
 		JOINS.addMappings(Join.INNER, org.asam.ods.JoinType.JTDEFAULT);
 		JOINS.addMappings(Join.OUTER, org.asam.ods.JoinType.JTOUTER);
+
+		CONTEXTTYPES.addMappings(ContextType.UNITUNDERTEST, "UnitUnderTest");
+		CONTEXTTYPES.addMappings(ContextType.TESTSEQUENCE, "TestSequence");
+		CONTEXTTYPES.addMappings(ContextType.TESTEQUIPMENT, "TestEquipment");
 
 		AE_NAME_MAPPING.addMappings(Environment.class, "Environment");
 		AE_NAME_MAPPING.addMappings(Measurement.class, "MeaResult");

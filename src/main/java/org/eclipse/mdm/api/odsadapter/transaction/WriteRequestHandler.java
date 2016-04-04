@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.EntityCore;
-import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -35,9 +35,9 @@ public final class WriteRequestHandler {
 	private static final String AE_LC_ATTR_FLAGS = "Flags";
 	private static final String AE_LC_ATTR_GLOBAL_FLAG = "GlobalFlag";
 
+	private final List<EntityCore> entityCores = new ArrayList<>();
 	private final EntityType localColumnEntityType;
 	private final InsertStatement insertStatement;
-	private List<URI> channelURIs = new ArrayList<>();
 
 	public WriteRequestHandler(ODSTransaction transaction) {
 		localColumnEntityType = transaction.getModelManager().getEntityType("LocalColumn");
@@ -45,13 +45,11 @@ public final class WriteRequestHandler {
 	}
 
 	public void addRequest(WriteRequest writeRequest) throws DataAccessException {
-		channelURIs.add(writeRequest.getChannel().getURI());
-		insertStatement.add(createCore(writeRequest));
+		entityCores.add(createCore(writeRequest));
 	}
 
-	public List<URI> execute() throws DataAccessException {
-		insertStatement.execute();
-		return channelURIs;
+	public void execute() throws AoException, DataAccessException {
+		insertStatement.executeWithCores(entityCores);
 	}
 
 	private EntityCore createCore(WriteRequest writeRequest) throws DataAccessException {

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
+
 package org.eclipse.mdm.api.odsadapter.transaction;
 
 import java.util.ArrayList;
@@ -6,11 +14,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
 import org.asam.ods.AoSession;
 import org.asam.ods.ApplElemAccess;
+import org.asam.ods.ApplicationStructure;
+import org.asam.ods.BaseStructure;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
@@ -20,6 +31,9 @@ import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
+import org.eclipse.mdm.api.dflt.model.CatalogComponent;
+import org.eclipse.mdm.api.dflt.model.CatalogSensor;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,56 +43,122 @@ public final class ODSTransaction implements Transaction {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSTransaction.class);
 
 	private final ODSModelManager modelManager;
-	private final ApplElemAccess applElemAccess;
 	private final AoSession aoSession;
 
 	private final int id;
+
+	private ApplicationStructure applicationStructure;
+	private BaseStructure baseStructure;
+
+	private ApplElemAccess applElemAccess;
+
+	private CatalogManager catalogManager;
 
 	public ODSTransaction(ODSModelManager modelManager) throws AoException {
 		this.modelManager = modelManager;
 
 		aoSession = modelManager.getAoSession().createCoSession();
-		applElemAccess = aoSession.getApplElemAccess();
 		id = aoSession.getId();
+
+		// TODO track duration
 
 		aoSession.startTransaction();
 		LOGGER.debug("Transaction '{}' started.", id);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T extends Entity> void create(Collection<T> entities) throws DataAccessException {
+		if(entities.isEmpty()) {
+			return;
+		} else if(entities.stream().filter(e -> e.getURI().getID() > 0).findAny().isPresent()) {
+			throw new IllegalArgumentException("At least one given entity is already persisted.");
+		}
 
-		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(modelManager::getEntityType));
-		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
-			InsertStatement insertStatement = new InsertStatement(this, entry.getKey());
-			entry.getValue().forEach(e -> insertStatement.add(e));
-			insertStatement.execute();
+		try {
+			Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
+
+			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType.get(CatalogComponent.class);
+			if(catalogComponents != null) {
+				getCatalogManager().createCatalogComponents(catalogComponents);
+			}
+
+			List<CatalogSensor> catalogSensors = (List<CatalogSensor>) entitiesByClassType.get(CatalogSensor.class);
+			if(catalogSensors != null) {
+				// TODO create CatalogSensors....
+				throw new DataAccessException("NOT IMPLEMENTED");
+			}
+
+			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
+			if(catalogAttributes != null) {
+				getCatalogManager().createCatalogAttributes(catalogAttributes);
+			}
+
+			executeStatements(et -> new InsertStatement(this, et), entities);
+		} catch(AoException e) {
+			throw new DataAccessException(e.reason, e); // TODO
+
 		}
 	}
 
 	@Override
 	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
-		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(modelManager::getEntityType));
-		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
-			UpdateStatement updateStatement = new UpdateStatement(this, entry.getKey());
-			entry.getValue().forEach(e -> updateStatement.add(e));
-			updateStatement.execute();
+		if(entities.isEmpty()) {
+			return;
+		} else if(entities.stream().filter(e -> e.getURI().getID() < 1).findAny().isPresent()) {
+			throw new IllegalArgumentException("At least one given entity is not yet persisted.");
+		}
+
+		/*
+		 * TODO: we should ensure that all of the given have been
+		 * modified -> ATTENTION - even if an entity itself is
+		 * unmodified, its children could be!
+		 */
+
+		try {
+			executeStatements(et -> new UpdateStatement(this, et), entities);
+		} catch(AoException e) {
+			throw new DataAccessException(e.reason, e); // TODO
 		}
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T extends Deletable> List<URI> delete(Collection<T> entities) throws DataAccessException {
 		if(entities.isEmpty()) {
 			return Collections.emptyList();
 		}
-		/*
-		 * TODO: this implementation is correct as long as entities are all of the same type!
-		 * this has to be fixed!
-		 */
-		EntityType rootEntityType = modelManager.getEntityType(entities.iterator().next().getClass());
-		DeleteStatement deleteStatement = new DeleteStatement(this, rootEntityType, true);
-		deleteStatement.addInstances(entities);
-		return deleteStatement.execute();
+
+		List<T> filteredEntities = entities.stream().filter(e -> e.getURI().getID() > 0).collect(Collectors.toList());
+
+		try {
+			Map<Class<?>, List<T>> entitiesByClassType = filteredEntities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
+
+			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType.get(CatalogComponent.class);
+			if(catalogComponents != null) {
+				getCatalogManager().deleteCatalogComponents(catalogComponents);
+			}
+
+			List<CatalogSensor> catalogSensors = (List<CatalogSensor>) entitiesByClassType.get(CatalogSensor.class);
+			if(catalogSensors != null) {
+				// TODO delete CatalogSensors....
+				throw new DataAccessException("NOT IMPLEMENTED");
+			}
+
+			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
+			if(catalogAttributes != null) {
+				getCatalogManager().deleteCatalogAttributes(catalogAttributes);
+			}
+
+			/*
+			 * TODO: this implementation is correct as long as entities are all of the same type!
+			 * this has to be fixed!
+			 */
+
+			return executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
+		} catch (AoException e) {
+			throw new DataAccessException(e.reason, e); // TODO
+		}
 	}
 
 	@Override
@@ -87,23 +167,27 @@ public final class ODSTransaction implements Transaction {
 			return;
 		}
 
-		Map<ScalarType, List<WriteRequest>> writeRequestsByRawType = writeRequests.stream()
-				.collect(Collectors.groupingBy(WriteRequest::getRawScalarType));
+		try {
+			Map<ScalarType, List<WriteRequest>> writeRequestsByRawType = writeRequests.stream()
+					.collect(Collectors.groupingBy(WriteRequest::getRawScalarType));
 
-		for(List<WriteRequest> writeRequestGroup : writeRequestsByRawType.values()) {
-			WriteRequestHandler writeRequestHandler = new WriteRequestHandler(this);
-			List<Channel> channels = new ArrayList<>();
+			for(List<WriteRequest> writeRequestGroup : writeRequestsByRawType.values()) {
+				WriteRequestHandler writeRequestHandler = new WriteRequestHandler(this);
+				List<Channel> channels = new ArrayList<>();
 
-			for(WriteRequest writeRequest : writeRequestGroup) {
-				Channel channel = writeRequest.getChannel();
-				channel.setScalarType(writeRequest.getCalculatedScalarType());
-				// TODO it might be required to change relation to another unit?!??
-				channels.add(channel);
-				writeRequestHandler.addRequest(writeRequest);
+				for(WriteRequest writeRequest : writeRequestGroup) {
+					Channel channel = writeRequest.getChannel();
+					channel.setScalarType(writeRequest.getCalculatedScalarType());
+					// TODO it might be required to change relation to another unit?!??
+					channels.add(channel);
+					writeRequestHandler.addRequest(writeRequest);
+				}
+
+				update(channels);
+				writeRequestHandler.execute();
 			}
-
-			update(channels);
-			writeRequestHandler.execute();
+		} catch(AoException e) {
+			throw new DataAccessException(e.reason, e); // TODO
 		}
 	}
 
@@ -115,8 +199,15 @@ public final class ODSTransaction implements Transaction {
 			 */
 			aoSession.commitTransaction();
 
+			if(catalogManager != null) {
+				modelManager.reloadApplicationModel();
+			}
 			/*
-			 * TODO trigger an delete and log in case of errors (DeleteStatements)
+			 * TODO update cached application model according to the changes that have been made (see CatalogManager)
+			 */
+
+			/*
+			 * TODO trigger an delete of removed file links and log in case of errors (Delete- or Update-Statements)
 			 */
 
 			// TODO add statistics to logging (how many created / updated / deleted)
@@ -161,13 +252,65 @@ public final class ODSTransaction implements Transaction {
 		return modelManager;
 	}
 
-	ApplElemAccess getApplElemAccess() {
+	ApplicationStructure getApplicationStructure() throws AoException {
+		if(applicationStructure == null) {
+			applicationStructure = aoSession.getApplicationStructure();
+		}
+
+		return applicationStructure;
+	}
+
+	BaseStructure getBaseStructure() throws AoException {
+		if(baseStructure == null) {
+			baseStructure = aoSession.getBaseStructure();
+		}
+
+		return baseStructure;
+	}
+
+	ApplElemAccess getApplElemAccess() throws AoException {
+		if(applElemAccess == null) {
+			applElemAccess = aoSession.getApplElemAccess();
+		}
+
 		return applElemAccess;
+	}
+
+	CatalogManager getCatalogManager() {
+		if(catalogManager == null) {
+			catalogManager = new CatalogManager(this);
+		}
+
+		return catalogManager;
+	}
+
+	private <T extends Entity> List<URI> executeStatements(Function<EntityType, BaseStatement> statementFactory, Collection<T> entities)
+			throws AoException, DataAccessException {
+		List<URI> uris = new ArrayList<>();
+		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(modelManager::getEntityType));
+		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
+			uris.addAll(statementFactory.apply(entry.getKey()).execute(entry.getValue()));
+		}
+
+		return uris;
 	}
 
 	private void closeSession() {
 		try {
-			applElemAccess._release();
+			if(applElemAccess != null) {
+				applElemAccess._release();
+			}
+
+			if(applicationStructure != null) {
+				applicationStructure._release();
+			}
+
+			if(baseStructure != null) {
+				baseStructure._release();
+			}
+
+			// TODO: clear catalog manager...
+
 			aoSession.close();
 			LOGGER.debug("Transaction '{}' closed.", id);
 		} catch(AoException e) {

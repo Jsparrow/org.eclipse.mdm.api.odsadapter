@@ -8,6 +8,8 @@
 
 package org.eclipse.mdm.api.odsadapter.query;
 
+import java.util.Objects;
+
 import org.asam.ods.ApplAttr;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
@@ -56,6 +58,21 @@ public final class ODSAttribute implements Attribute {
 		}
 
 		throw new IllegalStateException("The value type of this attribute is not an enumeration type.");
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getEntityType(), getName());
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if(object instanceof ODSAttribute) {
+			Attribute attribute = (Attribute) object;
+			return getEntityType().equals(attribute.getEntityType()) && getName().equals(attribute.getName());
+		}
+
+		return false;
 	}
 
 	@Override

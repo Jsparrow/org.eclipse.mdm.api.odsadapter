@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -58,9 +60,17 @@ public class ODSModelManager implements ModelManager {
 
 	private final DataItemFactory dataItemFactory;
 
-	private final AoSession aoSession;
+	private final Lock write;
+	private final Lock read;
 
-	private final ApplElemAccess applElemAccess;
+	private ApplElemAccess applElemAccess;
+	private AoSession aoSession;
+
+	{
+		ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
+		write = reentrantReadWriteLock.writeLock();
+		read = reentrantReadWriteLock.readLock();
+	}
 
 	public ODSModelManager(AoSession aoSession, DataItemFactory dataItemFactory) throws AoException {
 		this.aoSession = aoSession;
@@ -109,43 +119,59 @@ public class ODSModelManager implements ModelManager {
 
 	@Override
 	public EntityType getEntityType(ContextType contextType) {
-		if(contextType.isUnitUnderTest()) {
-			return getEntityType("UnitUnderTest");
-		} else if(contextType.isTestSequence()) {
-			return getEntityType("TestSequence");
-		} else if(contextType.isTestEquipment()) {
-			return getEntityType("TestEquipment");
-		}
-
-		throw new IllegalArgumentException("Unknown context type '" + contextType + "' passed.");
+		return getEntityType(ODSUtils.CONTEXTTYPES.convert(contextType));
 	}
 
 	@Override
 	public EntityType getEntityType(String name) {
-		EntityType entityType = entityTypesByName.get(name);
-		if(entityType == null) {
-			throw new IllegalArgumentException("Entity with name '" + name + "' not found.");
-		}
+		read.lock();
 
-		return entityType;
+		try {
+			EntityType entityType = entityTypesByName.get(name);
+			if(entityType == null) {
+				throw new IllegalArgumentException("Entity with name '" + name + "' not found.");
+			}
+
+			return entityType;
+		} finally {
+			read.unlock();
+		}
 	}
 
 	EntityType getEntityType(Long id) {
-		EntityType entityType = entityTypesByID.get(id);
-		if(entityType == null) {
-			throw new IllegalArgumentException("Entity with id '" + id + "' not found.");
-		}
+		read.lock();
 
-		return entityType;
+		try {
+			EntityType entityType = entityTypesByID.get(id);
+			if(entityType == null) {
+				throw new IllegalArgumentException("Entity with id '" + id + "' not found.");
+			}
+
+			return entityType;
+		} finally {
+			read.unlock();
+		}
 	}
 
 	public AoSession getAoSession() {
-		return aoSession;
+		read.lock();
+
+		try {
+			return aoSession;
+		} finally {
+			read.unlock();
+		}
 	}
 
 	@Deprecated
 	public ApplElemAccess getApplElemAccess() {
-		return applElemAccess;
+		read.lock();
+
+		try {
+			return applElemAccess;
+		} finally {
+			read.unlock();
+		}
 	}
 
 	@Deprecated
@@ -160,7 +186,41 @@ public class ODSModelManager implements ModelManager {
 	}
 
 	public void close() throws AoException {
-		aoSession.close();
+		read.lock();
+
+		try {
+			aoSession.close();
+		} finally {
+			read.unlock();
+		}
+	}
+
+	public void reloadApplicationModel() {
+		write.lock();
+
+		AoSession aoSessionOld = aoSession;
+		ApplElemAccess applElemAccessOld = applElemAccess;
+		try {
+			entityTypesByID.clear();
+			entityTypesByName.clear();
+
+			aoSession = aoSession.createCoSession();
+			applElemAccess = aoSession.getApplElemAccess();
+			loadApplicationModel();
+		} catch(AoException e) {
+			LOGGER.error("Unable to reload the application model due to: " + e.reason, e);
+		} finally {
+			write.unlock();
+		}
+
+		try {
+			applElemAccessOld._release();
+			aoSessionOld.close();
+		} catch(AoException e) {
+			LOGGER.debug("Unable to close replaced session due to: " + e.reason, e);
+		} finally {
+			aoSessionOld._release();
+		}
 	}
 
 	private void configureEntityQuery(Class<? extends Entity> type, Class<?>... relatedTypes) {

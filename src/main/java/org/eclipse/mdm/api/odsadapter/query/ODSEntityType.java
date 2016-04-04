@@ -139,6 +139,20 @@ public final class ODSEntityType implements EntityType {
 	}
 
 	@Override
+	public int hashCode() {
+		return getName().hashCode();
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if(object instanceof ODSEntityType) {
+			return getName().equals(((EntityType) object).getName());
+		}
+
+		return false;
+	}
+
+	@Override
 	public String toString() {
 		return getName();
 	}
