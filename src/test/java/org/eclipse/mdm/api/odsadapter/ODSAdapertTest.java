@@ -39,10 +39,10 @@ import org.junit.BeforeClass;
 public class ODSAdapertTest {
 
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
-	private static final String NAME_SERVICE = "corbaloc::1.2@in-dbserv1:2809/NameService";
+	private static final String NAME_SERVICE = "corbaloc::1.2@<SERVER_IP>:2809/NameService";
 
 	// TODO service name: <SERVICE_NAME>.ASAM-ODS
-	private static final String SERVICE_NAME = "MDMTEST01.ASAM-ODS";
+	private static final String SERVICE_NAME = "<SERVICE_NAME>.ASAM-ODS";
 
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
