@@ -63,7 +63,7 @@ final class UpdateStatement extends BaseStatement {
 		for(Entry<String, List<Value>> entry : updateMap.entrySet()) {
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
-			anvsu.unitId = ODSConverter.toODSLong(0);
+			anvsu.unitId = ODSConverter.toODSLong(0); // TODO ?
 			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
 			anvsuList.add(anvsu);
 		}
@@ -94,13 +94,14 @@ final class UpdateStatement extends BaseStatement {
 					+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");
 		}
 
-		// TODO we need custom behavior for versionable entities
-		// they are only allowed to be updated if the VersionState transition is one of:
-		// - EDITABLE -> VALID ==> modification of other fields is allowed
-		// - VALID -> ARCHIVED ==> modification of other fields is not allowed!
-
 		// add all entity values
 		for(Value value : entityCore.getValues().values()) {
+			/*
+			 * TODO: in case of ContextComponent instances we have to
+			 * add missing Value containers (this are those we have
+			 * omitted due to the underlying template component)
+			 */
+
 			// TODO scan for values with file links and collect them!
 			updateMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
 		}
@@ -143,6 +144,10 @@ final class UpdateStatement extends BaseStatement {
 	// TODO duplicate of InsertStatement.setRelationIDs
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
+			if(relatedEntity.getURI().getID() < 1) {
+				throw new IllegalArgumentException("Related entity must be a persited entity.");
+			}
+
 			Relation relation = getEntityType().getRelation(getModelManager().getEntityType(relatedEntity));
 			List<Value> relationValues = updateMap.get(relation.getName());
 			if(relationValues == null) {

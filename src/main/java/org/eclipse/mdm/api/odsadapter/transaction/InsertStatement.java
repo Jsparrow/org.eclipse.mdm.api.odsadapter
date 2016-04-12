@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 
 import org.asam.ods.AIDName;
 import org.asam.ods.AIDNameValueSeqUnitId;
@@ -63,10 +62,12 @@ final class InsertStatement extends BaseStatement {
 		for(Entry<String, List<Value>> entry : insertMap.entrySet()) {
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
-			anvsu.unitId = ODSConverter.toODSLong(0);
+			anvsu.unitId = ODSConverter.toODSLong(0); // TODO ?
 
-			//TODO Value enhancement - LocalColumn.Value will contain an array box!
-			// each values entry is bound to a sequence type
+			/* TODO
+			 * Value enhancement - LocalColumn.Value will contain an
+			 * array box! each values entry is bound to a sequence type
+			 */
 
 			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
 			anvsuList.add(anvsu);
@@ -83,12 +84,6 @@ final class InsertStatement extends BaseStatement {
 		for(List<Entity> children : childrenMap.values()) {
 			getTransaction().create(children);
 		}
-
-		/*
-		 * TODO exceptional cases:
-		 * - instance ID of created ContextRoot entities must be updated in ContextRoot.Version! MDM4...
-		 * - others?
-		 */
 
 		return uris;
 	}
@@ -114,12 +109,14 @@ final class InsertStatement extends BaseStatement {
 
 		entityCores.add(entityCore);
 
-		// TODO we need custom behavior for sortable entities
-		// - if sortable has parent -> find max sort index out of sibling entities
-		// - if parent does not exist -> find max sort index of all entities
-
 		// add all entity values
 		for(Value value : entityCore.getValues().values()) {
+			/*
+			 * TODO: in case of ContextComponent instances we have to
+			 * add missing Value containers (this are those we have
+			 * omitted due to the underlying template component)
+			 */
+
 			// TODO scan for values with file links and collect them!
 			insertMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
 		}
@@ -129,10 +126,8 @@ final class InsertStatement extends BaseStatement {
 			insertMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
 		}
 
-		// define "empty" values for parent relation
-		Optional<Relation> parentRelation = getEntityType().getParentRelation();
-		if(parentRelation.isPresent()) {
-			Relation relation = parentRelation.get();
+		// define "empty" values for parent relations
+		for(Relation relation : getEntityType().getParentRelations()) {
 			insertMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
 		}
 
@@ -148,6 +143,10 @@ final class InsertStatement extends BaseStatement {
 	// TODO duplicate of UpdateStatement.setRelationIDs
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
+			if(relatedEntity.getURI().getID() < 1) {
+				throw new IllegalArgumentException("Related entity must be a persited entity.");
+			}
+
 			Relation relation = getEntityType().getRelation(getModelManager().getEntityType(relatedEntity));
 			List<Value> relationValues = insertMap.get(relation.getName());
 			if(relationValues == null) {

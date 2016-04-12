@@ -10,13 +10,16 @@ package org.eclipse.mdm.api.odsadapter.query;
 
 import java.util.Objects;
 
+import org.asam.ods.ApplAttr;
 import org.asam.ods.ApplRel;
+import org.asam.ods.DataType;
+import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Relationship;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
-public final class ODSRelation implements Relation {
+final class ODSRelation implements Relation {
 
 	private final Relationship relationship;
 	private final EntityType source;
@@ -25,7 +28,9 @@ public final class ODSRelation implements Relation {
 
 	private final int rangeMax;
 
-	public ODSRelation(ApplRel applRel, EntityType source, EntityType target) {
+	private Attribute attribute;
+
+	ODSRelation(ApplRel applRel, EntityType source, EntityType target) {
 		this.source = source;
 		this.target = target;
 		name = applRel.arName;
@@ -51,6 +56,15 @@ public final class ODSRelation implements Relation {
 	@Override
 	public Relationship getRelationship() {
 		return relationship;
+	}
+
+	@Override
+	public Attribute getAttribute() {
+		if(attribute == null) {
+			attribute = new ODSAttribute(getSource(), new ApplAttr(getName(), "", DataType.DT_LONGLONG, 0, true, false, null), null);
+		}
+
+		return attribute;
 	}
 
 	@Override

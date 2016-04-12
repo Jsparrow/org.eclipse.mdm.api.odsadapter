@@ -117,7 +117,7 @@ public class ODSModelManager implements ModelManager {
 		return getEntityType(ODSUtils.getAEName(type));
 	}
 
-	@Override
+	@Override // TODO: this only works for ContextRoot!!
 	public EntityType getEntityType(ContextType contextType) {
 		return getEntityType(ODSUtils.CONTEXTTYPES.convert(contextType));
 	}

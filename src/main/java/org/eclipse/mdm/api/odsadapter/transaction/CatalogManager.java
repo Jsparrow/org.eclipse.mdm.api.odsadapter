@@ -100,6 +100,13 @@ final class CatalogManager {
 		}
 	}
 
+	public void updateCatalogAttributes(List<CatalogAttribute> catalogAttributes) throws DataAccessException {
+		/*
+		 * TODO: in case of CatalogAttribute we should update the Unit (changes the application model!)
+		 */
+		throw new DataAccessException("NOT IMPLEMENTED");
+	}
+
 	public void deleteCatalogComponents(Collection<CatalogComponent> catalogComponents) throws AoException, DataAccessException {
 		List<CatalogAttribute> attributes = new ArrayList<>();
 		List<CatalogSensor> sensors = new ArrayList<>();

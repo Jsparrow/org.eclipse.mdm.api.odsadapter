@@ -16,14 +16,14 @@ import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
-public final class ODSAttribute implements Attribute {
+final class ODSAttribute implements Attribute {
 
 	private final Class<? extends Enum<?>> enumClass;
 	private final String name;
 	private final EntityType entityType;
 	private final ValueType valueType;
 
-	public ODSAttribute(EntityType entityType, ApplAttr applAttr, Class<? extends Enum<?>> enumClass) {
+	ODSAttribute(EntityType entityType, ApplAttr applAttr, Class<? extends Enum<?>> enumClass) {
 		this.entityType = entityType;
 		name = applAttr.aaName;
 		valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);

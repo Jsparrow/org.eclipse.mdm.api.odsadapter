@@ -15,6 +15,7 @@ import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -70,6 +71,8 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
+import org.eclipse.mdm.api.dflt.model.ComponentTemplate;
+import org.eclipse.mdm.api.dflt.model.RootTemplate;
 import org.eclipse.mdm.api.odsadapter.query.DataItemFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -232,8 +235,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		 */
 
 		Map<EntityType, List<EntityType>> genericModelMap = new HashMap<>();
-		ContextType[] types = contextTypes.length == 0 || contextTypes.length > 3 ? ContextType.values() : contextTypes;
-		for(ContextType contextType : types) {
+		for(ContextType contextType : adjustContextTypes(contextTypes)) {
 			EntityType entityContextRootType = modelManager.getEntityType(contextType);
 			query.selectAll(entityContextRootType)
 			.join(parentEntityType.getRelation(entityContextRootType), Join.OUTER);
@@ -299,19 +301,18 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		return parameterSets;
 	}
 
-	@Deprecated // TODO This is a convenience implememtation to read CatalogComponent SNAPSHOTS - No Attributes or SENSORS!
+	@Deprecated // TODO This is a convenience implementation to read CatalogComponent SNAPSHOTS - No SENSORS!
 	public List<CatalogComponent> loadCatalogComponents(ContextType contextType) throws DataAccessException {
 		EntityType catalogComponentEntityType = modelManager.getEntityType("Cat" + ODSUtils.CONTEXTTYPES.convert(contextType) + "Comp");
-		Query query = modelManager.createQuery().selectAll(catalogComponentEntityType);
 
 		Map<Long, EntityCore> catalogComponentCores = new HashMap<>();
-		for (Result result : query.fetch()) {
+		for (Result result : modelManager.createQuery().selectAll(catalogComponentEntityType).fetch()) {
 			Record record = result.getRecord(catalogComponentEntityType);
 			catalogComponentCores.put(record.getID(), new DefaultEntityCore(record));
 		}
 
 		EntityType catalogAttributeEntityType = modelManager.getEntityType("Cat" + ODSUtils.CONTEXTTYPES.convert(contextType) + "Attr");
-		query = modelManager.createQuery().selectAll(catalogAttributeEntityType)
+		Query query = modelManager.createQuery().selectAll(catalogAttributeEntityType)
 				.join(catalogAttributeEntityType.getRelation(catalogComponentEntityType))
 				.selectID(catalogComponentEntityType);
 
@@ -319,8 +320,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 			EntityCore catalogAttributeCore = new DefaultEntityCore(result.getRecord(catalogAttributeEntityType));
 			EntityCore catalogComponentCore = catalogComponentCores.get(result.getRecord(catalogComponentEntityType).getID());
 			adjustCatalogAttributeCore(catalogComponentCore, catalogAttributeCore);
-			CatalogAttribute catalogAttribute = createEntity(CatalogAttribute.class, catalogAttributeCore);
-			catalogComponentCore.addChild(catalogAttribute);
+			catalogComponentCore.addChild(createEntity(CatalogAttribute.class, catalogAttributeCore));
 		}
 
 		List<CatalogComponent> catalogComponents = new ArrayList<>();
@@ -328,7 +328,65 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 			catalogComponents.add(createEntity(CatalogComponent.class, catalogComponentCore));
 		}
 
+		if(contextType.isTestEquipment()) {
+			// TODO: load catalog sensors and their attributes
+		}
+
 		return catalogComponents;
+	}
+
+	@Deprecated // TODO This is a convenience implementation to read RootTemplate SNAPSHOTS - No SENSORS!
+	public List<RootTemplate> loadRootTemplates(ContextType contextType) throws DataAccessException {
+		EntityType rootTemplateEntityType = modelManager.getEntityType("Tpl" + ODSUtils.CONTEXTTYPES.convert(contextType) + "Root");
+		Map<Long, EntityCore> rootTemplateCores = new HashMap<>();
+		for (Result result : modelManager.createQuery().selectAll(rootTemplateEntityType).fetch()) {
+			Record record = result.getRecord(rootTemplateEntityType);
+			rootTemplateCores.put(record.getID(), new DefaultEntityCore(record));
+		}
+
+		// TODO: this has to be cached!!!
+		Map<Long, CatalogComponent> catalogComponents = loadCatalogComponents(contextType).stream().collect(Collectors.toMap(cc -> cc.getURI().getID(), Function.identity()));
+
+		EntityType componentTemplateEntityType = modelManager.getEntityType("Tpl" + ODSUtils.CONTEXTTYPES.convert(contextType) + "Comp");
+		Relation rootTemplateParentRelation = componentTemplateEntityType.getRelation(rootTemplateEntityType);
+		Relation componentTemplateParentRelation = componentTemplateEntityType.getRelation(componentTemplateEntityType);
+		Relation catalogComponentRelation = componentTemplateEntityType.getRelation(modelManager.getEntityType("Cat" + ODSUtils.CONTEXTTYPES.convert(contextType) + "Comp"));
+		Query query = modelManager.createQuery().selectAll(componentTemplateEntityType)
+				.select(rootTemplateParentRelation.getAttribute())
+				.select(componentTemplateParentRelation.getAttribute())
+				.select(catalogComponentRelation.getAttribute())
+				.order(componentTemplateEntityType.getIDAttribute());
+
+		Map<Long, EntityCore> componentTemplateCores = new HashMap<>();
+		for(Result result : query.fetch()) {
+			Record record = result.getRecord(componentTemplateEntityType);
+			Optional<Long> rootTemplateID = record.getID(rootTemplateParentRelation);
+			Optional<Long> componentTemplateID = record.getID(componentTemplateParentRelation);
+			Long catalogComponentID = record.getID(catalogComponentRelation).get();
+			EntityCore entityCore = new DefaultEntityCore(record);
+			componentTemplateCores.put(record.getID(), entityCore);
+			entityCore.setInfoRelation(catalogComponents.get(catalogComponentID));
+
+			ComponentTemplate componentTemplate = createEntity(ComponentTemplate.class, entityCore);
+			if(rootTemplateID.isPresent()) {
+				rootTemplateCores.get(rootTemplateID.get()).addChild(componentTemplate);
+			} else if(componentTemplateID.isPresent()) {
+				componentTemplateCores.get(componentTemplateID.get()).addChild(componentTemplate);
+			} else {
+				throw new IllegalStateException("Component template does not have a parent.");
+			}
+		}
+
+		/*
+		 * TODO NIGHTMARE!
+		 */
+
+		List<RootTemplate> rootTemplates = new ArrayList<>();
+		for(EntityCore rootTemplate : rootTemplateCores.values()) {
+			rootTemplates.add(createEntity(RootTemplate.class, rootTemplate));
+		}
+
+		return rootTemplates;
 	}
 
 	private void adjustCatalogAttributeCore(EntityCore catalogComponentCore, EntityCore catalogAttributeCore) {
@@ -485,6 +543,15 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 				entityConstructor.setAccessible(isAccessible);
 			}
 		}
+	}
+
+	// TODO: all for none & no duplicates
+	private List<ContextType> adjustContextTypes(ContextType... contextTypes) {
+		if(contextTypes.length == 0) {
+			return Arrays.asList(ContextType.values());
+		}
+
+		return Arrays.stream(contextTypes).distinct().collect(Collectors.toList());
 	}
 
 	private static final class EntityCache<T extends Entity> {

@@ -46,7 +46,7 @@ public final class ODSEntityType implements EntityType {
 	private final T_LONGLONG odsID;
 	private final String name;
 
-	public ODSEntityType(String sourceName, ApplElem applElem, Map<String, Class<? extends Enum<?>>> enumClasses)
+	ODSEntityType(String sourceName, ApplElem applElem, Map<String, Class<? extends Enum<?>>> enumClasses)
 			throws AoException {
 		this.sourceName = sourceName;
 		name = applElem.aeName;
@@ -76,8 +76,10 @@ public final class ODSEntityType implements EntityType {
 	public Attribute getAttribute(String name) {
 		Attribute attribute = attributeByName.get(name);
 		if(attribute == null) {
-			throw new IllegalArgumentException("Attribute with name '" + name
-					+ "' not found at entity type '" + getName() + "'");
+			Optional<Relation> relation = getRelations().stream().filter(r -> r.getName().equals(name)).findAny();
+			return relation.map(Relation::getAttribute)
+					.orElseThrow(() -> new IllegalArgumentException("Attribute with name '" + name
+							+ "' not found at entity type '" + getName() + "'."));
 		}
 		return attribute;
 	}
@@ -92,8 +94,22 @@ public final class ODSEntityType implements EntityType {
 	}
 
 	@Override
+	@Deprecated // TODO will be removed..
 	public Optional<Relation> getParentRelation() {
 		return getRelations(Relationship.FATHER_CHILD).stream().filter(r -> ((ODSRelation) r).isIncomming(Relationship.FATHER_CHILD)).findAny();
+	}
+
+	private Relation getParentRelation(EntityType parentEntityType) {
+		return getParentRelations().stream()
+				.filter(et -> et.getTarget().equals(parentEntityType)).findAny()
+				.orElseThrow(() -> new IllegalArgumentException("Parent relation to entity type '" + parentEntityType + "' does not exist."));
+	}
+
+	@Override
+	public List<Relation> getParentRelations() {
+		return getRelations(Relationship.FATHER_CHILD).stream()
+				.filter(r -> ((ODSRelation) r).isIncomming(Relationship.FATHER_CHILD))
+				.collect(Collectors.toList());
 	}
 
 	@Override
@@ -118,7 +134,11 @@ public final class ODSEntityType implements EntityType {
 	public Relation getRelation(EntityType target) {
 		Relation relation = relationsByEntity.get(target);
 		if(relation == null) {
-			throw new IllegalArgumentException("Relation from '" + this + "' to '" + target + "' not found!");
+			/*
+			 * TODO: throw an exception...
+			 */
+			return getParentRelation(target);
+			// TODO			throw new IllegalArgumentException("Relation from '" + this + "' to '" + target + "' not found!");
 		}
 
 		return relation;

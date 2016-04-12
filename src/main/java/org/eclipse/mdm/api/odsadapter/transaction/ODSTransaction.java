@@ -75,6 +75,10 @@ public final class ODSTransaction implements Transaction {
 			throw new IllegalArgumentException("At least one given entity is already persisted.");
 		}
 
+		// TODO: for each given entity check each of its implicitly related entities and verify all of them have an instance ID!
+		// TODO: for each given entity check each of its info related entities and verify all of them have an instance ID!
+		// TODO: maybe both should be done while processing the entity cores in insert- / update-statements?!
+
 		try {
 			Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
 
@@ -102,6 +106,7 @@ public final class ODSTransaction implements Transaction {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
 		if(entities.isEmpty()) {
 			return;
@@ -109,11 +114,21 @@ public final class ODSTransaction implements Transaction {
 			throw new IllegalArgumentException("At least one given entity is not yet persisted.");
 		}
 
+		// TODO if entity instanceof Versionable -> VersionState.EDITING || VersionState.VALID (OLD STATE NOT CURRENT!)!
+		// -> if old state is EDITING -> anything may be modified
+		// -> if old state is VALID -> only the VersionState is allowed to be changed to ARCHIVED!
+
 		/*
 		 * TODO: we should ensure that all of the given have been
 		 * modified -> ATTENTION - even if an entity itself is
 		 * unmodified, its children could be!
 		 */
+
+		Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
+		List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
+		if(catalogAttributes != null) {
+			getCatalogManager().updateCatalogAttributes(catalogAttributes);
+		}
 
 		try {
 			executeStatements(et -> new UpdateStatement(this, et), entities);
@@ -128,6 +143,8 @@ public final class ODSTransaction implements Transaction {
 		if(entities.isEmpty()) {
 			return Collections.emptyList();
 		}
+
+		// TODO if entity instanceof Versionable -> VersionState.EDITING (OLD STATE NOT CURRENT!)!
 
 		List<T> filteredEntities = entities.stream().filter(e -> e.getURI().getID() > 0).collect(Collectors.toList());
 
