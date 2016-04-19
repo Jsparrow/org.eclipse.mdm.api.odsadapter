@@ -9,9 +9,11 @@
 package org.eclipse.mdm.api.odsadapter.query;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -21,6 +23,7 @@ import java.util.regex.Pattern;
 import org.asam.ods.AIDName;
 import org.asam.ods.AIDNameUnitId;
 import org.asam.ods.AoException;
+import org.asam.ods.ApplElemAccess;
 import org.asam.ods.ElemResultSetExt;
 import org.asam.ods.JoinDef;
 import org.asam.ods.NameValueSeqUnitId;
@@ -56,7 +59,8 @@ public class ODSQuery implements Query {
 	private static final String GROUPE_NAME = "name";
 	private static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("\\S+\\((?<" + GROUPE_NAME + ">\\S+)\\)");
 
-	private Set<EntityType> queriedEntityTypes = new HashSet<>();
+	private final Map<Long, EntityType> entityTypesByID = new HashMap<>();
+	private final Set<EntityType> queriedEntityTypes = new HashSet<>();
 
 	private final List<SelAIDNameUnitId> anuSeq = new ArrayList<>();
 
@@ -66,10 +70,10 @@ public class ODSQuery implements Query {
 
 	private final List<SelOrder> orderBy = new ArrayList<>();
 
-	private final ODSModelManager modelManager;
+	private final ApplElemAccess applElemAccess;
 
-	ODSQuery(ODSModelManager modelManager) {
-		this.modelManager = modelManager;
+	ODSQuery(ApplElemAccess applElemAccess) {
+		this.applElemAccess = applElemAccess;
 	}
 
 	@Override
@@ -79,7 +83,9 @@ public class ODSQuery implements Query {
 
 	@Override
 	public Query select(Attribute attribute, Aggregation aggregation, String unit) {
-		queriedEntityTypes.add(attribute.getEntityType());
+		EntityType entityType = attribute.getEntityType();
+		entityTypesByID.put(ODSConverter.fromODSLong(((ODSEntityType) entityType).getODSID()), entityType);
+		queriedEntityTypes.add(entityType);
 		anuSeq.add(createSelect(attribute, aggregation, unit));
 		return this;
 	}
@@ -151,7 +157,7 @@ public class ODSQuery implements Query {
 
 			List<Result> results = new ArrayList<>();
 			long start = System.currentTimeMillis();
-			for(ResultSetExt resultSetExt : modelManager.getApplElemAccess().getInstancesExt(qse, 0)) {
+			for(ResultSetExt resultSetExt : applElemAccess.getInstancesExt(qse, 0)) {
 				for(Result result : new ODSResultSEQ(resultSetExt)) {
 					results.add(result);
 				}
@@ -264,7 +270,7 @@ public class ODSQuery implements Query {
 		private final EntityType entityType;
 
 		private ODSRecordSEQ(ElemResultSetExt elemResultSetExt) throws DataAccessException {
-			entityType = modelManager.getEntityType(ODSConverter.fromODSLong(elemResultSetExt.aid));
+			entityType = entityTypesByID.get(ODSConverter.fromODSLong(elemResultSetExt.aid));
 			for (NameValueSeqUnitId nvsui : elemResultSetExt.values) {
 				Matcher matcher = AGGREGATION_NAME_PATTERN.matcher(nvsui.valName);
 				String attributeName = matcher.matches() ? matcher.group(GROUPE_NAME) : nvsui.valName;

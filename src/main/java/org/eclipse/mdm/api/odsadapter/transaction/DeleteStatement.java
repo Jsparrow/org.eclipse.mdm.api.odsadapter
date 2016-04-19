@@ -133,7 +133,7 @@ final class DeleteStatement extends BaseStatement {
 		return list;
 	}
 
-	private void addInstance(URI uri) throws DataAccessException {
+	private void addInstance(URI uri) throws AoException, DataAccessException {
 		if(!uri.getTypeName().equals(getEntityType().getName())) {
 			throw new DataAccessException("Unable to add entity with uri '" + uri
 					+ "' to this statement (expected entities of type: " + getEntityType() + ").");
@@ -144,7 +144,7 @@ final class DeleteStatement extends BaseStatement {
 		}
 	}
 
-	private void lookupChildren(URI uri) throws DataAccessException {
+	private void lookupChildren(URI uri) throws AoException, DataAccessException {
 		map.get(uri.getTypeName()).put(uri.toString(), uri);
 		EntityType parentEntityType = getModelManager().getEntityType(uri.getTypeName());
 
@@ -164,12 +164,12 @@ final class DeleteStatement extends BaseStatement {
 	}
 
 	private List<Result> executeChildrenQuery(EntityType parentEntityType, URI parentURI, EntityType childEntityType)
-			throws DataAccessException {
-		return getModelManager().createQuery().select(childEntityType.getIDAttribute())
+			throws AoException, DataAccessException {
+		return getTransaction().createQuery().select(childEntityType.getIDAttribute())
 				.join(parentEntityType, childEntityType).fetch(Filter.idOnly(parentEntityType, parentURI.getID()));
 	}
 
-	private void lookupInfoRelations(EntityType currentEntityType, URI uri) throws DataAccessException {
+	private void lookupInfoRelations(EntityType currentEntityType, URI uri) throws AoException, DataAccessException {
 		if(AE_NAME_TESTSTEP.equals(currentEntityType.getName())) {
 			//delete context data (order) at TestStep
 			fork(currentEntityType, uri, uutEntityType, tsqEntityType, teqEntityType);
@@ -209,10 +209,10 @@ final class DeleteStatement extends BaseStatement {
 		return true;
 	}
 
-	private List<URI> locateMeasurementSiblings(EntityType measurementEntityType, URI uri) throws DataAccessException {
+	private List<URI> locateMeasurementSiblings(EntityType measurementEntityType, URI uri) throws AoException, DataAccessException {
 		//locate TestStep
 		EntityType testStepEntityType = getModelManager().getEntityType(TestStep.class);
-		Query testStepQuery = getModelManager().createQuery();
+		Query testStepQuery = getTransaction().createQuery();
 		testStepQuery.select(testStepEntityType.getIDAttribute());
 		testStepQuery.join(measurementEntityType, testStepEntityType);
 		Optional<Result> oResult = testStepQuery.fetchSingleton(Filter.idOnly(measurementEntityType, uri.getID()));
@@ -223,7 +223,7 @@ final class DeleteStatement extends BaseStatement {
 
 		Long testStepID = oResult.get().getRecord(testStepEntityType).getID();
 
-		Query measurementsQuery = getModelManager().createQuery();
+		Query measurementsQuery = getTransaction().createQuery();
 		measurementsQuery.select(measurementEntityType.getIDAttribute());
 		measurementsQuery.join(measurementEntityType, testStepEntityType);
 		List<Result> results = measurementsQuery.fetch(Filter.idOnly(testStepEntityType, testStepID));
@@ -232,7 +232,8 @@ final class DeleteStatement extends BaseStatement {
 				.collect(Collectors.toList());
 	}
 
-	private void fork(EntityType currentEntityType, URI uri, EntityType... infoEntityTypes) throws DataAccessException {
+	private void fork(EntityType currentEntityType, URI uri, EntityType... infoEntityTypes)
+			throws AoException, DataAccessException {
 		for(EntityType infoEntityType : infoEntityTypes) {
 			Optional<Result> result = executeInfoQuery(currentEntityType, uri, infoEntityType);
 			if(!result.isPresent()) {
@@ -245,12 +246,16 @@ final class DeleteStatement extends BaseStatement {
 		}
 	}
 
-	private Optional<Result> executeInfoQuery(EntityType entityType, URI uri, EntityType infoEntityType) throws DataAccessException {
-		return getModelManager().createQuery().selectID(infoEntityType).join(entityType, infoEntityType)
+	private Optional<Result> executeInfoQuery(EntityType entityType, URI uri, EntityType infoEntityType)
+			throws AoException, DataAccessException {
+		return getTransaction().createQuery().selectID(infoEntityType).join(entityType, infoEntityType)
 				.fetchSingleton(Filter.idOnly(entityType, uri.getID()));
 	}
 
 	private void initialize(EntityType entityType) {
+		if(map.containsKey(entityType.getName())) {
+			return;
+		}
 		map.put(entityType.getName(), new HashMap<>());
 		List<Relation> childRelations = entityType.getChildRelations();
 		for(Relation childRelation : childRelations) {

@@ -23,6 +23,7 @@ import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.EntityCore;
+import org.eclipse.mdm.api.base.model.EntityCore.EntityStore;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -41,13 +42,13 @@ final class UpdateStatement extends BaseStatement {
 	private final Map<Class<? extends Deletable>, List<Deletable>> childrenToRemove = new HashMap<>();
 	private Map<String, List<Value>> updateMap = new HashMap<>();
 	private final List<URI> uris = new ArrayList<>();
-	private final List<Relation> updatableRelations;
+
+	private final List<String> nonUpdatableRelationNames;
 
 	protected UpdateStatement(ODSTransaction transaction, EntityType entityType) {
 		super(transaction, entityType);
 
-		updatableRelations = getModelManager().getRelatedTypes(entityType.getName())
-				.stream().map(entityType::getRelation).collect(Collectors.toList());
+		nonUpdatableRelationNames = entityType.getInfoRelations().stream().map(Relation::getName).collect(Collectors.toList());
 	}
 
 	@Override
@@ -61,6 +62,12 @@ final class UpdateStatement extends BaseStatement {
 		T_LONGLONG aID = getEntityType().getODSID();
 
 		for(Entry<String, List<Value>> entry : updateMap.entrySet()) {
+			if(nonUpdatableRelationNames.contains(entry.getKey())) {
+				// skip "empty" informative relation sequence
+				continue;
+			}
+
+
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
 			anvsu.unitId = ODSConverter.toODSLong(0); // TODO ?
@@ -109,21 +116,29 @@ final class UpdateStatement extends BaseStatement {
 		updateMap.computeIfAbsent(getEntityType().getIDAttribute().getName(), k -> new ArrayList<>())
 		.add(getEntityType().getIDAttribute().createValue(entityCore.getURI().getID()));
 
-		// define "empty" values for informative relations
-		for(Relation relation : updatableRelations) {
+		// define "empty" values for ALL informative relations
+		for(Relation relation : getEntityType().getInfoRelations()) {
 			updateMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
 		}
 
+		// preserve "empty" relation values for removed entities
+		EntityStore mutableStore = entityCore.getMutableStore();
+
+		mutableStore.getRemoved().stream().map(e -> getModelManager().getEntityType(e))
+		.map(getEntityType()::getRelation).map(Relation::getName).forEach(nonUpdatableRelationNames::remove);
+
 		// replace "empty" relation values with corresponding instance IDs
-		setRelationIDs(entityCore.getInfoRelations().values());
+		setRelationIDs(mutableStore.getCurrent());
 
 		uris.add(entityCore.getURI());
 
 		collectChildEntities(entityCore);
+
+		getTransaction().addCore(entityCore);
 	}
 
 	private void collectChildEntities(EntityCore entityCore) {
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildren().entrySet()) {
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildrenStore().getCurrent().entrySet()) {
 			Map<Boolean, List<Entity>> patrition = entry.getValue().stream().collect(Collectors.partitioningBy(e -> e.getURI().getID() < 1));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
 			if(virtualEntities != null && !virtualEntities.isEmpty()) {
@@ -135,7 +150,7 @@ final class UpdateStatement extends BaseStatement {
 			}
 		}
 
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getRemovedChildren().entrySet()) {
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildrenStore().getRemoved().entrySet()) {
 			List<Deletable> toDelete = entry.getValue().stream().filter(e -> e.getURI().getID() > 0).collect(Collectors.toList());
 			childrenToRemove.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(toDelete);
 		}
@@ -155,6 +170,7 @@ final class UpdateStatement extends BaseStatement {
 						+ "' is incompatible with update statement for entity type '" + getEntityType() + "'");
 			}
 			relationValues.get(relationValues.size() - 1).set(relatedEntity.getURI().getID());
+			nonUpdatableRelationNames.remove(relation.getName());
 		}
 	}
 

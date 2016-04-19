@@ -132,12 +132,14 @@ final class InsertStatement extends BaseStatement {
 		}
 
 		// replace "empty" relation values with corresponding instance IDs
-		setRelationIDs(entityCore.getInfoRelations().values());
-		setRelationIDs(entityCore.getImplicitRelations().values());
+		setRelationIDs(entityCore.getMutableStore().getCurrent());
+		setRelationIDs(entityCore.getPermanentStore().getCurrent());
 
-		for(Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildren().entrySet()) {
+		for(Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildrenStore().getCurrent().entrySet()) {
 			childrenMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(entry.getValue());
 		}
+
+		getTransaction().addCore(entityCore);
 	}
 
 	// TODO duplicate of UpdateStatement.setRelationIDs

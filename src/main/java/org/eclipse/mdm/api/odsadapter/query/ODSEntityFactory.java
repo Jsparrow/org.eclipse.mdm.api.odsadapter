@@ -91,13 +91,13 @@ public final class ODSEntityFactory extends DefaultEntityFactory {
 	}
 
 	@Override
-	protected MimeType createCatalogMimeType(EntityCore entityCore) {
-		return new MimeType("application/x-asam.aoany." + entityCore.getURI().getTypeName().toLowerCase(Locale.ROOT));
+	protected MimeType createCatalogMimeType(Entity entity) {
+		return new MimeType("application/x-asam.aoany." + entity.getURI().getTypeName().toLowerCase(Locale.ROOT));
 	}
 
 	@Override
-	protected MimeType createTemplateMimeType(EntityCore entityCore) {
-		return new MimeType("application/x-asam.aoany." + entityCore.getURI().getTypeName().toLowerCase(Locale.ROOT));
+	protected MimeType createTemplateMimeType(Entity entity) {
+		return new MimeType("application/x-asam.aoany." + entity.getURI().getTypeName().toLowerCase(Locale.ROOT));
 	}
 
 	private EntityCore createCore(String entityTypeName) {

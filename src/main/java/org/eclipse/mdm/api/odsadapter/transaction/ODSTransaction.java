@@ -27,13 +27,17 @@ import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EntityCore;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
+import org.eclipse.mdm.api.dflt.model.TemplateComponent;
+import org.eclipse.mdm.api.dflt.model.TemplateRoot;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,8 @@ public final class ODSTransaction implements Transaction {
 	private final AoSession aoSession;
 
 	private final int id;
+
+	private final List<EntityCore> coresToApply = new ArrayList<>();
 
 	private ApplicationStructure applicationStructure;
 	private BaseStructure baseStructure;
@@ -74,10 +80,6 @@ public final class ODSTransaction implements Transaction {
 		} else if(entities.stream().filter(e -> e.getURI().getID() > 0).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is already persisted.");
 		}
-
-		// TODO: for each given entity check each of its implicitly related entities and verify all of them have an instance ID!
-		// TODO: for each given entity check each of its info related entities and verify all of them have an instance ID!
-		// TODO: maybe both should be done while processing the entity cores in insert- / update-statements?!
 
 		try {
 			Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
@@ -117,12 +119,6 @@ public final class ODSTransaction implements Transaction {
 		// TODO if entity instanceof Versionable -> VersionState.EDITING || VersionState.VALID (OLD STATE NOT CURRENT!)!
 		// -> if old state is EDITING -> anything may be modified
 		// -> if old state is VALID -> only the VersionState is allowed to be changed to ARCHIVED!
-
-		/*
-		 * TODO: we should ensure that all of the given have been
-		 * modified -> ATTENTION - even if an entity itself is
-		 * unmodified, its children could be!
-		 */
 
 		Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
 		List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
@@ -165,6 +161,18 @@ public final class ODSTransaction implements Transaction {
 			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
 			if(catalogAttributes != null) {
 				getCatalogManager().deleteCatalogAttributes(catalogAttributes);
+			}
+
+			List<TemplateRoot> templateRoots = (List<TemplateRoot>) entitiesByClassType.get(TemplateRoot.class);
+			if(templateRoots != null) {
+				delete(templateRoots.stream().map(TemplateRoot::getTemplateComponents)
+						.collect(ArrayList::new, List::addAll, List::addAll));
+			}
+
+			List<TemplateComponent> templateComponents = (List<TemplateComponent>) entitiesByClassType.get(TemplateComponent.class);
+			if(templateComponents != null) {
+				delete(templateComponents.stream().map(TemplateComponent::getTemplateComponents)
+						.collect(ArrayList::new, List::addAll, List::addAll));
 			}
 
 			/*
@@ -212,17 +220,16 @@ public final class ODSTransaction implements Transaction {
 	public void commit() throws DataAccessException {
 		try {
 			/*
-			 * TODO upload of files has to be done simultaneously BEFORE creating / updating instances
+			 * TODO upload of files has to be done BEFORE creating / updating instances
 			 */
 			aoSession.commitTransaction();
+
+			// commit succeed -> apply changes in entity cores
+			coresToApply.forEach(EntityCore::apply);
 
 			if(catalogManager != null) {
 				modelManager.reloadApplicationModel();
 			}
-			/*
-			 * TODO update cached application model according to the changes that have been made (see CatalogManager)
-			 */
-
 			/*
 			 * TODO trigger an delete of removed file links and log in case of errors (Delete- or Update-Statements)
 			 */
@@ -254,15 +261,13 @@ public final class ODSTransaction implements Transaction {
 		}
 	}
 
-	void modified(EntityType entityType) {
-		// TODO
-		// clear the cache of this entity type
+	void addCore(EntityCore core) {
+		coresToApply.add(core);
 	}
 
-	void deleted(EntityType entityType) {
-		// TODO
-		// clear the cache of this entity type
-		// and clear the caches of related entity types!
+	// TODO is it possible to simplify this?!
+	Query createQuery() throws AoException {
+		return modelManager.createQuery(getApplElemAccess());
 	}
 
 	ODSModelManager getModelManager() {

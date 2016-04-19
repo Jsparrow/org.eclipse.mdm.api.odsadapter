@@ -55,8 +55,8 @@ public final class WriteRequestHandler {
 	private EntityCore createCore(WriteRequest writeRequest) throws DataAccessException {
 		EntityCore entityCore = new DefaultEntityCore(localColumnEntityType);
 
-		entityCore.setImplicitRelation(writeRequest.getChannelGroup(), true);
-		entityCore.setInfoRelation(writeRequest.getChannel());
+		entityCore.getPermanentStore().setParent(writeRequest.getChannelGroup(), true);
+		entityCore.getMutableStore().set(writeRequest.getChannel());
 
 		Map<String, Value> values = entityCore.getValues();
 		values.get(Entity.ATTR_NAME).set(writeRequest.getChannel().getName());

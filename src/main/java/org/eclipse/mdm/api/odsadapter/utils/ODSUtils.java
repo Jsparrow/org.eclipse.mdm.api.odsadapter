@@ -37,6 +37,9 @@ import org.eclipse.mdm.api.base.query.Join;
 import org.eclipse.mdm.api.base.query.Operation;
 import org.eclipse.mdm.api.base.query.Operator;
 import org.eclipse.mdm.api.base.query.Relationship;
+import org.eclipse.mdm.api.dflt.model.TemplateTest;
+import org.eclipse.mdm.api.dflt.model.TemplateTestStep;
+import org.eclipse.mdm.api.dflt.model.TemplateTestStepUsage;
 
 public final class ODSUtils {
 
@@ -155,6 +158,9 @@ public final class ODSUtils {
 		AE_NAME_MAPPING.addMappings(TestStep.class, "TestStep");
 		AE_NAME_MAPPING.addMappings(Quantity.class, "Quantity");
 		AE_NAME_MAPPING.addMappings(Unit.class, "Unit");
+		AE_NAME_MAPPING.addMappings(TemplateTestStep.class, "TplTestStep");
+		AE_NAME_MAPPING.addMappings(TemplateTest.class, "TplTest");
+		AE_NAME_MAPPING.addMappings(TemplateTestStepUsage.class, "TplTestStepUsage");
 
 
 		/*
@@ -178,6 +184,10 @@ public final class ODSUtils {
 		DEFAULT_MIMETYPES.put("UNITUNDERTEST", "application/x-asam.aounitundertest.unitundertest");
 		DEFAULT_MIMETYPES.put("TESTSEQUENCE", "application/x-asam.aotestsequence.testsequence");
 		DEFAULT_MIMETYPES.put("TESTEQUIPMENT", "application/x-asam.aotestequipment.testequipment");
+
+		DEFAULT_MIMETYPES.put("TemplateTestStep", "application/x-asam.aoany.tplteststep");
+		DEFAULT_MIMETYPES.put("TemplateTest", "application/x-asam.aoany.tpltest");
+		DEFAULT_MIMETYPES.put("TemplateTestStepUsage", "application/x-asam.aoany.tplteststepusage");
 	}
 
 	public static String getAEName(Class<? extends Entity> clazz) {

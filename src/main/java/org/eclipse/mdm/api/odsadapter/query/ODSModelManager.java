@@ -109,7 +109,12 @@ public class ODSModelManager implements ModelManager {
 
 	@Override
 	public Query createQuery() {
-		return new ODSQuery(this);
+		return createQuery(getApplElemAccess());
+	}
+
+	// TODO this has to be used for query executed within a transaction
+	public Query createQuery(ApplElemAccess applElemAccess) {
+		return new ODSQuery(applElemAccess);
 	}
 
 	@Override
@@ -178,11 +183,6 @@ public class ODSModelManager implements ModelManager {
 	public List<EntityType> getImplicitEntityTypes(Class<? extends Entity> type) {
 		String typeName = getEntityType(type).getName();
 		return entityQueryConfigs.getOrDefault(typeName, new EntityQueryConfig(typeName)).getEntityTypes();
-	}
-
-	@Deprecated
-	public List<EntityType> getRelatedTypes(String typeName) {
-		return entityQueryConfigs.getOrDefault(typeName, new EntityQueryConfig(typeName)).getRelatedTypes();
 	}
 
 	public void close() throws AoException {

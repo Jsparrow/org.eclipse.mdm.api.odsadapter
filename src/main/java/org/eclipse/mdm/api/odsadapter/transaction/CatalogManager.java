@@ -71,6 +71,7 @@ final class CatalogManager {
 				applicationRelation.setRelationName(catalogComponent.getName());
 				applicationRelation.setInverseRelationName(odsContextTypeName);
 				applicationRelation.setBaseRelation(transaction.getBaseStructure().getRelation(contextRootBaseElement, baseElement));
+				applicationRelation._release();
 
 				// relation template component to context component
 				applicationRelation = transaction.getApplicationStructure().createRelation();
@@ -80,13 +81,22 @@ final class CatalogManager {
 				applicationRelation.setInverseRelationName("Tpl" + odsContextTypeName + "Comp");
 				applicationRelation.setRelationRange(new RelationRange((short)0, (short) -1));
 				applicationRelation.setInverseRelationRange(new RelationRange((short) 1, (short) 1));
+
+				// release resources
+				applicationElement._release();
+				applicationRelation._release();
 			}
+
+			// release resources
+			contextTemplateComponentApplicationElement._release();
+			contextRootApplicationElement._release();
+			contextRootBaseElement._release();
+			baseElement._release();
 		}
 	}
 
 	public void createCatalogAttributes(Collection<CatalogAttribute> catalogAttributes) throws AoException {
 		for(CatalogAttribute catalogAttribute : catalogAttributes) {
-			// TODO implement a cache...
 			ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(catalogAttribute.getParent().getName());
 
 			ApplicationAttribute applicationAttribute = applicationElement.createAttribute();
@@ -97,6 +107,10 @@ final class CatalogManager {
 			if (dataType == DataType.DT_ENUM) {
 				applicationAttribute.setEnumerationDefinition(transaction.getApplicationStructure().getEnumerationDefinition(ODSEnumerations.getEnumName(catalogAttribute.getEnumerationClass())));
 			}
+
+			// release resources
+			applicationElement._release();
+			applicationAttribute._release();
 		}
 	}
 
@@ -104,25 +118,17 @@ final class CatalogManager {
 		/*
 		 * TODO: in case of CatalogAttribute we should update the Unit (changes the application model!)
 		 */
-		throw new DataAccessException("NOT IMPLEMENTED");
 	}
 
 	public void deleteCatalogComponents(Collection<CatalogComponent> catalogComponents) throws AoException, DataAccessException {
 		List<CatalogAttribute> attributes = new ArrayList<>();
 		List<CatalogSensor> sensors = new ArrayList<>();
 		for (CatalogComponent catalogComponent : catalogComponents) {
-			// TODO VERY IMPORTANT! If not fixed this might break the
-			//      application model in rare cases!
-			// make sure it is safe to delete this catalog component in
-			// compliance with the application model's meta data
-			//
-			// TODO for now we assume given catalog components are unchanged!
-
 			attributes.addAll(catalogComponent.getCatalogAttributes());
 			sensors.addAll(catalogComponent.getCatalogSensors());
 		}
-		transaction.delete(attributes);
 		transaction.delete(sensors);
+		transaction.delete(attributes);
 
 		if(areReferencedInTemplates(catalogComponents)) {
 			throw new DataAccessException("Unable to delete given catalog components since at least one is used in templates.");
@@ -136,8 +142,14 @@ final class CatalogManager {
 				ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(catalogComponent.getName());
 				for(ApplicationRelation applicationRelation : applicationElement.getAllRelations()) {
 					transaction.getApplicationStructure().removeRelation(applicationRelation);
+
+					// release resources
+					applicationRelation._release();
 				}
 				transaction.getApplicationStructure().removeElement(applicationElement);
+
+				// release resources
+				applicationElement._release();
 			}
 		}
 	}
@@ -156,7 +168,13 @@ final class CatalogManager {
 			for(CatalogAttribute catalogAttribute : entry.getValue()) {
 				ApplicationAttribute applicationAttribute = applicationElement.getAttributeByName(catalogAttribute.getName());
 				applicationElement.removeAttribute(applicationAttribute);
+
+				// release resources
+				applicationAttribute._release();
 			}
+
+			// release resources
+			applicationElement._release();
 		}
 	}
 
@@ -185,10 +203,16 @@ final class CatalogManager {
 		mimeTypeApplicationAttribute.setLength(256);
 		mimeTypeApplicationAttribute.setIsObligatory(true);
 
+		// release resources
+		idApplicationAttribute._release();
+		nameApplicationAttribute._release();
+		mimeTypeApplicationAttribute._release();
+		mimeTypeBaseAttribute._release();
+
 		return applicationElement;
 	}
 
-	private boolean areReferencedInTemplates(Collection<? extends Entity> entities) throws DataAccessException {
+	private boolean areReferencedInTemplates(Collection<? extends Entity> entities) throws AoException, DataAccessException {
 		Map<EntityType, List<Entity>> entitiesByEntityType = entities.stream()
 				.collect(Collectors.groupingBy(transaction.getModelManager()::getEntityType));
 
@@ -196,7 +220,7 @@ final class CatalogManager {
 			EntityType source = entry.getKey();
 			EntityType target = transaction.getModelManager().getEntityType(source.getName().replace("Cat", "Tpl"));
 
-			Query query = transaction.getModelManager().createQuery().selectID(target).join(source.getRelation(target));
+			Query query = transaction.createQuery().selectID(target).join(source.getRelation(target));
 
 			long[] instanceIDs = collectInstanceIDs(entry.getValue());
 			List<Result> results = query.fetch(Filter.and().add(Operation.IN_SET.create(source.getIDAttribute(), instanceIDs)));
