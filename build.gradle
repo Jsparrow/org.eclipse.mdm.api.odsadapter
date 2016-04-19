@@ -31,16 +31,17 @@ sourceSets {
 }
 
 dependencies {
-    //Java Enterprise Beans
-    compile 'javax.ejb:javax.ejb-api:3.2'
-	
+	// logging	
 	compile 'org.slf4j:slf4j-api:1.7.19'
 	
+	// MDM5 API
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.base:1.0.0'
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.default:1.0.0'
 	
+	// compile CORBA idl using JDK tools
     generatedCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
     
+    // testing
     testCompile 'junit:junit:4.12'
 	testRuntime 'org.slf4j:slf4j-simple:1.7.19'
 }
