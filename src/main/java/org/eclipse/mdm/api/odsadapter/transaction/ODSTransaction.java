@@ -175,11 +175,6 @@ public final class ODSTransaction implements Transaction {
 						.collect(ArrayList::new, List::addAll, List::addAll));
 			}
 
-			/*
-			 * TODO: this implementation is correct as long as entities are all of the same type!
-			 * this has to be fixed!
-			 */
-
 			return executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
 		} catch (AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
@@ -330,8 +325,6 @@ public final class ODSTransaction implements Transaction {
 			if(baseStructure != null) {
 				baseStructure._release();
 			}
-
-			// TODO: clear catalog manager...
 
 			aoSession.close();
 			LOGGER.debug("Transaction '{}' closed.", id);

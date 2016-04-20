@@ -40,13 +40,9 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
 final class CatalogManager {
 
-	/*
-	 * TODO: collect all accessed CORBA references and release them as soon as this instance is cleared!
-	 */
-
 	private final ODSTransaction transaction;
 
-	public CatalogManager(ODSTransaction transaction) {
+	CatalogManager(ODSTransaction transaction) {
 		this.transaction = transaction;
 	}
 
@@ -62,7 +58,7 @@ final class CatalogManager {
 			BaseElement baseElement = transaction.getBaseStructure().getElementByType("Ao" + odsContextTypeName + "Part");
 
 			for(CatalogComponent catalogComponent : entry.getValue()) {
-				ApplicationElement applicationElement = createApplicationElement(baseElement, catalogComponent);
+				ApplicationElement applicationElement = createApplicationElement(catalogComponent.getName(), baseElement);
 
 				// relation context root to context component
 				ApplicationRelation applicationRelation = transaction.getApplicationStructure().createRelation();
@@ -178,10 +174,9 @@ final class CatalogManager {
 		}
 	}
 
-	private ApplicationElement createApplicationElement(BaseElement baseElement,
-			/* TODO this may be used for CatalogSensors as well! */CatalogComponent catalogComponent) throws AoException {
+	private ApplicationElement createApplicationElement(String applicationElementName, BaseElement baseElement) throws AoException {
 		ApplicationElement applicationElement = transaction.getApplicationStructure().createElement(baseElement);
-		applicationElement.setName(catalogComponent.getName());
+		applicationElement.setName(applicationElementName);
 
 		// Id
 		ApplicationAttribute idApplicationAttribute = applicationElement.getAttributeByBaseName("id");

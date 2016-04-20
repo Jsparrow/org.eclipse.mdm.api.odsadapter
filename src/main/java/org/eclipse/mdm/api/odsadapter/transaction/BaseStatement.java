@@ -26,7 +26,7 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 abstract class BaseStatement {
 
-	protected static final Method GET_CORE_METHOD;
+	private static final Method GET_CORE_METHOD;
 
 	static {
 		try {

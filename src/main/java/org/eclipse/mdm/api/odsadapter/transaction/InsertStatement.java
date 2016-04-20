@@ -62,13 +62,7 @@ final class InsertStatement extends BaseStatement {
 		for(Entry<String, List<Value>> entry : insertMap.entrySet()) {
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
-			anvsu.unitId = ODSConverter.toODSLong(0); // TODO ?
-
-			/* TODO
-			 * Value enhancement - LocalColumn.Value will contain an
-			 * array box! each values entry is bound to a sequence type
-			 */
-
+			anvsu.unitId = ODSConverter.toODSLong(0);
 			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
 			anvsuList.add(anvsu);
 		}
@@ -142,7 +136,6 @@ final class InsertStatement extends BaseStatement {
 		getTransaction().addCore(entityCore);
 	}
 
-	// TODO duplicate of UpdateStatement.setRelationIDs
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
 			if(relatedEntity.getURI().getID() < 1) {

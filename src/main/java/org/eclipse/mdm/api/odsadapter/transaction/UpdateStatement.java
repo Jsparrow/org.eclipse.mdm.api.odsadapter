@@ -70,7 +70,7 @@ final class UpdateStatement extends BaseStatement {
 
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
-			anvsu.unitId = ODSConverter.toODSLong(0); // TODO ?
+			anvsu.unitId = ODSConverter.toODSLong(0);
 			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
 			anvsuList.add(anvsu);
 		}
@@ -106,7 +106,7 @@ final class UpdateStatement extends BaseStatement {
 			/*
 			 * TODO: in case of ContextComponent instances we have to
 			 * add missing Value containers (this are those we have
-			 * omitted due to the underlying template component)
+			 * omitted on READ due to the underlying template component)
 			 */
 
 			// TODO scan for values with file links and collect them!
@@ -121,9 +121,8 @@ final class UpdateStatement extends BaseStatement {
 			updateMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
 		}
 
-		// preserve "empty" relation values for removed entities
+		// preserve "empty" relation values for removed related entities
 		EntityStore mutableStore = entityCore.getMutableStore();
-
 		mutableStore.getRemoved().stream().map(e -> getModelManager().getEntityType(e))
 		.map(getEntityType()::getRelation).map(Relation::getName).forEach(nonUpdatableRelationNames::remove);
 
@@ -156,7 +155,6 @@ final class UpdateStatement extends BaseStatement {
 		}
 	}
 
-	// TODO duplicate of InsertStatement.setRelationIDs
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
 			if(relatedEntity.getURI().getID() < 1) {

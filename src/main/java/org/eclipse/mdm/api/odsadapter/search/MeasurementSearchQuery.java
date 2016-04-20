@@ -21,10 +21,7 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 final class MeasurementSearchQuery extends BaseEntitySearchQuery {
 
 	public MeasurementSearchQuery(ODSModelManager modelManager, ContextState contextState) {
-		super(modelManager, Measurement.class, Test.class /* TODO: Change to Project */, Optional.of(contextState));
-
-		// TODO addDependency(Project.class, Pool.class, false, Join.INNER);
-		// TODO addDependency(Pool.class, Test.class, false, Join.INNER);
+		super(modelManager, Measurement.class, Test.class, Optional.of(contextState));
 
 		addDependency(Test.class, TestStep.class, false, Join.INNER);
 		addDependency(User.class, Test.class, true, Join.INNER);
