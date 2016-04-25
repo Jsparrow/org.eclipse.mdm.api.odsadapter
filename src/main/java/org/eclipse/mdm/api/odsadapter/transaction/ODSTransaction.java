@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,7 +50,7 @@ public final class ODSTransaction implements Transaction {
 	private final ODSModelManager modelManager;
 	private final AoSession aoSession;
 
-	private final int id;
+	private final String id = UUID.randomUUID().toString();
 
 	private final List<EntityCore> coresToApply = new ArrayList<>();
 
@@ -64,7 +65,6 @@ public final class ODSTransaction implements Transaction {
 		this.modelManager = modelManager;
 
 		aoSession = modelManager.getAoSession().createCoSession();
-		id = aoSession.getId();
 
 		// TODO track duration
 
