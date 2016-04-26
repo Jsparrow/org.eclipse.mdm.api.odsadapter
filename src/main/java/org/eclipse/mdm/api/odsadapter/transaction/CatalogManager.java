@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
@@ -93,7 +94,7 @@ final class CatalogManager {
 
 	public void createCatalogAttributes(Collection<CatalogAttribute> catalogAttributes) throws AoException {
 		for(CatalogAttribute catalogAttribute : catalogAttributes) {
-			ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(catalogAttribute.getParent().getName());
+			ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(getParentName(catalogAttribute));
 
 			ApplicationAttribute applicationAttribute = applicationElement.createAttribute();
 			ValueType valueType = catalogAttribute.getScalarType().toValueType();
@@ -156,7 +157,7 @@ final class CatalogManager {
 		}
 
 		Map<String, List<CatalogAttribute>> catalogAttributesByParent = catalogAttributes.stream()
-				.collect(Collectors.groupingBy(c -> c.getParent().getName()));
+				.collect(Collectors.groupingBy(CatalogManager::getParentName));
 
 		for(Entry<String, List<CatalogAttribute>> entry : catalogAttributesByParent.entrySet()) {
 			ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(entry.getKey());
@@ -228,7 +229,7 @@ final class CatalogManager {
 		return false;
 	}
 
-	private long[] collectInstanceIDs(List<Entity> entities) {
+	private static long[] collectInstanceIDs(List<Entity> entities) {
 		long[] ids = new long[entities.size()];
 
 		for(int i = 0; i < ids.length; i++) {
@@ -236,6 +237,15 @@ final class CatalogManager {
 		}
 
 		return ids;
+	}
+
+	private static String getParentName(CatalogAttribute catalogAttribute) {
+		Optional<CatalogComponent> catalogComponent = catalogAttribute.getCatalogComponent();
+		if(catalogComponent.isPresent()) {
+			return catalogComponent.get().getName();
+		}
+
+		return catalogAttribute.getCatalogSensor().orElseThrow(() -> new IllegalStateException("Parent entity is unknown.")).getName();
 	}
 
 }
