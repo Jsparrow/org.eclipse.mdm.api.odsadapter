@@ -40,6 +40,8 @@ import org.eclipse.mdm.api.base.query.Relationship;
 import org.eclipse.mdm.api.dflt.model.TemplateTest;
 import org.eclipse.mdm.api.dflt.model.TemplateTestStep;
 import org.eclipse.mdm.api.dflt.model.TemplateTestStepUsage;
+import org.eclipse.mdm.api.dflt.model.ValueList;
+import org.eclipse.mdm.api.dflt.model.ValueListValue;
 
 public final class ODSUtils {
 
@@ -161,6 +163,8 @@ public final class ODSUtils {
 		AE_NAME_MAPPING.addMappings(TemplateTestStep.class, "TplTestStep");
 		AE_NAME_MAPPING.addMappings(TemplateTest.class, "TplTest");
 		AE_NAME_MAPPING.addMappings(TemplateTestStepUsage.class, "TplTestStepUsage");
+		AE_NAME_MAPPING.addMappings(ValueList.class, "ValueList");
+		AE_NAME_MAPPING.addMappings(ValueListValue.class, "ValueListValue");
 
 
 		/*
@@ -168,26 +172,29 @@ public final class ODSUtils {
 		 */
 
 		//TODO: change  MIME type of Test as soon as default model is implemented
-		DEFAULT_MIMETYPES.put("Test", "application/x-asam.aotest");
-		DEFAULT_MIMETYPES.put("TestStep", "application/x-asam.aosubtest.teststep");
-		DEFAULT_MIMETYPES.put("Measurement", "application/x-asam.aomeasurement");
-		DEFAULT_MIMETYPES.put("Channel", "application/x-asam.aomeasurementquantity");
-		DEFAULT_MIMETYPES.put("ChannelGroup", "application/x-asam.aosubmatrix");
-		DEFAULT_MIMETYPES.put("User", "application/x-asam.aouser");
-		DEFAULT_MIMETYPES.put("Environment", "application/x-asam.aoenvironment");
-		DEFAULT_MIMETYPES.put("Unit", "application/x-asam.aounit");
-		DEFAULT_MIMETYPES.put("Parameter", "application/x-asam.aoparameter.resultparameter");
-		DEFAULT_MIMETYPES.put("ParameterSet", "application/x-asam.aoparameterset.resultparameterset");
-		DEFAULT_MIMETYPES.put("PhysicalDimension", "application/x-asam.aophysicaldimension");
-		DEFAULT_MIMETYPES.put("Quantity", "application/x-asam.aoquantity");
+		DEFAULT_MIMETYPES.put(Test.class.getSimpleName(), "application/x-asam.aotest");
+		DEFAULT_MIMETYPES.put(TestStep.class.getSimpleName(), "application/x-asam.aosubtest.teststep");
+		DEFAULT_MIMETYPES.put(Measurement.class.getSimpleName(), "application/x-asam.aomeasurement");
+		DEFAULT_MIMETYPES.put(Channel.class.getSimpleName(), "application/x-asam.aomeasurementquantity");
+		DEFAULT_MIMETYPES.put(ChannelGroup.class.getSimpleName(), "application/x-asam.aosubmatrix");
+		DEFAULT_MIMETYPES.put(User.class.getSimpleName(), "application/x-asam.aouser");
+		DEFAULT_MIMETYPES.put(Environment.class.getSimpleName(), "application/x-asam.aoenvironment");
+		DEFAULT_MIMETYPES.put(Unit.class.getSimpleName(), "application/x-asam.aounit");
+		DEFAULT_MIMETYPES.put(Parameter.class.getSimpleName(), "application/x-asam.aoparameter.resultparameter");
+		DEFAULT_MIMETYPES.put(ParameterSet.class.getSimpleName(), "application/x-asam.aoparameterset.resultparameterset");
+		DEFAULT_MIMETYPES.put(PhysicalDimension.class.getSimpleName(), "application/x-asam.aophysicaldimension");
+		DEFAULT_MIMETYPES.put(Quantity.class.getSimpleName(), "application/x-asam.aoquantity");
 		DEFAULT_MIMETYPES.put("LocalColumn", "application/x-asam.aolocalcolumn");
-		DEFAULT_MIMETYPES.put("UNITUNDERTEST", "application/x-asam.aounitundertest.unitundertest");
-		DEFAULT_MIMETYPES.put("TESTSEQUENCE", "application/x-asam.aotestsequence.testsequence");
-		DEFAULT_MIMETYPES.put("TESTEQUIPMENT", "application/x-asam.aotestequipment.testequipment");
+		DEFAULT_MIMETYPES.put(ContextType.UNITUNDERTEST.name(), "application/x-asam.aounitundertest.unitundertest");
+		DEFAULT_MIMETYPES.put(ContextType.TESTSEQUENCE.name(), "application/x-asam.aotestsequence.testsequence");
+		DEFAULT_MIMETYPES.put(ContextType.TESTEQUIPMENT.name(), "application/x-asam.aotestequipment.testequipment");
+		DEFAULT_MIMETYPES.put(TemplateTestStep.class.getSimpleName(), "application/x-asam.aoany.tplteststep");
+		DEFAULT_MIMETYPES.put(TemplateTest.class.getSimpleName(), "application/x-asam.aoany.tpltest");
+		DEFAULT_MIMETYPES.put(TemplateTestStepUsage.class.getSimpleName(), "application/x-asam.aoany.tplteststepusage");
+		DEFAULT_MIMETYPES.put(ValueList.class.getSimpleName(), "application/x-asam.aoparameterset.valuelist");
+		DEFAULT_MIMETYPES.put(ValueListValue.class.getSimpleName(), "application/x-asam.aoparameter.valuelistvalue");
 
-		DEFAULT_MIMETYPES.put("TemplateTestStep", "application/x-asam.aoany.tplteststep");
-		DEFAULT_MIMETYPES.put("TemplateTest", "application/x-asam.aoany.tpltest");
-		DEFAULT_MIMETYPES.put("TemplateTestStepUsage", "application/x-asam.aoany.tplteststepusage");
+
 	}
 
 	public static String getAEName(Class<? extends Entity> clazz) {
