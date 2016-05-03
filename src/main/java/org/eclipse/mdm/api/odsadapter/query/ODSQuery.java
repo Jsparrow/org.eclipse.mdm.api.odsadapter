@@ -135,12 +135,14 @@ public class ODSQuery implements Query {
 		try {
 
 			List<SelItem> condSeq = new ArrayList<>();
+			int condCount = 0;
 			for(FilterItem conditionItem : filter) {
 				SelItem selItem = new SelItem();
 				if(conditionItem.isCondition()) {
 					selItem.value(createCondition(conditionItem.getCondition()));
 				} else if(conditionItem.isOperator()) {
 					selItem._operator(ODSUtils.OPERATORS.convert(conditionItem.getOperator()));
+					condCount++;
 				} else {
 					throw new IllegalArgumentException("Passed filter item is neither an operator nor a condition.");
 				}
@@ -165,7 +167,7 @@ public class ODSQuery implements Query {
 			long stop = System.currentTimeMillis();
 
 			LOGGER.debug("Query executed in {} ms and retrieved {} result rows ({} selections, {} conditions, "
-					+ "{} joins).", stop - start, results.size(), anuSeq.size(), condSeq.size(), joinSeq.size());
+					+ "{} joins).", stop - start, results.size(), anuSeq.size(), condCount, joinSeq.size());
 			return results;
 		} catch(AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);
