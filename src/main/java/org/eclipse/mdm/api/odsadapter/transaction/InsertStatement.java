@@ -104,7 +104,7 @@ final class InsertStatement extends BaseStatement {
 		entityCores.add(entityCore);
 
 		// add all entity values
-		for(Value value : entityCore.getValues().values()) {
+		for(Value value : entityCore.getAllValues().values()) {
 			/*
 			 * TODO: in case of ContextComponent instances we have to
 			 * add missing Value containers (this are those we have
