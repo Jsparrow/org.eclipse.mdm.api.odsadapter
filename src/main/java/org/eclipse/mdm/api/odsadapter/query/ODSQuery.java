@@ -82,11 +82,11 @@ public class ODSQuery implements Query {
 	}
 
 	@Override
-	public Query select(Attribute attribute, Aggregation aggregation, String unit) {
+	public Query select(Attribute attribute, Aggregation aggregation) {
 		EntityType entityType = attribute.getEntityType();
 		entityTypesByID.put(ODSConverter.fromODSLong(((ODSEntityType) entityType).getODSID()), entityType);
 		queriedEntityTypes.add(entityType);
-		anuSeq.add(createSelect(attribute, aggregation, unit));
+		anuSeq.add(createSelect(attribute, aggregation));
 		return this;
 	}
 
@@ -174,12 +174,12 @@ public class ODSQuery implements Query {
 		}
 	}
 
-	private SelAIDNameUnitId createSelect(Attribute attribute, Aggregation aggregation, String unit) {
+	private SelAIDNameUnitId createSelect(Attribute attribute, Aggregation aggregation) {
 		SelAIDNameUnitId sanu = new SelAIDNameUnitId();
 
 		sanu.aggregate = ODSUtils.AGGREGATIONS.convert(aggregation);
 		sanu.attr = createAIDName(attribute);
-		sanu.unitId = ODSConverter.toODSLong(0L); // TODO unit
+		sanu.unitId = new T_LONGLONG();
 
 		return sanu;
 	}
@@ -189,7 +189,7 @@ public class ODSQuery implements Query {
 
 		sve.oper = ODSUtils.OPERATIONS.convert(condition.getOperation());
 		sve.attr = new AIDNameUnitId();
-		sve.attr.unitId = new T_LONGLONG(); // TODO condition.getValue().getUnit();
+		sve.attr.unitId = new T_LONGLONG();
 		sve.attr.attr = createAIDName(condition.getAttribute());
 		sve.value = ODSConverter.toODSValue(condition.getValue());
 
