@@ -216,7 +216,7 @@ final class CatalogManager {
 			EntityType source = entry.getKey();
 			EntityType target = transaction.getModelManager().getEntityType(source.getName().replace("Cat", "Tpl"));
 
-			Query query = transaction.createQuery().selectID(target).join(source.getRelation(target));
+			Query query = transaction.createQuery().selectID(target).join(source, target);
 
 			long[] instanceIDs = collectInstanceIDs(entry.getValue());
 			List<Result> results = query.fetch(Filter.and().add(Operation.IN_SET.create(source.getIDAttribute(), instanceIDs)));
