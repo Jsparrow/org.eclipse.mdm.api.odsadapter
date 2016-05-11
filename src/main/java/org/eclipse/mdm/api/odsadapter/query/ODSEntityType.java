@@ -102,7 +102,7 @@ public final class ODSEntityType implements EntityType {
 	private Relation getParentRelation(EntityType parentEntityType) {
 		return getParentRelations().stream()
 				.filter(et -> et.getTarget().equals(parentEntityType)).findAny()
-				.orElseThrow(() -> new IllegalArgumentException("Parent relation to entity type '" + parentEntityType + "' does not exist."));
+				.orElseThrow(() -> new IllegalArgumentException("Relation to entity type '" + parentEntityType + "' does not exist."));
 	}
 
 	@Override
