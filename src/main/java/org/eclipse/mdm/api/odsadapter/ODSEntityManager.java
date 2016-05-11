@@ -32,7 +32,6 @@ import org.asam.ods.AoException;
 import org.asam.ods.AoSession;
 import org.asam.ods.InstanceElement;
 import org.eclipse.mdm.api.base.ConnectionException;
-import org.eclipse.mdm.api.base.EntityManager;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
 import org.eclipse.mdm.api.base.model.Channel;
@@ -71,6 +70,7 @@ import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
+import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
@@ -81,9 +81,11 @@ import org.eclipse.mdm.api.dflt.model.TemplateTestStep;
 import org.eclipse.mdm.api.dflt.model.TemplateTestStepUsage;
 import org.eclipse.mdm.api.dflt.model.ValueList;
 import org.eclipse.mdm.api.dflt.model.ValueListValue;
+import org.eclipse.mdm.api.dflt.model.Versionable;
 import org.eclipse.mdm.api.odsadapter.query.DataItemFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
+import org.eclipse.mdm.api.odsadapter.search.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
 import org.eclipse.mdm.api.odsadapter.transaction.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
@@ -91,7 +93,7 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ODSEntityManager implements EntityManager, DataItemFactory {
+public class ODSEntityManager implements EntityManager, DataItemFactory, EntityLoader {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSEntityManager.class);
 
@@ -165,6 +167,41 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		return result.isPresent() ? Optional.of(createEntity(type, result.get())) : Optional.empty();
 	}
 
+	//	@Override
+	//	public List<Status> loadStatus(Class<? extends StatusAttachable> type) throws DataAccessException {
+	//		return loadStatusByPattern(type, "*");
+	//	}
+	//
+	//	@Override
+	//	public Optional<Status> loadStatus(Class<? extends StatusAttachable> type, String name) throws DataAccessException {
+	//		List<Status> status = loadStatusByPattern(type, name);
+	//		if(status.size() > 1) {
+	//			throw new DataAccessException("Multiple status entities with name '" + name + "' found.");
+	//		}
+	//
+	//		return status.isEmpty() ? Optional.empty() : Optional.of(status.get(0));
+	//	}
+	//
+	//	private List<Status> loadStatusByPattern(Class<? extends StatusAttachable> type, String pattern) throws DataAccessException {
+	//		EntityType statusEntityType;
+	//
+	//		if(Test.class.equals(type)) {
+	//			statusEntityType = modelManager.getEntityType("StatusTest");
+	//		} else if(TestStep.class.equals(type)) {
+	//			// StatusTestStep
+	//			statusEntityType = modelManager.getEntityType("StatusTestStep");
+	//		} else {
+	//			throw new IllegalArgumentException("Given type '" + type.getSimpleName() + "' is not supported.");
+	//		}
+	//
+	//		List<Status> status = new ArrayList<>();
+	//		for(Result result : modelManager.createQuery().selectAll(statusEntityType).fetch(Filter.nameOnly(statusEntityType, pattern))) {
+	//			status.add(createEntity(Status.class, new DefaultEntityCore(result.getRecord(statusEntityType))));
+	//		}
+	//
+	//		return status;
+	//	}
+
 	@Override
 	public <T extends Entity> Optional<T> loadParent(Entity child, Class<T> parentType) throws DataAccessException {
 		EntityType parentEntityType = modelManager.getEntityType(parentType);
@@ -205,8 +242,29 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		return loadAll(type, Filter.nameOnly(modelManager.getEntityType(type), pattern));
 	}
 
+	//	@Override
+	//	public <T extends StatusAttachable> List<T> loadAll(Class<T> type, Status status, String pattern) throws DataAccessException {
+	//		EntityType entityType = modelManager.getEntityType(type);
+	//		EntityType statusEntityType = modelManager.getEntityType(status.getURI().getTypeName());
+	//
+	//		// query instance IDs
+	//		List<Long> instanceIDs = modelManager.createQuery()
+	//				.join(entityType, statusEntityType).selectID(entityType)
+	//				.fetch(Filter.and()
+	//						.id(statusEntityType, status.getURI().getID())
+	//						.name(entityType, pattern))
+	//				.stream().map(r -> r.getRecord(entityType)).map(Record::getID).collect(Collectors.toList());
+	//
+	//		if(instanceIDs.isEmpty()) {
+	//			return Collections.emptyList();
+	//		}
+	//
+	//		return loadAll(type, Filter.idsOnly(entityType, instanceIDs));
+	//	}
+
+	@Override
 	@SuppressWarnings("unchecked")
-	private <T extends Entity> List<T> loadAll(Class<T> type, Filter filter) throws DataAccessException {
+	public <T extends Entity> List<T> loadAll(Class<T> type, Filter filter) throws DataAccessException {
 		/*
 		 * TODO delegate to custom implementations ....
 		 *
@@ -215,6 +273,9 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		 * 3. try default query
 		 */
 
+		//		if(StatusAttachable.class.isAssignableFrom(type)) {
+		//			return (List<T>) loadAllStatusAttachables((Class<StatusAttachable>) type, filter);
+		//		} else
 		if(ValueList.class.equals(type)) {
 			return (List<T>) loadValueLists(filter);
 		} else if(TemplateTestStep.class.equals(type)) {
@@ -229,10 +290,12 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		return createEntities(type, modelManager.createQuery(type).fetch(filter));
 	}
 
+	@Override
 	public <T extends Entity> List<T> loadAll(Class<T> type, ContextType contextType) throws DataAccessException {
 		return loadAll(type, contextType, "*");
 	}
 
+	@Override
 	public <T extends Entity> List<T> loadAll(Class<T> type, ContextType contextType, String pattern) throws DataAccessException {
 		EntityType entityType;
 		if(CatalogComponent.class.equals(type)) {
@@ -281,16 +344,98 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 				.name(childEntityType, pattern)));
 	}
 
+	//	@Override
+	//	public <T extends StatusAttachable> List<T> loadChildren(Entity parent, Class<T> type, Status status, String pattern) throws DataAccessException {
+	//		EntityType parentEntityType = modelManager.getEntityType(parent);
+	//		EntityType childEntityType = modelManager.getEntityType(type);
+	//		EntityType statusEntityType = modelManager.getEntityType(status.getURI().getTypeName());
+	//
+	//		// query instance IDs
+	//		List<Long> instanceIDs = modelManager.createQuery()
+	//				.join(childEntityType, parentEntityType, statusEntityType)
+	//				.selectID(childEntityType)
+	//				.fetch(Filter.and()
+	//						.id(parentEntityType, parent.getURI().getID())
+	//						.id(statusEntityType, status.getURI().getID())
+	//						.name(childEntityType, pattern))
+	//				.stream().map(r -> r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
+	//
+	//		if(instanceIDs.isEmpty()) {
+	//			return Collections.emptyList();
+	//		}
+	//
+	//		return loadAll(type, Filter.idsOnly(childEntityType, instanceIDs));
+	//	}
+
+	@Override
+	public <T extends Versionable> Optional<T> loadLatestValid(Class<T> type, String name) throws DataAccessException {
+		/*
+		 * TODO: default implementation should work (slow)
+		 */
+		return EntityManager.super.loadLatestValid(type, name);
+	}
+
+	//	@Deprecated // TODO: replace with a generic implementation...
+	//	private <T extends StatusAttachable> List<T> loadAllStatusAttachables(Class<T> type, Filter filter) throws DataAccessException {
+	//		EntityType statusEntityType;
+	//
+	//		if(Test.class.equals(type)) {
+	//			statusEntityType = modelManager.getEntityType("StatusTest");
+	//		} else if(TestStep.class.equals(type)) {
+	//			statusEntityType = modelManager.getEntityType("StatusTestStep");
+	//		} else {
+	//			throw new IllegalArgumentException(); // TODO
+	//		}
+	//
+	//		EntityType entityType = modelManager.getEntityType(type);
+	//		Relation statusRelation = entityType.getRelation(statusEntityType);
+	//
+	//		Map<Long, List<EntityCore>> requireStatus = new HashMap<>();
+	//		List<T> statusAttachables = new ArrayList<>();
+	//		for(Result result : modelManager.createQuery(type).select(statusRelation.getAttribute()).fetch(filter)) {
+	//			Record record = result.removeRecord(modelManager.getEntityType(type));
+	//			EntityCore core = new DefaultEntityCore(record);
+	//			for(Record relatedRecord : result) {
+	//				Class<? extends Entity> clazz = ODSUtils.getClass(relatedRecord.getEntityType().getName());
+	//
+	//				if(isCached(clazz)) {
+	//					core.getMutableStore().set(getCached(clazz, relatedRecord.getID()));
+	//				} else {
+	//					core.getMutableStore().set(createEntity(clazz, new DefaultEntityCore(relatedRecord)));
+	//				}
+	//			}
+	//
+	//			Optional<Long> statusID = record.getID(statusRelation);
+	//			if(statusID.isPresent()) {
+	//				requireStatus.computeIfAbsent(statusID.get(), k -> new ArrayList<>()).add(core);
+	//			}
+	//
+	//			statusAttachables.add(createEntity(type, core));
+	//		}
+	//
+	//		if(!requireStatus.isEmpty()) {
+	//			for(Result result : modelManager.createQuery().selectAll(statusEntityType).fetch(Filter.idsOnly(statusEntityType, requireStatus.keySet()))) {
+	//				Status status = createEntity(Status.class, new DefaultEntityCore(result.getRecord(statusEntityType)));
+	//
+	//				for(EntityCore core : requireStatus.get(status.getURI().getID())) {
+	//					core.getMutableStore().set(status);
+	//				}
+	//			}
+	//		}
+	//
+	//		return statusAttachables;
+	//	}
+
 	// TODO this is one query per application element
-	private Optional<ContextRoot> loadContextRoot(ContextDescribable contextDescribable, ContextType contextType) throws DataAccessException {
-		EntityType parentEntityType = modelManager.getEntityType(contextDescribable);
+	private Optional<ContextRoot> loadContextRoot(Entity parent, ContextType contextType) throws DataAccessException {
+		EntityType parentEntityType = modelManager.getEntityType(parent);
 		EntityType contextRootEntityType = modelManager.getEntityType(contextType);
 		EntityType templateRootEntityType = getEntityType(contextType, "Tpl", "Root");
 		Relation templateRootrelation = contextRootEntityType.getRelation(templateRootEntityType);
 
 		Optional<Result> result = modelManager.createQuery()
 				.selectAll(contextRootEntityType).select(templateRootrelation.getAttribute())
-				.fetchSingleton(Filter.idOnly(parentEntityType, contextDescribable.getURI().getID()));
+				.fetchSingleton(Filter.idOnly(parentEntityType, parent.getURI().getID()));
 
 		if(result.isPresent()) {
 			Record record = result.get().getRecord(contextRootEntityType);
@@ -902,8 +1047,8 @@ public class ODSEntityManager implements EntityManager, DataItemFactory {
 		return entities;
 	}
 
-	@Override
-	public <T extends Entity> T createEntity(Class<T> type, Result result) throws DataAccessException {
+	@Deprecated
+	private <T extends Entity> T createEntity(Class<T> type, Result result) throws DataAccessException {
 		Record record = result.removeRecord(modelManager.getEntityType(type));
 		EntityCore core = new DefaultEntityCore(record);
 		for(Record relatedRecord : result) {

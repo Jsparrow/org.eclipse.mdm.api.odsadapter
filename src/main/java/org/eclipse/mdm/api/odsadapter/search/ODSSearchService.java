@@ -29,18 +29,17 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.base.query.Searchable;
-import org.eclipse.mdm.api.odsadapter.query.DataItemFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 public final class ODSSearchService implements SearchService {
 
 	private final Map<Class<? extends Entity>, SearchQuery> searchQueriesByType = new HashMap<>();
 
-	private final DataItemFactory dataItemFactory;
+	private final EntityLoader entityLoader;
 	private final ODSModelManager modelManager;
 
-	public ODSSearchService(ODSModelManager modelManager, DataItemFactory dataItemFactory) {
-		this.dataItemFactory = dataItemFactory;
+	public ODSSearchService(ODSModelManager modelManager, EntityLoader entityLoader) {
+		this.entityLoader = entityLoader;
 		this.modelManager = modelManager;
 
 		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, c));
@@ -81,16 +80,20 @@ public final class ODSSearchService implements SearchService {
 
 	private <T extends Entity> Map<T, List<Record>> createResult(Class<T> type, List<Result> results) throws DataAccessException {
 		List<EntityType> relatedEntityTypes = modelManager.getImplicitEntityTypes(type);
-		Map<T, List<Record>> resultMap = new HashMap<>();
+		EntityType entityType = modelManager.getEntityType(type);
+
+		Map<Long, List<Record>> resultsByEntityID = new HashMap<>();
 		for(Result result : results) {
-			/**
-			 * TODO this should be refactored as soon as an entity factory is implemented
-			 */
 			List<Record> relatedRecords = result.retainAll(relatedEntityTypes);
-			resultMap.put(dataItemFactory.createEntity(type, result), relatedRecords);
+			resultsByEntityID.put(result.getRecord(entityType).getID(), relatedRecords);
 		}
 
-		return resultMap;
+		Map<T, List<Record>> resultsByEntity = new HashMap<>();
+		for(T entity : entityLoader.loadAll(type, Filter.idsOnly(entityType, resultsByEntityID.keySet()))) {
+			resultsByEntity.put(entity, resultsByEntityID.get(entity.getURI().getID()));
+		}
+
+		return resultsByEntity;
 	}
 
 	private SearchQuery findSearchQuery(Class<? extends Entity> type) {

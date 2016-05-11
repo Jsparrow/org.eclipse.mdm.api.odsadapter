@@ -9,15 +9,11 @@
 package org.eclipse.mdm.api.odsadapter.query;
 
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.Result;
+
 
 @Deprecated
 public interface DataItemFactory {
 
 	boolean isCached(Class<? extends Entity> entityType);
-
-	@Deprecated
-	<T extends Entity> T createEntity(Class<T> type, Result result) throws DataAccessException;
 
 }

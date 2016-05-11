@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.mdm.api.base.ConnectionException;
-import org.eclipse.mdm.api.base.EntityManager;
+import org.eclipse.mdm.api.base.BaseEntityManager;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
 import org.eclipse.mdm.api.base.massdata.ReadRequestIterable;
@@ -36,7 +36,7 @@ import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class ODSAdapertTest {
+public class ODSAdapterTest {
 
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
 	private static final String NAME_SERVICE = "corbaloc::1.2@<SERVER_IP>:2809/NameService";
@@ -47,7 +47,7 @@ public class ODSAdapertTest {
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
 
-	private static EntityManager entityManager;
+	private static BaseEntityManager entityManager;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
