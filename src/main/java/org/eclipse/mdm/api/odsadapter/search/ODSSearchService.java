@@ -89,7 +89,7 @@ public final class ODSSearchService implements SearchService {
 		}
 
 		Map<T, List<Record>> resultsByEntity = new HashMap<>();
-		for(T entity : entityLoader.loadAll(type, Filter.idsOnly(entityType, resultsByEntityID.keySet()))) {
+		for(T entity : entityLoader.loadAll(type, resultsByEntityID.keySet())) {
 			resultsByEntity.put(entity, resultsByEntityID.get(entity.getURI().getID()));
 		}
 

@@ -263,8 +263,12 @@ public class ODSEntityManager implements EntityManager, DataItemFactory, EntityL
 	//	}
 
 	@Override
+	public <T extends Entity> List<T> loadAll(Class<T> type, Collection<Long> instanceIDs) throws DataAccessException {
+		return loadAll(type, Filter.idsOnly(modelManager.getEntityType(type), instanceIDs));
+	}
+
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> List<T> loadAll(Class<T> type, Filter filter) throws DataAccessException {
+	private <T extends Entity> List<T> loadAll(Class<T> type, Filter filter) throws DataAccessException {
 		/*
 		 * TODO delegate to custom implementations ....
 		 *
@@ -684,7 +688,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory, EntityL
 			 * TODO: make it clean....
 			 */
 
-			for(ValueList valueList : loadAll(ValueList.class, Filter.idsOnly(valueListEntityType, requireValueList.keySet()))) {
+			for(ValueList valueList : loadAll(ValueList.class, requireValueList.keySet())) {
 				for(CatalogAttribute catalogAttribute : requireValueList.get(valueList.getURI().getID())) {
 					catalogAttribute.setValueList(valueList);
 				}
@@ -937,7 +941,7 @@ public class ODSEntityManager implements EntityManager, DataItemFactory, EntityL
 		}
 
 		if(!requireTestStep.isEmpty()) {
-			for(TemplateTestStep templateTestStep : loadAll(TemplateTestStep.class, Filter.idsOnly(templateTestStepEntityType, requireTestStep.keySet()))) {
+			for(TemplateTestStep templateTestStep : loadAll(TemplateTestStep.class, requireTestStep.keySet())) {
 				for(EntityCore entityCore : requireTestStep.get(templateTestStep.getURI().getID())) {
 					entityCore.getMutableStore().set(templateTestStep);
 				}
