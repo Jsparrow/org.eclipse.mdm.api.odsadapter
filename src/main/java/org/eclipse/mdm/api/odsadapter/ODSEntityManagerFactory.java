@@ -9,10 +9,13 @@
 package org.eclipse.mdm.api.odsadapter;
 
 import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+
+import javax.ejb.Stateful;
 
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
@@ -31,6 +34,7 @@ import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Stateful
 public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
 	public static final String PARAM_NAMESERVICE = "nameservice";
