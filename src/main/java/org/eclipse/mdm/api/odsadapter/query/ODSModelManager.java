@@ -106,11 +106,23 @@ public class ODSModelManager implements ModelManager {
 
 		return query;
 	}
-
+	
 	@Override
 	public Query createQuery() {
 		return createQuery(getApplElemAccess());
 	}
+	
+	
+	@Override
+	public List<EntityType> listEntityTypes() {
+		read.lock();
+		try {
+			return new ArrayList<>(entityTypesByName.values());
+		} finally {
+			read.unlock();
+		}
+	}
+	
 
 	// TODO this has to be used for query executed within a transaction
 	public Query createQuery(ApplElemAccess applElemAccess) {
