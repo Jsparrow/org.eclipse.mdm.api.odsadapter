@@ -79,7 +79,7 @@ jar {
 }
 
 task deleteGenerated(type: Delete) {
-    delete 'src/gen/'
+    delete 'src/gen/java/org'
 }
 
 clean.dependsOn deleteGenerated

@@ -31,6 +31,9 @@ import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
+import com.highqsoft.corbafileserver.generated.CORBAFileServerIFHelper;
+
 @Stateful
 public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
@@ -79,7 +82,9 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 					getParameter(parameters, PARAM_PASSWORD)));
 			LOGGER.info("Connection to ODS server established.");
 
-			return new ODSEntityManager(new ODSModelManager(aoSession));
+			CORBAFileServerIF fileServer = CORBAFileServerIFHelper.narrow(nameService.resolve(nameOfService, "CORBA-FT"));
+
+			return new ODSEntityManager(new ODSModelManager(aoSession, fileServer));
 		} catch(AoException e) {
 			e.printStackTrace();
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);

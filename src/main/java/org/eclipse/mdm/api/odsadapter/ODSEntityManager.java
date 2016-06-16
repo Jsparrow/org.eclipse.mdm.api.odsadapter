@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import org.asam.ods.AoException;
 import org.asam.ods.InstanceElement;
 import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.FileService;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
 import org.eclipse.mdm.api.base.model.Channel;
@@ -45,6 +46,8 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.Status;
+import org.eclipse.mdm.api.odsadapter.filetransfer.ODSFileService;
+import org.eclipse.mdm.api.odsadapter.filetransfer.ODSFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityRequest;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
@@ -83,6 +86,11 @@ public class ODSEntityManager implements EntityManager {
 		// TODO
 		// java docs: cache this service for ONE request!
 		return Optional.of(new ODSSearchService(modelManager, entityLoader));
+	}
+
+	@Override
+	public Optional<FileService> getFileService() {
+		return Optional.of(new ODSFileService(modelManager, Transfer.STREAM));
 	}
 
 	@Override

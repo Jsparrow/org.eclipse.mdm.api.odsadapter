@@ -69,11 +69,15 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
+
 public class ODSModelManager implements ModelManager {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSModelManager.class);
 
 	private final Map<String, EntityType> entityTypesByName = new HashMap<>();
+
+	private final CORBAFileServerIF fileServer;
 
 	private final Lock write;
 	private final Lock read;
@@ -89,7 +93,8 @@ public class ODSModelManager implements ModelManager {
 		read = reentrantReadWriteLock.readLock();
 	}
 
-	public ODSModelManager(AoSession aoSession) throws AoException {
+	public ODSModelManager(AoSession aoSession, CORBAFileServerIF fileServer) throws AoException {
+		this.fileServer = fileServer;
 		this.aoSession = aoSession;
 		applElemAccess = aoSession.getApplElemAccess();
 
@@ -99,7 +104,11 @@ public class ODSModelManager implements ModelManager {
 
 
 	public ODSModelManager newSession() throws AoException {
-		return new ODSModelManager(getAoSession().createCoSession());
+		return new ODSModelManager(getAoSession().createCoSession(), fileServer);
+	}
+
+	public CORBAFileServerIF getFileServer() {
+		return fileServer;
 	}
 
 	/*
