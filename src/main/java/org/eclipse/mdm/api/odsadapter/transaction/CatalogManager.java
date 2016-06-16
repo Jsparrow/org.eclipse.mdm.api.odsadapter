@@ -20,8 +20,10 @@ import org.asam.ods.AoException;
 import org.asam.ods.ApplicationAttribute;
 import org.asam.ods.ApplicationElement;
 import org.asam.ods.ApplicationRelation;
+import org.asam.ods.ApplicationStructure;
 import org.asam.ods.BaseAttribute;
 import org.asam.ods.BaseElement;
+import org.asam.ods.BaseStructure;
 import org.asam.ods.DataType;
 import org.asam.ods.RelationRange;
 import org.eclipse.mdm.api.base.model.ContextType;
@@ -43,6 +45,9 @@ final class CatalogManager {
 
 	private final ODSTransaction transaction;
 
+	private ApplicationStructure applicationStructure;
+	private BaseStructure baseStructure;
+
 	CatalogManager(ODSTransaction transaction) {
 		this.transaction = transaction;
 	}
@@ -53,25 +58,25 @@ final class CatalogManager {
 
 		for(Entry<ContextType, List<CatalogComponent>> entry : catalogComponentsByContextType.entrySet()) {
 			String odsContextTypeName = ODSUtils.CONTEXTTYPES.convert(entry.getKey());
-			ApplicationElement contextRootApplicationElement = transaction.getApplicationStructure().getElementByName(odsContextTypeName);
+			ApplicationElement contextRootApplicationElement = getApplicationStructure().getElementByName(odsContextTypeName);
 			BaseElement contextRootBaseElement = contextRootApplicationElement.getBaseElement();
-			ApplicationElement contextTemplateComponentApplicationElement = transaction.getApplicationStructure().getElementByName("Tpl" + odsContextTypeName + "Comp");
-			BaseElement baseElement = transaction.getBaseStructure().getElementByType("Ao" + odsContextTypeName + "Part");
+			ApplicationElement contextTemplateComponentApplicationElement = getApplicationStructure().getElementByName("Tpl" + odsContextTypeName + "Comp");
+			BaseElement baseElement = getBaseStructure().getElementByType("Ao" + odsContextTypeName + "Part");
 
 			for(CatalogComponent catalogComponent : entry.getValue()) {
 				ApplicationElement applicationElement = createApplicationElement(catalogComponent.getName(), baseElement);
 
 				// relation context root to context component
-				ApplicationRelation applicationRelation = transaction.getApplicationStructure().createRelation();
+				ApplicationRelation applicationRelation = getApplicationStructure().createRelation();
 				applicationRelation.setElem1(contextRootApplicationElement);
 				applicationRelation.setElem2(applicationElement);
 				applicationRelation.setRelationName(catalogComponent.getName());
 				applicationRelation.setInverseRelationName(odsContextTypeName);
-				applicationRelation.setBaseRelation(transaction.getBaseStructure().getRelation(contextRootBaseElement, baseElement));
+				applicationRelation.setBaseRelation(getBaseStructure().getRelation(contextRootBaseElement, baseElement));
 				applicationRelation._release();
 
 				// relation template component to context component
-				applicationRelation = transaction.getApplicationStructure().createRelation();
+				applicationRelation = getApplicationStructure().createRelation();
 				applicationRelation.setElem1(contextTemplateComponentApplicationElement);
 				applicationRelation.setElem2(applicationElement);
 				applicationRelation.setRelationName(catalogComponent.getName());
@@ -94,7 +99,7 @@ final class CatalogManager {
 
 	public void createCatalogAttributes(Collection<CatalogAttribute> catalogAttributes) throws AoException {
 		for(CatalogAttribute catalogAttribute : catalogAttributes) {
-			ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(getParentName(catalogAttribute));
+			ApplicationElement applicationElement = getApplicationStructure().getElementByName(getParentName(catalogAttribute));
 
 			ApplicationAttribute applicationAttribute = applicationElement.createAttribute();
 			ValueType valueType = catalogAttribute.getScalarType().toValueType();
@@ -102,7 +107,7 @@ final class CatalogManager {
 			applicationAttribute.setDataType(dataType);
 			applicationAttribute.setName(catalogAttribute.getName());
 			if (dataType == DataType.DT_ENUM) {
-				applicationAttribute.setEnumerationDefinition(transaction.getApplicationStructure().getEnumerationDefinition(ODSEnumerations.getEnumName(catalogAttribute.getEnumerationClass())));
+				applicationAttribute.setEnumerationDefinition(getApplicationStructure().getEnumerationDefinition(ODSEnumerations.getEnumName(catalogAttribute.getEnumerationClass())));
 			}
 
 			// release resources
@@ -136,14 +141,14 @@ final class CatalogManager {
 
 		for(Entry<ContextType, List<CatalogComponent>> entry : catalogComponentsByContextType.entrySet()) {
 			for(CatalogComponent catalogComponent : entry.getValue()) {
-				ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(catalogComponent.getName());
+				ApplicationElement applicationElement = getApplicationStructure().getElementByName(catalogComponent.getName());
 				for(ApplicationRelation applicationRelation : applicationElement.getAllRelations()) {
-					transaction.getApplicationStructure().removeRelation(applicationRelation);
+					getApplicationStructure().removeRelation(applicationRelation);
 
 					// release resources
 					applicationRelation._release();
 				}
-				transaction.getApplicationStructure().removeElement(applicationElement);
+				getApplicationStructure().removeElement(applicationElement);
 
 				// release resources
 				applicationElement._release();
@@ -160,7 +165,7 @@ final class CatalogManager {
 				.collect(Collectors.groupingBy(CatalogManager::getParentName));
 
 		for(Entry<String, List<CatalogAttribute>> entry : catalogAttributesByParent.entrySet()) {
-			ApplicationElement applicationElement = transaction.getApplicationStructure().getElementByName(entry.getKey());
+			ApplicationElement applicationElement = getApplicationStructure().getElementByName(entry.getKey());
 
 			for(CatalogAttribute catalogAttribute : entry.getValue()) {
 				ApplicationAttribute applicationAttribute = applicationElement.getAttributeByName(catalogAttribute.getName());
@@ -175,8 +180,18 @@ final class CatalogManager {
 		}
 	}
 
+	public void clear() {
+		if(applicationStructure != null) {
+			applicationStructure._release();
+		}
+
+		if(baseStructure != null) {
+			baseStructure._release();
+		}
+	}
+
 	private ApplicationElement createApplicationElement(String applicationElementName, BaseElement baseElement) throws AoException {
-		ApplicationElement applicationElement = transaction.getApplicationStructure().createElement(baseElement);
+		ApplicationElement applicationElement = getApplicationStructure().createElement(baseElement);
 		applicationElement.setName(applicationElementName);
 
 		// Id
@@ -208,6 +223,22 @@ final class CatalogManager {
 		return applicationElement;
 	}
 
+	ApplicationStructure getApplicationStructure() throws AoException {
+		if(applicationStructure == null) {
+			applicationStructure = transaction.getModelManager().getAoSession().getApplicationStructure();
+		}
+
+		return applicationStructure;
+	}
+
+	BaseStructure getBaseStructure() throws AoException {
+		if(baseStructure == null) {
+			baseStructure = transaction.getModelManager().getAoSession().getBaseStructure();
+		}
+
+		return baseStructure;
+	}
+
 	private boolean areReferencedInTemplates(Collection<? extends Entity> entities) throws AoException, DataAccessException {
 		Map<EntityType, List<Entity>> entitiesByEntityType = entities.stream()
 				.collect(Collectors.groupingBy(transaction.getModelManager()::getEntityType));
@@ -216,7 +247,7 @@ final class CatalogManager {
 			EntityType source = entry.getKey();
 			EntityType target = transaction.getModelManager().getEntityType(source.getName().replace("Cat", "Tpl"));
 
-			Query query = transaction.createQuery().selectID(target).join(source, target);
+			Query query = transaction.getModelManager().createQuery().selectID(target).join(source, target);
 
 			long[] instanceIDs = collectInstanceIDs(entry.getValue());
 			List<Result> results = query.fetch(Filter.and().add(Operation.IN_SET.create(source.getIDAttribute(), instanceIDs)));
@@ -233,7 +264,7 @@ final class CatalogManager {
 		long[] ids = new long[entities.size()];
 
 		for(int i = 0; i < ids.length; i++) {
-			ids[i] = entities.get(i).getURI().getID();
+			ids[i] = entities.get(i).getID();
 		}
 
 		return ids;

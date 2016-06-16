@@ -22,8 +22,8 @@ import org.asam.ods.AoException;
 import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.EntityCore;
-import org.eclipse.mdm.api.base.model.EntityCore.EntityStore;
+import org.eclipse.mdm.api.base.model.Core;
+import org.eclipse.mdm.api.base.model.Core.EntityStore;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -45,7 +45,7 @@ final class UpdateStatement extends BaseStatement {
 
 	private final List<String> nonUpdatableRelationNames;
 
-	protected UpdateStatement(ODSTransaction transaction, EntityType entityType) {
+	UpdateStatement(ODSTransaction transaction, EntityType entityType) {
 		super(transaction, entityType);
 
 		nonUpdatableRelationNames = entityType.getInfoRelations().stream().map(Relation::getName).collect(Collectors.toList());
@@ -66,7 +66,6 @@ final class UpdateStatement extends BaseStatement {
 				// skip "empty" informative relation sequence
 				continue;
 			}
-
 
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
@@ -95,26 +94,20 @@ final class UpdateStatement extends BaseStatement {
 		return uris;
 	}
 
-	private void readEntityCore(EntityCore entityCore) {
-		if(!entityCore.getURI().getTypeName().equals(getEntityType().getName())) {
-			throw new IllegalArgumentException("Given entity core '" + entityCore.getURI().getTypeName()
-					+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");
+	private void readEntityCore(Core core) {
+		if(!core.getTypeName().equals(getEntityType().getName())) {
+			throw new IllegalArgumentException("Given entity core '" + core.getTypeName()
+			+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");
 		}
 
 		// add all entity values
-		for(Value value : entityCore.getAllValues().values()) {
-			/*
-			 * TODO: in case of ContextComponent instances we have to
-			 * add missing Value containers (this are those we have
-			 * omitted on READ due to the underlying template component)
-			 */
-
+		for(Value value : core.getAllValues().values()) {
 			// TODO scan for values with file links and collect them!
 			updateMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
 		}
 
 		updateMap.computeIfAbsent(getEntityType().getIDAttribute().getName(), k -> new ArrayList<>())
-		.add(getEntityType().getIDAttribute().createValue(entityCore.getURI().getID()));
+		.add(getEntityType().getIDAttribute().createValue(core.getID()));
 
 		// define "empty" values for ALL informative relations
 		for(Relation relation : getEntityType().getInfoRelations()) {
@@ -122,23 +115,23 @@ final class UpdateStatement extends BaseStatement {
 		}
 
 		// preserve "empty" relation values for removed related entities
-		EntityStore mutableStore = entityCore.getMutableStore();
+		EntityStore mutableStore = core.getMutableStore();
 		mutableStore.getRemoved().stream().map(e -> getModelManager().getEntityType(e))
 		.map(getEntityType()::getRelation).map(Relation::getName).forEach(nonUpdatableRelationNames::remove);
 
 		// replace "empty" relation values with corresponding instance IDs
 		setRelationIDs(mutableStore.getCurrent());
 
-		uris.add(entityCore.getURI());
+		uris.add(core.getURI());
 
-		collectChildEntities(entityCore);
+		collectChildEntities(core);
 
-		getTransaction().addCore(entityCore);
+		getTransaction().addCore(core);
 	}
 
-	private void collectChildEntities(EntityCore entityCore) {
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildrenStore().getCurrent().entrySet()) {
-			Map<Boolean, List<Entity>> patrition = entry.getValue().stream().collect(Collectors.partitioningBy(e -> e.getURI().getID() < 1));
+	private void collectChildEntities(Core core) {
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent().entrySet()) {
+			Map<Boolean, List<Entity>> patrition = entry.getValue().stream().collect(Collectors.partitioningBy(e -> e.getID() < 1));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
 			if(virtualEntities != null && !virtualEntities.isEmpty()) {
 				childrenToCreate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(virtualEntities);
@@ -149,15 +142,15 @@ final class UpdateStatement extends BaseStatement {
 			}
 		}
 
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildrenStore().getRemoved().entrySet()) {
-			List<Deletable> toDelete = entry.getValue().stream().filter(e -> e.getURI().getID() > 0).collect(Collectors.toList());
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getRemoved().entrySet()) {
+			List<Deletable> toDelete = entry.getValue().stream().filter(e -> e.getID() > 0).collect(Collectors.toList());
 			childrenToRemove.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(toDelete);
 		}
 	}
 
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
-			if(relatedEntity.getURI().getID() < 1) {
+			if(relatedEntity.getID() < 1) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 
@@ -167,7 +160,7 @@ final class UpdateStatement extends BaseStatement {
 				throw new IllegalStateException("Relation '" + relation
 						+ "' is incompatible with update statement for entity type '" + getEntityType() + "'");
 			}
-			relationValues.get(relationValues.size() - 1).set(relatedEntity.getURI().getID());
+			relationValues.get(relationValues.size() - 1).set(relatedEntity.getID());
 			nonUpdatableRelationNames.remove(relation.getName());
 		}
 	}

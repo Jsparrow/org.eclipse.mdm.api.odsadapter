@@ -31,6 +31,7 @@ import org.eclipse.mdm.api.base.model.DoubleComplex;
 import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.FloatComplex;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
+import org.eclipse.mdm.api.base.model.MimeType;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
@@ -746,8 +747,6 @@ public final class ODSConverter {
 		return input == null ? null : new T_DCOMPLEX(input.real(), input.imaginary());
 	}
 
-	// TODO EXTERNAL_REFERENCE #########################################################################################
-
 	private static FileLink[] fromODSExternalReferenceSeq(T_ExternalReference[] input) {
 		List<FileLink> result = new ArrayList<>();
 		if(input != null) {
@@ -760,7 +759,7 @@ public final class ODSConverter {
 	}
 
 	private static FileLink fromODSExternalReference(T_ExternalReference input) {
-		return null; // TODO
+		return FileLink.newRemote(input.location, new MimeType(input.mimeType), input.description);
 	}
 
 	private static T_ExternalReference[] toODSExternalReferenceSeq(FileLink[] input) {
@@ -773,7 +772,7 @@ public final class ODSConverter {
 	}
 
 	private static T_ExternalReference toODSExternalReference(FileLink input) {
-		return null; // TODO
+		return new T_ExternalReference(input.getDescription(), input.getMimeType().toString(), input.getRemotePath());
 	}
 
 	// TODO BLOB #########################################################################################

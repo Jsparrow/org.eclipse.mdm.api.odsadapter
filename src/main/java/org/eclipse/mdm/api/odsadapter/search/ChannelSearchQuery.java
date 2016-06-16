@@ -8,29 +8,25 @@
 
 package org.eclipse.mdm.api.odsadapter.search;
 
-import java.util.Optional;
-
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.Measurement;
-import org.eclipse.mdm.api.base.model.Quantity;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
-import org.eclipse.mdm.api.base.model.Unit;
-import org.eclipse.mdm.api.base.model.User;
-import org.eclipse.mdm.api.base.query.Join;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
+import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 
 final class ChannelSearchQuery extends BaseEntitySearchQuery {
 
 	public ChannelSearchQuery(ODSModelManager modelManager, ContextState contextState) {
-		super(modelManager, Channel.class, Test.class, Optional.of(contextState));
+		super(modelManager, Channel.class);
 
-		addDependency(Test.class, TestStep.class, false, Join.INNER);
-		addDependency(User.class, Test.class, true, Join.INNER);
-		addDependency(TestStep.class, Measurement.class, false, Join.INNER);
-		addDependency(Measurement.class, Channel.class, false, Join.INNER);
-		addDependency(Unit.class, Channel.class, true, Join.INNER);
-		addDependency(Quantity.class, Channel.class, true, Join.INNER);
+		// layers
+		addJoinConfig(JoinConfig.up(TestStep.class, Test.class));
+		addJoinConfig(JoinConfig.up(Measurement.class, TestStep.class));
+		addJoinConfig(JoinConfig.up(Channel.class, Measurement.class));
+
+		// context
+		addJoinConfig(contextState);
 
 		// TODO join to sensor tables.... || this will break the joins to context data
 		// multiple outer join to the same table...

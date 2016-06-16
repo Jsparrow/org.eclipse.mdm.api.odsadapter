@@ -160,7 +160,7 @@ public class ODSQuery implements Query {
 			List<Result> results = new ArrayList<>();
 			long start = System.currentTimeMillis();
 			for(ResultSetExt resultSetExt : applElemAccess.getInstancesExt(qse, 0)) {
-				for(Result result : new ODSResultSEQ(resultSetExt)) {
+				for(Result result : new ODSResultSEQ(entityTypesByID, resultSetExt)) {
 					results.add(result);
 				}
 			}
@@ -225,15 +225,16 @@ public class ODSQuery implements Query {
 		return aidName;
 	}
 
-	private final class ODSResultSEQ implements Iterable<Result>, Iterator<Result> {
+	private static final class ODSResultSEQ implements Iterable<Result>, Iterator<Result> {
 
 		private final List<ODSRecordSEQ> odsRecordSEQs = new ArrayList<>();
 		private final int length;
 		private int index;
 
-		public ODSResultSEQ(ResultSetExt resultSetExt) throws DataAccessException {
+		public ODSResultSEQ(Map<Long, EntityType> entityTypes, ResultSetExt resultSetExt) throws DataAccessException {
 			for(ElemResultSetExt elemResultSetExt : resultSetExt.firstElems) {
-				odsRecordSEQs.add(new ODSRecordSEQ(elemResultSetExt));
+				EntityType entityType = entityTypes.get(ODSConverter.fromODSLong(elemResultSetExt.aid));
+				odsRecordSEQs.add(new ODSRecordSEQ(entityType, elemResultSetExt.values));
 			}
 
 			length = odsRecordSEQs.isEmpty() ? 0 : odsRecordSEQs.get(0).getLength();
@@ -266,14 +267,14 @@ public class ODSQuery implements Query {
 
 	}
 
-	private final class ODSRecordSEQ {
+	private static final class ODSRecordSEQ {
 
 		private final List<ODSValueSeq> odsValueSeqs = new ArrayList<>();
 		private final EntityType entityType;
 
-		private ODSRecordSEQ(ElemResultSetExt elemResultSetExt) throws DataAccessException {
-			entityType = entityTypesByID.get(ODSConverter.fromODSLong(elemResultSetExt.aid));
-			for (NameValueSeqUnitId nvsui : elemResultSetExt.values) {
+		private ODSRecordSEQ(EntityType entityType, NameValueSeqUnitId[] nvsuis) throws DataAccessException {
+			this.entityType = entityType;
+			for (NameValueSeqUnitId nvsui : nvsuis) {
 				Matcher matcher = AGGREGATION_NAME_PATTERN.matcher(nvsui.valName);
 				String attributeName = matcher.matches() ? matcher.group(GROUPE_NAME) : nvsui.valName;
 				odsValueSeqs.add(new ODSValueSeq(entityType.getAttribute(attributeName), nvsui));
@@ -295,7 +296,7 @@ public class ODSQuery implements Query {
 
 	}
 
-	private final class ODSValueSeq {
+	private static final class ODSValueSeq {
 
 		private final String unit;
 		private final int length;
@@ -304,7 +305,7 @@ public class ODSQuery implements Query {
 
 		public ODSValueSeq(Attribute attribute, NameValueSeqUnitId nvsui) throws DataAccessException {
 			length = nvsui.value.flag.length;
-			unit = ""; // TODO UNIT MAPPING
+			unit = ""; // TODO UNIT MAPPING => attribute.getUnit();
 			values = ODSConverter.fromODSValueSeq(attribute, unit, nvsui.value);
 		}
 

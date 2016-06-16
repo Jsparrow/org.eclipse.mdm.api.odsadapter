@@ -22,7 +22,7 @@ import org.asam.ods.ElemId;
 import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.EntityCore;
+import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -37,10 +37,10 @@ final class InsertStatement extends BaseStatement {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InsertStatement.class);
 
 	private final Map<Class<? extends Entity>, List<Entity>> childrenMap = new HashMap<>();
-	private final List<EntityCore> entityCores = new ArrayList<>();
+	private final List<Core> cores = new ArrayList<>();
 	private final Map<String, List<Value>> insertMap = new HashMap<>();
 
-	protected InsertStatement(ODSTransaction transaction, EntityType entityType) {
+	InsertStatement(ODSTransaction transaction, EntityType entityType) {
 		super(transaction, entityType);
 	}
 
@@ -50,8 +50,8 @@ final class InsertStatement extends BaseStatement {
 		return execute();
 	}
 
-	public List<URI> executeWithCores(Collection<EntityCore> entityCores) throws AoException, DataAccessException {
-		entityCores.forEach(this::readEntityCore);
+	public List<URI> executeWithCores(Collection<Core> cores) throws AoException, DataAccessException {
+		cores.forEach(this::readEntityCore);
 		return execute();
 	}
 
@@ -88,23 +88,24 @@ final class InsertStatement extends BaseStatement {
 		for(int i = 0; i < elemIds.length; i++) {
 			long instanceID = ODSConverter.fromODSLong(elemIds[i].iid);
 			URI uri = new URI(getEntityType().getSourceName(), getEntityType().getName(), instanceID);
-			entityCores.get(i).setURI(uri);
+			cores.get(i).setURI(uri);
+			cores.get(i).setID(instanceID);
 			uris.add(uri);
 		}
 
 		return uris;
 	}
 
-	private void readEntityCore(EntityCore entityCore) {
-		if(!entityCore.getURI().getTypeName().equals(getEntityType().getName())) {
-			throw new IllegalArgumentException("Given entity core '" + entityCore.getURI().getTypeName()
-					+ "' is incompatible with current insert statement for entity type '" + getEntityType() + "'.");
+	private void readEntityCore(Core core) {
+		if(!core.getTypeName().equals(getEntityType().getName())) {
+			throw new IllegalArgumentException("Given entity core '" + core.getTypeName()
+			+ "' is incompatible with current insert statement for entity type '" + getEntityType() + "'.");
 		}
 
-		entityCores.add(entityCore);
+		cores.add(core);
 
 		// add all entity values
-		for(Value value : entityCore.getAllValues().values()) {
+		for(Value value : core.getAllValues().values()) {
 			/*
 			 * TODO: in case of ContextComponent instances we have to
 			 * add missing Value containers (this are those we have
@@ -126,19 +127,19 @@ final class InsertStatement extends BaseStatement {
 		}
 
 		// replace "empty" relation values with corresponding instance IDs
-		setRelationIDs(entityCore.getMutableStore().getCurrent());
-		setRelationIDs(entityCore.getPermanentStore().getCurrent());
+		setRelationIDs(core.getMutableStore().getCurrent());
+		setRelationIDs(core.getPermanentStore().getCurrent());
 
-		for(Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : entityCore.getChildrenStore().getCurrent().entrySet()) {
+		for(Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent().entrySet()) {
 			childrenMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(entry.getValue());
 		}
 
-		getTransaction().addCore(entityCore);
+		getTransaction().addCore(core);
 	}
 
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
-			if(relatedEntity.getURI().getID() < 1) {
+			if(relatedEntity.getID() < 1) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 
@@ -148,7 +149,7 @@ final class InsertStatement extends BaseStatement {
 				throw new IllegalStateException("Relation '" + relation + "' is incompatible with insert statement "
 						+ "for entity type '" + getEntityType() + "'");
 			}
-			relationValues.get(relationValues.size() - 1).set(relatedEntity.getURI().getID());
+			relationValues.get(relationValues.size() - 1).set(relatedEntity.getID());
 		}
 	}
 

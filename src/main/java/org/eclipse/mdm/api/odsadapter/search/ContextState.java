@@ -8,23 +8,17 @@
 
 package org.eclipse.mdm.api.odsadapter.search;
 
-import org.eclipse.mdm.api.base.model.ContextDescribable;
-import org.eclipse.mdm.api.base.model.Measurement;
-import org.eclipse.mdm.api.base.model.TestStep;
-
 enum ContextState {
 
-	ORDERED(TestStep.class),
-	MEASURED(Measurement.class);
+	ORDERED,
+	MEASURED;
 
-	private final Class<? extends ContextDescribable> type;
-
-	private ContextState(Class<? extends ContextDescribable> contextDescribableType) {
-		type = contextDescribableType;
+	public boolean isOrdered() {
+		return ORDERED == this;
 	}
 
-	Class<? extends ContextDescribable> getType() {
-		return type;
+	public boolean isMeasured() {
+		return MEASURED == this;
 	}
 
 }

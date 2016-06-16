@@ -17,7 +17,7 @@ import org.asam.ods.AoException;
 import org.asam.ods.ApplElemAccess;
 import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.EntityCore;
+import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -47,9 +47,9 @@ abstract class BaseStatement {
 
 	public abstract List<URI> execute(Collection<Entity> entities) throws AoException, DataAccessException;
 
-	protected EntityCore extract(Entity entity) {
+	protected Core extract(Entity entity) {
 		try {
-			return (EntityCore) GET_CORE_METHOD.invoke(entity);
+			return (Core) GET_CORE_METHOD.invoke(entity);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			throw new IllegalArgumentException("Given entity of type '" + entity.getClass().getSimpleName() +
 					"' does not extend '" + BaseEntity.class.getName() + "'");
@@ -65,7 +65,7 @@ abstract class BaseStatement {
 	}
 
 	protected ApplElemAccess getApplElemAccess() throws AoException {
-		return transaction.getApplElemAccess();
+		return transaction.getModelManager().getApplElemAccess();
 	}
 
 	protected ODSEntityType getEntityType() {

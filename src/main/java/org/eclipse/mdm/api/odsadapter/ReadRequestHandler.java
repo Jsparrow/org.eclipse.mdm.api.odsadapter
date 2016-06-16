@@ -69,7 +69,7 @@ final class ReadRequestHandler {
 				Channel channel = entry.getKey();
 				Unit unit = entry.getValue();
 				Column column = uniqueColumn(channel.getName(), vm.getColumns(channel.getName()));
-				if(!unit.getName().equals(channel.getUnit().getName())) {
+				if(!unit.nameMatches(channel.getUnit().getName())) {
 					column.setUnit(unit.getName());
 				}
 				columnList.add(column);
@@ -84,7 +84,7 @@ final class ReadRequestHandler {
 
 	private ValueMatrix getODSValueMatrix(ReadRequest readRequest) throws AoException, DataAccessException {
 		Entity entity = readRequest.getChannelGroup();
-		T_LONGLONG iid = ODSConverter.toODSLong(entity.getURI().getID());
+		T_LONGLONG iid = ODSConverter.toODSLong(entity.getID());
 		T_LONGLONG aid  = ((ODSEntityType) modelManager.getEntityType(entity)).getODSID();
 		return modelManager.getApplElemAccess().getValueMatrixInMode(new ElemId(aid, iid), ValueMatrixMode.CALCULATED);
 	}

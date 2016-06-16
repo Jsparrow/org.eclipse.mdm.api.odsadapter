@@ -8,12 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter;
 
-import java.util.ArrayList;
-
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.ejb.Stateful;
 
@@ -24,7 +19,9 @@ import org.asam.ods.AoSession;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.EntityManagerFactory;
 import org.eclipse.mdm.api.dflt.EntityManager;
+import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.omg.CORBA.ORB;
+import org.omg.CORBA.Object;
 import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContextExt;
 import org.omg.CosNaming.NamingContextExtHelper;
@@ -37,6 +34,8 @@ import org.slf4j.LoggerFactory;
 @Stateful
 public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
+	public static final String AUTH_TEMPLATE = "USER=%s,PASSWORD=%s,CREATE_COSESSION_ALLOWED=TRUE";
+
 	public static final String PARAM_NAMESERVICE = "nameservice";
 	public static final String PARAM_SERVICENAME = "servicename";
 	public static final String PARAM_USER = "user";
@@ -44,7 +43,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSEntityManagerFactory.class);
 
-	private ORB orb = null;
+	private final ORB orb = ORB.init(new String[]{}, System.getProperties());
 
 	/**
 	 * {@inheritDoc}
@@ -64,19 +63,10 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	 */
 	@Override
 	public EntityManager connect(Map<String, String> parameters) throws ConnectionException {
-		String odsNameService = getParameter(parameters, PARAM_NAMESERVICE);
-		String odsServiceName = getParameter(parameters, PARAM_SERVICENAME);
-		String odsUser = getParameter(parameters, PARAM_USER);
-		String odsPassword = getParameter(parameters, PARAM_PASSWORD);
+		try(NameService nameService = new NameService(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
+			String nameOfService = getParameter(parameters, PARAM_SERVICENAME).replace(".ASAM-ODS", "");
 
-		return new ODSEntityManager(connect2ODS(odsNameService, odsServiceName, odsUser, odsPassword));
-	}
-
-	private AoSession connect2ODS(String odsNameService, String odsServiceName, String odsUser,
-			String odsPassword) throws ConnectionException {
-		try {
-			AoFactory aoFactory = resolveAoFactorysService(odsServiceName, odsNameService);
-
+			AoFactory aoFactory = AoFactoryHelper.narrow(nameService.resolve(nameOfService, "ASAM-ODS"));
 			LOGGER.info("Connecting to ODS Server ...");
 
 			LOGGER.info("AoFactory name: {}", aoFactory.getName());
@@ -84,48 +74,15 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			LOGGER.info("AoFactory interface version: {}", aoFactory.getInterfaceVersion());
 			LOGGER.info("AoFactory type: {}", aoFactory.getType());
 
-			String connectionString = "USER=" + odsUser + ",PASSWORD=" + odsPassword  + ",CREATE_COSESSION_ALLOWED=TRUE";
-			AoSession aoSession = aoFactory.newSession(connectionString);
-
+			AoSession aoSession = aoFactory.newSession(String.format(AUTH_TEMPLATE,
+					getParameter(parameters, PARAM_USER),
+					getParameter(parameters, PARAM_PASSWORD)));
 			LOGGER.info("Connection to ODS server established.");
-			return aoSession;
+
+			return new ODSEntityManager(new ODSModelManager(aoSession));
 		} catch(AoException e) {
+			e.printStackTrace();
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
-		}
-	}
-
-	private AoFactory resolveAoFactorysService(String odsServiceName, String odsNameService) throws ConnectionException {
-		try {
-			NamingContextExt nameService = NamingContextExtHelper.narrow(getORB().string_to_object(odsNameService));
-			if(nameService == null) {
-				throw new ConnectionException("Unable to resolve NameService '" + odsNameService + "'.");
-			}
-
-			if(odsServiceName.contains("/")) {
-				String[] ncsStrings = odsServiceName.split("/");
-				List<NameComponent> ncList = new ArrayList<>();
-				for(String ncString : ncsStrings) {
-					NameComponent nc = new NameComponent(ncString, "");
-					ncList.add(nc);
-				}
-				NameComponent[] ncs = ncList.toArray(new NameComponent[ncList.size()]);
-				org.omg.CORBA.Object o = nameService.resolve(ncs);
-				return AoFactoryHelper.narrow(o);
-			}
-
-			if(odsServiceName.toUpperCase(Locale.ROOT).endsWith(".ASAM-ODS")) {
-				String serviceName = odsServiceName.replace(".ASAM-ODS", "");
-				NameComponent nc = new NameComponent(serviceName, "ASAM-ODS");
-				org.omg.CORBA.Object o = nameService.resolve(new NameComponent[]{nc});
-				return AoFactoryHelper.narrow(o);
-			}
-
-			NameComponent nc = new NameComponent(odsServiceName, "");
-			org.omg.CORBA.Object o = nameService.resolve(new NameComponent[]{nc});
-
-			return AoFactoryHelper.narrow(o);
-		} catch (NotFound | CannotProceed | InvalidName e) {
-			throw new ConnectionException("Unable to resolve AoFactory.", e);
 		}
 	}
 
@@ -138,16 +95,42 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		return value;
 	}
 
-	private ORB getORB() {
-		if(orb == null) {
-			Properties props = new Properties(System.getProperties());
-			//			props.put("org.omg.CORBA.ORBClass", "org.jacorb.orb.ORB");
-			//			props.put("org.omg.CORBA.ORBSingletonClass", "org.jacorb.orb.ORBSingleton");
+	private static final class NameService implements AutoCloseable {
 
-			orb = ORB.init(new String[]{}, props);
+		private final String path;
+
+		private NamingContextExt namingContext;
+		private ORB orb;
+
+		public NameService(ORB orb, String path) {
+			this.path = path;
+			this.orb = orb;
 		}
 
-		return orb;
+		public Object resolve(String id, String kind) throws  ConnectionException {
+			try {
+				return getNameService().resolve(new NameComponent[] { new NameComponent(id, kind) });
+			} catch (NotFound | CannotProceed | InvalidName e) {
+				throw new ConnectionException("Unable to resolve service '" + id + "." + kind + "'.", e);
+			}
+		}
+
+		private NamingContextExt getNameService() throws ConnectionException {
+			if(namingContext == null) {
+				namingContext = NamingContextExtHelper.narrow(orb.string_to_object(path));
+				if(namingContext == null) {
+					throw new ConnectionException("Unable to resolve NameService '" + path + "'.");
+				}
+			}
+
+			return namingContext;
+		}
+
+		@Override
+		public void close() throws ConnectionException {
+			getNameService()._release();
+		}
+
 	}
 
 }

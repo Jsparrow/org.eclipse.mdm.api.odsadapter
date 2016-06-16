@@ -10,7 +10,6 @@ package org.eclipse.mdm.api.odsadapter.transaction;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,21 +18,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
-import org.asam.ods.AoSession;
-import org.asam.ods.ApplElemAccess;
-import org.asam.ods.ApplicationStructure;
-import org.asam.ods.BaseStructure;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
+import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.EntityCore;
 import org.eclipse.mdm.api.base.model.ScalarType;
-import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
@@ -45,30 +38,33 @@ import org.slf4j.LoggerFactory;
 
 public final class ODSTransaction implements Transaction {
 
+	// TODO: it should be possible to a attach a listener
+	// -> progress notification updates while uploading files
+	// -> any other useful informations?!
+	// -> splitting of tasks into subtasks may be required...
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSTransaction.class);
 
+	// this one is stored in case of application model modifications
+	private final ODSModelManager parentModelManager;
+
+	// this one is used to access the application model and execute queries
+	// instance is decoupled from its parent
 	private final ODSModelManager modelManager;
-	private final AoSession aoSession;
 
 	private final String id = UUID.randomUUID().toString();
 
-	private final List<EntityCore> coresToApply = new ArrayList<>();
-
-	private ApplicationStructure applicationStructure;
-	private BaseStructure baseStructure;
-
-	private ApplElemAccess applElemAccess;
+	private final List<Core> modifiedCores = new ArrayList<>();
 
 	private CatalogManager catalogManager;
 
-	public ODSTransaction(ODSModelManager modelManager) throws AoException {
-		this.modelManager = modelManager;
-
-		aoSession = modelManager.getAoSession().createCoSession();
+	public ODSTransaction(ODSModelManager parentModelManager) throws AoException {
+		this.parentModelManager = parentModelManager;
+		modelManager = parentModelManager.newSession();
 
 		// TODO track duration
 
-		aoSession.startTransaction();
+		modelManager.getAoSession().startTransaction();
 		LOGGER.debug("Transaction '{}' started.", id);
 	}
 
@@ -77,7 +73,7 @@ public final class ODSTransaction implements Transaction {
 	public <T extends Entity> void create(Collection<T> entities) throws DataAccessException {
 		if(entities.isEmpty()) {
 			return;
-		} else if(entities.stream().filter(e -> e.getURI().getID() > 0).findAny().isPresent()) {
+		} else if(entities.stream().filter(e -> e.getID() > 0).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is already persisted.");
 		}
 
@@ -112,7 +108,7 @@ public final class ODSTransaction implements Transaction {
 	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
 		if(entities.isEmpty()) {
 			return;
-		} else if(entities.stream().filter(e -> e.getURI().getID() < 1).findAny().isPresent()) {
+		} else if(entities.stream().filter(e -> e.getID() < 1).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is not yet persisted.");
 		}
 
@@ -135,14 +131,14 @@ public final class ODSTransaction implements Transaction {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends Deletable> List<URI> delete(Collection<T> entities) throws DataAccessException {
+	public <T extends Deletable> void delete(Collection<T> entities) throws DataAccessException {
 		if(entities.isEmpty()) {
-			return Collections.emptyList();
+			return;
 		}
 
 		// TODO if entity instanceof Versionable -> VersionState.EDITING (OLD STATE NOT CURRENT!)!
 
-		List<T> filteredEntities = entities.stream().filter(e -> e.getURI().getID() > 0).collect(Collectors.toList());
+		List<T> filteredEntities = entities.stream().filter(e -> e.getID() > 0).collect(Collectors.toList());
 
 		try {
 			Map<Class<?>, List<T>> entitiesByClassType = filteredEntities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
@@ -175,7 +171,7 @@ public final class ODSTransaction implements Transaction {
 						.collect(ArrayList::new, List::addAll, List::addAll));
 			}
 
-			return executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
+			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
 		} catch (AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
 		}
@@ -217,13 +213,14 @@ public final class ODSTransaction implements Transaction {
 			/*
 			 * TODO upload of files has to be done BEFORE creating / updating instances
 			 */
-			aoSession.commitTransaction();
+			modelManager.getAoSession().commitTransaction();
 
 			// commit succeed -> apply changes in entity cores
-			coresToApply.forEach(EntityCore::apply);
+			modifiedCores.forEach(Core::apply);
 
 			if(catalogManager != null) {
-				modelManager.reloadApplicationModel();
+				// application model has been modified -> reload
+				parentModelManager.reloadApplicationModel();
 			}
 			/*
 			 * TODO trigger an delete of removed file links and log in case of errors (Delete- or Update-Statements)
@@ -240,7 +237,7 @@ public final class ODSTransaction implements Transaction {
 	@Override
 	public void abort() {
 		try {
-			aoSession.abortTransaction();
+			modelManager.getAoSession().abortTransaction();
 
 			/*
 			 * TODO in case of uploaded files trigger an delete operation to remove them from the server
@@ -256,44 +253,15 @@ public final class ODSTransaction implements Transaction {
 		}
 	}
 
-	void addCore(EntityCore core) {
-		coresToApply.add(core);
-	}
-
-	// TODO is it possible to simplify this?!
-	Query createQuery() throws AoException {
-		return modelManager.createQuery(getApplElemAccess());
+	void addCore(Core core) {
+		modifiedCores.add(core);
 	}
 
 	ODSModelManager getModelManager() {
 		return modelManager;
 	}
 
-	ApplicationStructure getApplicationStructure() throws AoException {
-		if(applicationStructure == null) {
-			applicationStructure = aoSession.getApplicationStructure();
-		}
-
-		return applicationStructure;
-	}
-
-	BaseStructure getBaseStructure() throws AoException {
-		if(baseStructure == null) {
-			baseStructure = aoSession.getBaseStructure();
-		}
-
-		return baseStructure;
-	}
-
-	ApplElemAccess getApplElemAccess() throws AoException {
-		if(applElemAccess == null) {
-			applElemAccess = aoSession.getApplElemAccess();
-		}
-
-		return applElemAccess;
-	}
-
-	CatalogManager getCatalogManager() {
+	private CatalogManager getCatalogManager() {
 		if(catalogManager == null) {
 			catalogManager = new CatalogManager(this);
 		}
@@ -301,37 +269,24 @@ public final class ODSTransaction implements Transaction {
 		return catalogManager;
 	}
 
-	private <T extends Entity> List<URI> executeStatements(Function<EntityType, BaseStatement> statementFactory, Collection<T> entities)
+	private <T extends Entity> void executeStatements(Function<EntityType, BaseStatement> statementFactory, Collection<T> entities)
 			throws AoException, DataAccessException {
-		List<URI> uris = new ArrayList<>();
 		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(modelManager::getEntityType));
 		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
-			uris.addAll(statementFactory.apply(entry.getKey()).execute(entry.getValue()));
+			statementFactory.apply(entry.getKey()).execute(entry.getValue());
 		}
-
-		return uris;
 	}
 
 	private void closeSession() {
 		try {
-			if(applElemAccess != null) {
-				applElemAccess._release();
+			if(catalogManager != null) {
+				catalogManager.clear();
 			}
 
-			if(applicationStructure != null) {
-				applicationStructure._release();
-			}
-
-			if(baseStructure != null) {
-				baseStructure._release();
-			}
-
-			aoSession.close();
+			modelManager.close();
 			LOGGER.debug("Transaction '{}' closed.", id);
 		} catch(AoException e) {
 			LOGGER.error("Unable to close transaction '" + id + "' due to: " + e.reason, e);
-		} finally {
-			aoSession._release();
 		}
 	}
 

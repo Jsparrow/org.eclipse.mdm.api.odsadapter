@@ -44,8 +44,8 @@ final class SearchableNode implements Searchable {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder("Searchable(").append("entityType = ").append(entityType);
-		sb.append(", implicit = ").append(isImplicit());
+		StringBuilder sb = new StringBuilder("Searchable(").append("EntityType = ").append(entityType);
+		sb.append(", Implicit = ").append(isImplicit());
 
 		if(!isLeaf()) {
 			sb.append(", relatedSearchables = ").append(

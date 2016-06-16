@@ -30,14 +30,14 @@ import org.eclipse.mdm.api.base.query.Searchable;
 
 final class MergedSearchQuery<T extends BaseEntitySearchQuery> implements SearchQuery {
 
-	private final Class<? extends Entity> type;
+	private final Class<? extends Entity> entityClass;
 	private final ModelManager modelManager;
 
 	private final T byResult;
 	private final T byOrder;
 
-	public MergedSearchQuery(Class<? extends Entity> type, ModelManager modelManager, Function<ContextState, T> factory) {
-		this.type = type;
+	public MergedSearchQuery(Class<? extends Entity> entityClass, ModelManager modelManager, Function<ContextState, T> factory) {
+		this.entityClass = entityClass;
 		this.modelManager = modelManager;
 
 		byResult = factory.apply(ContextState.MEASURED);
@@ -77,7 +77,7 @@ final class MergedSearchQuery<T extends BaseEntitySearchQuery> implements Search
 	}
 
 	private List<Result> mergeResults(List<Result> results1, List<Result> results2) {
-		EntityType typeEntity = modelManager.getEntityType(type);
+		EntityType typeEntity = modelManager.getEntityType(entityClass);
 		return Stream.concat(results1.stream(), results2.stream())
 				// group by instance ID and merge grouped results
 				.collect(groupingBy(r -> r.getRecord(typeEntity).getID(), reducing(Result::merge)))

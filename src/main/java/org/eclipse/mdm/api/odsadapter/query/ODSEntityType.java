@@ -93,12 +93,6 @@ public final class ODSEntityType implements EntityType {
 		return Collections.unmodifiableList(relations);
 	}
 
-	@Override
-	@Deprecated // TODO will be removed..
-	public Optional<Relation> getParentRelation() {
-		return getRelations(Relationship.FATHER_CHILD).stream().filter(r -> ((ODSRelation) r).isIncomming(Relationship.FATHER_CHILD)).findAny();
-	}
-
 	private Relation getParentRelation(EntityType parentEntityType) {
 		return getParentRelations().stream()
 				.filter(et -> et.getTarget().equals(parentEntityType)).findAny()
@@ -118,7 +112,9 @@ public final class ODSEntityType implements EntityType {
 				.collect(Collectors.toList());
 	}
 
+
 	@Override
+	// TODO: Rename to outgoing Relations
 	public List<Relation> getInfoRelations() {
 		return getRelations(Relationship.INFO).stream().filter(r -> ((ODSRelation) r).isIncomming(Relationship.INFO))
 				.collect(Collectors.toList());
@@ -133,15 +129,7 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public Relation getRelation(EntityType target) {
 		Relation relation = relationsByEntity.get(target);
-		if(relation == null) {
-			/*
-			 * TODO: throw an exception...
-			 */
-			return getParentRelation(target);
-			// TODO			throw new IllegalArgumentException("Relation from '" + this + "' to '" + target + "' not found!");
-		}
-
-		return relation;
+		return relation == null ? getParentRelation(target) : relation;
 	}
 
 	@Override

@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
@@ -36,7 +37,6 @@ import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
-import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,12 +66,12 @@ final class DeleteStatement extends BaseStatement {
 	private Map<String, Map<String, URI>> map = new LinkedHashMap<>();
 	private List<DeleteStatement> forkedStatements = new ArrayList<>();
 
-	protected DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDeleteFeature) {
+	DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDeleteFeature) {
 		super(transaction, entityType);
 		this.useAutoDeleteFeature = useAutoDeleteFeature;
-		uutEntityType = getModelManager().getEntityType(ContextType.UNITUNDERTEST);
-		tsqEntityType = getModelManager().getEntityType(ContextType.TESTSEQUENCE);
-		teqEntityType = getModelManager().getEntityType(ContextType.TESTEQUIPMENT);
+		uutEntityType = getModelManager().getEntityType(ContextRoot.class, ContextType.UNITUNDERTEST);
+		tsqEntityType = getModelManager().getEntityType(ContextRoot.class, ContextType.TESTSEQUENCE);
+		teqEntityType = getModelManager().getEntityType(ContextRoot.class, ContextType.TESTEQUIPMENT);
 
 		initialize(getEntityType());
 	}
@@ -165,7 +165,7 @@ final class DeleteStatement extends BaseStatement {
 
 	private List<Result> executeChildrenQuery(EntityType parentEntityType, URI parentURI, EntityType childEntityType)
 			throws AoException, DataAccessException {
-		return getTransaction().createQuery().select(childEntityType.getIDAttribute())
+		return getTransaction().getModelManager().createQuery().select(childEntityType.getIDAttribute())
 				.join(parentEntityType, childEntityType).fetch(Filter.idOnly(parentEntityType, parentURI.getID()));
 	}
 
@@ -200,7 +200,9 @@ final class DeleteStatement extends BaseStatement {
 	}
 
 	private boolean isDeleteMeasurementContext(List<URI> measurementURIs) {
-		Map<String, URI> measurementURIMap = map.get(ODSUtils.getAEName(Measurement.class));
+		// TODO replace measurementEntityType ?
+		EntityType measurementEntityType = getTransaction().getModelManager().getEntityType(Measurement.class);
+		Map<String, URI> measurementURIMap = map.get(measurementEntityType.getName());
 		for(URI measurementURI : measurementURIs) {
 			if(!measurementURIMap.containsKey(measurementURI)) {
 				return false;
@@ -212,7 +214,7 @@ final class DeleteStatement extends BaseStatement {
 	private List<URI> locateMeasurementSiblings(EntityType measurementEntityType, URI uri) throws AoException, DataAccessException {
 		//locate TestStep
 		EntityType testStepEntityType = getModelManager().getEntityType(TestStep.class);
-		Query testStepQuery = getTransaction().createQuery();
+		Query testStepQuery = getTransaction().getModelManager().createQuery();
 		testStepQuery.select(testStepEntityType.getIDAttribute());
 		testStepQuery.join(measurementEntityType, testStepEntityType);
 		Optional<Result> oResult = testStepQuery.fetchSingleton(Filter.idOnly(measurementEntityType, uri.getID()));
@@ -223,7 +225,7 @@ final class DeleteStatement extends BaseStatement {
 
 		Long testStepID = oResult.get().getRecord(testStepEntityType).getID();
 
-		Query measurementsQuery = getTransaction().createQuery();
+		Query measurementsQuery = getTransaction().getModelManager().createQuery();
 		measurementsQuery.select(measurementEntityType.getIDAttribute());
 		measurementsQuery.join(measurementEntityType, testStepEntityType);
 		List<Result> results = measurementsQuery.fetch(Filter.idOnly(testStepEntityType, testStepID));
@@ -248,7 +250,7 @@ final class DeleteStatement extends BaseStatement {
 
 	private Optional<Result> executeInfoQuery(EntityType entityType, URI uri, EntityType infoEntityType)
 			throws AoException, DataAccessException {
-		return getTransaction().createQuery().selectID(infoEntityType).join(entityType, infoEntityType)
+		return getTransaction().getModelManager().createQuery().selectID(infoEntityType).join(entityType, infoEntityType)
 				.fetchSingleton(Filter.idOnly(entityType, uri.getID()));
 	}
 

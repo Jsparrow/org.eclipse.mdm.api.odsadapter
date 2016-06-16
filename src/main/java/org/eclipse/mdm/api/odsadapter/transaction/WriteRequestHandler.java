@@ -15,14 +15,13 @@ import java.util.Map;
 import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.EntityCore;
+import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.DefaultEntityCore;
+import org.eclipse.mdm.api.base.query.DefaultCore;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
-import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
 public final class WriteRequestHandler {
 
@@ -35,7 +34,7 @@ public final class WriteRequestHandler {
 	private static final String AE_LC_ATTR_FLAGS = "Flags";
 	private static final String AE_LC_ATTR_GLOBAL_FLAG = "GlobalFlag";
 
-	private final List<EntityCore> entityCores = new ArrayList<>();
+	private final List<Core> cores = new ArrayList<>();
 	private final EntityType localColumnEntityType;
 	private final InsertStatement insertStatement;
 
@@ -45,22 +44,22 @@ public final class WriteRequestHandler {
 	}
 
 	public void addRequest(WriteRequest writeRequest) throws DataAccessException {
-		entityCores.add(createCore(writeRequest));
+		cores.add(createCore(writeRequest));
 	}
 
 	public void execute() throws AoException, DataAccessException {
-		insertStatement.executeWithCores(entityCores);
+		insertStatement.executeWithCores(cores);
 	}
 
-	private EntityCore createCore(WriteRequest writeRequest) throws DataAccessException {
-		EntityCore entityCore = new DefaultEntityCore(localColumnEntityType);
+	private Core createCore(WriteRequest writeRequest) throws DataAccessException {
+		Core core = new DefaultCore(localColumnEntityType);
 
-		entityCore.getPermanentStore().setParent(writeRequest.getChannelGroup(), true);
-		entityCore.getMutableStore().set(writeRequest.getChannel());
+		core.getPermanentStore().set(writeRequest.getChannelGroup());
+		core.getMutableStore().set(writeRequest.getChannel());
 
-		Map<String, Value> values = entityCore.getValues();
+		Map<String, Value> values = core.getValues();
 		values.get(Entity.ATTR_NAME).set(writeRequest.getChannel().getName());
-		values.get(Entity.ATTR_MIMETYPE).set(ODSUtils.DEFAULT_MIMETYPES.get(localColumnEntityType.getName()));
+		values.get(Entity.ATTR_MIMETYPE).set("application/x-asam.aolocalcolumn");
 		values.get(AE_LC_ATTR_INDEPENDENT).set(ODSConverter.toODSValidFlag(writeRequest.isIndependent()));
 		values.get(AE_LC_ATTR_RAWDATATYPE).set(writeRequest.getRawScalarType());
 		values.get(AE_LC_ATTR_REPRESENTATION).set(writeRequest.getSequenceRepresentation());
@@ -109,7 +108,7 @@ public final class WriteRequestHandler {
 		//			throw new DataAccessException("");
 		//		}
 
-		return entityCore;
+		return core;
 	}
 
 }

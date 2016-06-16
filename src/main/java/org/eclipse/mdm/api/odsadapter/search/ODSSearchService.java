@@ -29,18 +29,20 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.base.query.Searchable;
+import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
+import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 public final class ODSSearchService implements SearchService {
 
-	private final Map<Class<? extends Entity>, SearchQuery> searchQueriesByType = new HashMap<>();
+	private final Map<Class<? extends Entity>, SearchQuery> searchQueries = new HashMap<>();
 
-	private final EntityLoader entityLoader;
 	private final ODSModelManager modelManager;
+	private final EntityLoader entityLoader;
 
 	public ODSSearchService(ODSModelManager modelManager, EntityLoader entityLoader) {
-		this.entityLoader = entityLoader;
 		this.modelManager = modelManager;
+		this.entityLoader = entityLoader;
 
 		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, c));
 		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(modelManager, c));
@@ -50,63 +52,60 @@ public final class ODSSearchService implements SearchService {
 
 	@Override
 	public List<Class<? extends Entity>> listSearchableTypes() {
-		return new ArrayList<>(searchQueriesByType.keySet());
+		return new ArrayList<>(searchQueries.keySet());
 	}
 
 	@Override
-	public List<EntityType> listEntityTypes(Class<? extends Entity> type) {
-		return findSearchQuery(type).listEntityTypes();
+	public List<EntityType> listEntityTypes(Class<? extends Entity> entityClass) {
+		return findSearchQuery(entityClass).listEntityTypes();
 	}
 
 	@Override
-	public Searchable getSearchableRoot(Class<? extends Entity> type) {
-		return findSearchQuery(type).getSearchableRoot();
+	public Searchable getSearchableRoot(Class<? extends Entity> entityClass) {
+		return findSearchQuery(entityClass).getSearchableRoot();
 	}
 
 	@Override
-	public List<Value> getFilterValues(Class<? extends Entity> type, Attribute attribute, Filter filter) throws DataAccessException {
-		return findSearchQuery(type).getFilterValues(attribute, filter);
+	public List<Value> getFilterValues(Class<? extends Entity> entityClass, Attribute attribute, Filter filter) throws DataAccessException {
+		return findSearchQuery(entityClass).getFilterValues(attribute, filter);
 	}
 
 	@Override
-	public <T extends Entity> Map<T, List<Record>> fetchComplete(Class<T> type, List<EntityType> entityTypes, Filter filter) throws DataAccessException {
-		return createResult(type, findSearchQuery(type).fetchComplete(entityTypes, filter));
+	public <T extends Entity> Map<T, List<Record>> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes, Filter filter) throws DataAccessException {
+		return createResult(entityClass, findSearchQuery(entityClass).fetchComplete(entityTypes, filter));
 	}
 
 	@Override
-	public <T extends Entity> Map<T, List<Record>> fetch(Class<T> type, List<Attribute> attributes, Filter filter) throws DataAccessException {
-		return createResult(type, findSearchQuery(type).fetch(attributes, filter));
+	public <T extends Entity> Map<T, List<Record>> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter) throws DataAccessException {
+		return createResult(entityClass, findSearchQuery(entityClass).fetch(attributes, filter));
 	}
 
-	private <T extends Entity> Map<T, List<Record>> createResult(Class<T> type, List<Result> results) throws DataAccessException {
-		List<EntityType> relatedEntityTypes = modelManager.getImplicitEntityTypes(type);
-		EntityType entityType = modelManager.getEntityType(type);
-
-		Map<Long, List<Record>> resultsByEntityID = new HashMap<>();
+	private <T extends Entity> Map<T, List<Record>> createResult(Class<T> entityClass, List<Result> results) throws DataAccessException {
+		EntityType entityType = modelManager.getEntityType(entityClass);
+		Map<Long, List<Record>> recordsByEntityID = new HashMap<>();
 		for(Result result : results) {
-			List<Record> relatedRecords = result.retainAll(relatedEntityTypes);
-			resultsByEntityID.put(result.getRecord(entityType).getID(), relatedRecords);
+			recordsByEntityID.put(result.getRecord(entityType).getID(), result.getRecords());
 		}
 
 		Map<T, List<Record>> resultsByEntity = new HashMap<>();
-		for(T entity : entityLoader.loadAll(type, resultsByEntityID.keySet())) {
-			resultsByEntity.put(entity, resultsByEntityID.get(entity.getURI().getID()));
+		for(T entity : entityLoader.loadAll(new Key<>(entityClass), recordsByEntityID.keySet())) {
+			resultsByEntity.put(entity, recordsByEntityID.get(entity.getID()));
 		}
 
 		return resultsByEntity;
 	}
 
-	private SearchQuery findSearchQuery(Class<? extends Entity> type) {
-		SearchQuery searchQuery = searchQueriesByType.get(type);
+	private SearchQuery findSearchQuery(Class<? extends Entity> entityClass) {
+		SearchQuery searchQuery = searchQueries.get(entityClass);
 		if(searchQuery == null) {
-			throw new IllegalArgumentException("Search query for type '" + type.getSimpleName() + "' not found.");
+			throw new IllegalArgumentException("Search query for type '" + entityClass.getSimpleName() + "' not found.");
 		}
 
 		return searchQuery;
 	}
 
-	private void registerMergedSearchQuery(Class<? extends Entity> type, Function<ContextState, BaseEntitySearchQuery> factory) {
-		searchQueriesByType.put(type, new MergedSearchQuery<>(type, modelManager, factory));
+	private void registerMergedSearchQuery(Class<? extends Entity> entityClass, Function<ContextState, BaseEntitySearchQuery> factory) {
+		searchQueries.put(entityClass, new MergedSearchQuery<>(entityClass, modelManager, factory));
 	}
 
 }

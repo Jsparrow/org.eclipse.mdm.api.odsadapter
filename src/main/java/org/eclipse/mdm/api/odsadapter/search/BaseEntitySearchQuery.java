@@ -11,19 +11,22 @@ package org.eclipse.mdm.api.odsadapter.search;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.reducing;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.eclipse.mdm.api.base.model.ContextDescribable;
+import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.Measurement;
+import org.eclipse.mdm.api.base.model.Test;
+import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Aggregation;
 import org.eclipse.mdm.api.base.query.Attribute;
@@ -37,41 +40,57 @@ import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 import org.eclipse.mdm.api.base.query.Searchable;
+import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
+import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
-import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
+import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
+import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinNode;
 
 abstract class BaseEntitySearchQuery implements SearchQuery {
 
-	private final Map<String, DependencyRelation> dependencyRelations = new HashMap<>();
+	private final Set<String> implicitTypeNames = new HashSet<>();
 
-	private final Map<String, List<String>> dependencyMap = new HashMap<>();
+	private final JoinTree joinTree = new JoinTree();
+	private final Class<? extends Entity> entityClass;
+
 	private final ODSModelManager modelManager;
 
-	private final Class<? extends Entity> root;
-	private final Class<? extends Entity> type;
-
-	protected BaseEntitySearchQuery(ODSModelManager modelManager, Class<? extends Entity> type,
-			Class<? extends Entity> root, Optional<ContextState> contextState) {
+	protected BaseEntitySearchQuery(ODSModelManager modelManager, Class<? extends Entity> entityClass) {
 		this.modelManager = modelManager;
-		this.root = root;
-		this.type = type;
+		this.entityClass = entityClass;
 
-		contextState.ifPresent(c -> addDependencyToContext(c.getType()));
+		EntityConfig<?> entityConfig = modelManager.getEntityConfig(new Key<>(entityClass));
+		EntityType source = entityConfig.getEntityType();
+
+		implicitTypeNames.add(source.getName());
+
+		entityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType)
+		.forEach(entityType -> {
+			implicitTypeNames.add(entityType.getName());
+			joinTree.addNode(source, entityType, true, Join.OUTER);
+		});
+
+		entityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType)
+		.forEach(entityType -> {
+			implicitTypeNames.add(entityType.getName());
+			joinTree.addNode(source, entityType, true, Join.INNER);
+		});
 	}
 
 	@Override
 	public final List<EntityType> listEntityTypes() {
-		return dependencyRelations.entrySet().stream().flatMap(e -> Stream.of(e.getKey(), e.getValue().source))
-				.distinct().map(modelManager::getEntityType).collect(Collectors.toList());
+		return joinTree.getNodeNames().stream().map(modelManager::getEntityType).collect(Collectors.toList());
 	}
 
 	@Override
 	public final Searchable getSearchableRoot() {
-		Map<String, SearchableNode> nodes = new HashMap<>();
-		List<EntityType> implicitEntityTypes = modelManager.getImplicitEntityTypes(type);
-		Function<String, SearchableNode> factory = k -> createSearchable(k, implicitEntityTypes);
+		Function<String, SearchableNode> factory = k -> {
+			EntityType entityType = modelManager.getEntityType(k);
+			return new SearchableNode(entityType, implicitTypeNames.contains(entityType.getName()));
+		};
 
-		for(Entry<String, List<String>> entry : dependencyMap.entrySet()) {
+		Map<String, SearchableNode> nodes = new HashMap<>();
+		for(Entry<String, List<String>> entry : joinTree.getTree().entrySet()) {
 			SearchableNode parent = nodes.computeIfAbsent(entry.getKey(), factory);
 
 			for(String childName : entry.getValue()) {
@@ -79,47 +98,96 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 			}
 		}
 
-		return nodes.get(ODSUtils.getAEName(root));
+		return nodes.get(modelManager.getEntityType(Test.class).getName());
 	}
 
 	@Override
 	public final List<Value> getFilterValues(Attribute attribute, Filter filter) throws DataAccessException {
 		Query query = modelManager.createQuery().select(attribute, Aggregation.DISTINCT).group(attribute);
+
+		// add required joins
+		filter.stream().filter(FilterItem::isCondition).map(FilterItem::getCondition)
+		.forEach(c -> {
+			addJoins(query, c.getAttribute().getEntityType());
+		});
+
 		return query.fetch(filter).stream().map(r -> r.getValue(attribute)).collect(Collectors.toList());
 	}
 
 	@Override
 	public final List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) throws DataAccessException {
-		Query query = modelManager.createQuery(type);
-		entityTypes.forEach(e -> addJoins(query, e));
-		/**
-		 * TODO remove implicit selected / related entity types? e.g.: Test & User
-		 */
-		query.selectAll(entityTypes);
+		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
+
+		// add required joins
+		entityTypes.stream().filter(et -> !implicitTypeNames.contains(et.getName()))
+		.forEach(entityType -> {
+			addJoins(query, entityType);
+			query.selectAll(entityType);
+		});
+
 		return fetch(query, filter);
 	}
 
 	@Override
 	public final List<Result> fetch(List<Attribute> attributes, Filter filter) throws DataAccessException {
-		Query query = modelManager.createQuery(type);
-		attributes.forEach(a -> addJoins(query, a.getEntityType()));
-		/**
-		 * TODO remove implicit selected / related attributes? e.g.: Test & User
-		 */
-		query.select(attributes);
+		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
+
+		// add required joins
+		attributes.stream().filter(a -> !implicitTypeNames.contains(a.getEntityType().getName()))
+		.forEach(attribute -> {
+			addJoins(query, attribute.getEntityType());
+			query.select(attribute);
+		});
+
 		return fetch(query, filter);
 	}
 
-	protected final void addDependency(Class<? extends Entity> targetType, Class<? extends Entity> sourceType,
-			boolean viaParent, Join join) {
-		addDependency(ODSUtils.getAEName(targetType), ODSUtils.getAEName(sourceType), viaParent, join);
+	protected final void addJoinConfig(JoinConfig joinConfig) {
+		EntityConfig<?> targetEntityConfig = modelManager.getEntityConfig(new Key<>(joinConfig.target));
+		EntityType target = targetEntityConfig.getEntityType();
+
+		// add dependency source to target
+		joinTree.addNode(modelManager.getEntityType(joinConfig.source), target, joinConfig.viaParent, Join.INNER);
+
+		// add target's optional dependencies
+		targetEntityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType)
+		.forEach(entityType -> {
+			joinTree.addNode(target, entityType, true, Join.OUTER);
+		});
+
+		// add target's mandatory dependencies
+		targetEntityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType)
+		.forEach(entityType -> {
+			joinTree.addNode(target, entityType, true, Join.INNER);
+		});
+	}
+
+	protected final void addJoinConfig(ContextState contextState) {
+		if(contextState == null) {
+			// nothing to do
+			return;
+		}
+
+		Class<? extends Entity> source = contextState.isOrdered() ? TestStep.class : Measurement.class;
+		for(ContextType contextType : ContextType.values()) {
+			EntityType rootEntityType = modelManager.getEntityType(ContextRoot.class, contextType);
+			for(Relation componentRelation : rootEntityType.getChildRelations()) {
+				joinTree.addNode(componentRelation.getSource(), componentRelation.getTarget(), true, Join.OUTER);
+
+				for(Relation sensorRelation : componentRelation.getTarget().getChildRelations()) {
+					joinTree.addNode(sensorRelation.getSource(), sensorRelation.getTarget(), true, Join.OUTER);
+				}
+			}
+
+			joinTree.addNode(modelManager.getEntityType(source), rootEntityType, true, Join.OUTER);
+		}
 	}
 
 	private List<Result> fetch(Query query, Filter filter) throws DataAccessException {
 		filter.stream().filter(FilterItem::isCondition).map(FilterItem::getCondition)
 		.forEach(c -> addJoins(query, c.getAttribute().getEntityType()));
 
-		EntityType entityType = modelManager.getEntityType(type);
+		EntityType entityType = modelManager.getEntityType(entityClass);
 		return query.order(entityType.getIDAttribute()).fetch(filter).stream()
 				// group by instance ID and merge grouped results
 				.collect(groupingBy(r -> r.getRecord(entityType).getID(), reducing(Result::merge)))
@@ -127,63 +195,15 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 				.values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
 
-	private final void addDependencyToContext(Class<? extends ContextDescribable> type) {
-		for(ContextType contextType : ContextType.values()) {
-			EntityType contextRootEntityType = modelManager.getEntityType(contextType);
-			for(Relation relation : contextRootEntityType.getChildRelations()) {
-				addDependency(relation.getTarget().getName(), relation.getSource().getName(), true, Join.OUTER);
-
-				for(Relation sensorRelation : relation.getTarget().getChildRelations()) {
-					addDependency(sensorRelation.getTarget().getName(), sensorRelation.getSource().getName(), true, Join.OUTER);
-				}
-			}
-
-			addDependency(contextRootEntityType.getName(), ODSUtils.getAEName(type), true, Join.OUTER);
-		}
-	}
-
 	private void addJoins(Query query, EntityType entityType) {
 		if(query.isQueried(entityType)) {
 			return;
 		}
 
-		DependencyRelation dependencyRelation = dependencyRelations.get(entityType.getName());
-		if(dependencyRelation == null) {
-			throw new IllegalArgumentException("Missing join relation for entity type '" + entityType + "'.");
-		}
-
-		EntityType sourceEntityType = modelManager.getEntityType(dependencyRelation.source);
+		JoinNode joinNode = joinTree.getJoinNode(entityType.getName());
+		EntityType sourceEntityType = modelManager.getEntityType(joinNode.source);
 		addJoins(query, sourceEntityType);
-		query.join(sourceEntityType.getRelation(entityType), dependencyRelation.join);
-	}
-
-	private void addDependency(String targetName, String sourceName, boolean viaParent, Join join) {
-		if(dependencyRelations.put(targetName, new DependencyRelation(sourceName, join)) != null) {
-			throw new IllegalArgumentException("Target entity type is not allowed to depend on multiple source entity types.");
-		}
-
-		if(viaParent) {
-			dependencyMap.computeIfAbsent(sourceName, k -> new ArrayList<>()).add(targetName);
-		} else {
-			dependencyMap.computeIfAbsent(targetName, k -> new ArrayList<>()).add(sourceName);
-		}
-	}
-
-	private SearchableNode createSearchable(String name, List<EntityType> implicitEntityTypes) {
-		EntityType entityType = modelManager.getEntityType(name);
-		return new SearchableNode(entityType, implicitEntityTypes.contains(entityType));
-	}
-
-	private static final class DependencyRelation {
-
-		private final String source;
-		private final Join join;
-
-		private DependencyRelation(String source, Join join) {
-			this.source = source;
-			this.join = join;
-		}
-
+		query.join(sourceEntityType.getRelation(entityType), joinNode.join);
 	}
 
 }
