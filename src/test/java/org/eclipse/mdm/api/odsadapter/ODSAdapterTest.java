@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.mdm.api.base.ConnectionException;
-import org.eclipse.mdm.api.base.BaseEntityManager;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
 import org.eclipse.mdm.api.base.massdata.ReadRequestIterable;
@@ -33,10 +32,22 @@ import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.dflt.EntityManager;
+import org.eclipse.mdm.api.dflt.model.DefaultEntityFactory;
+import org.eclipse.mdm.api.dflt.model.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class ODSAdapterTest {
+
+	/*
+	 * ATTENTION:
+	 * ==========
+	 *
+	 * To run this test make sure the target service is running a
+	 * MDM default model and any database constraint which enforces
+	 * a relation of Test to a parent entity is deactivated!
+	 */
 
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
 	private static final String NAME_SERVICE = "corbaloc::1.2@<SERVER_IP>:2809/NameService";
@@ -47,7 +58,7 @@ public class ODSAdapterTest {
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
 
-	private static BaseEntityManager entityManager;
+	private static EntityManager entityManager;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
@@ -67,41 +78,43 @@ public class ODSAdapterTest {
 
 	@org.junit.Test
 	public void runtTestScript() throws DataAccessException {
-		createTestData();
-		updateTestData();
-		createMeasurementData();
-		readMeasurementData();
-		deleteTestData();
+		try {
+			createTestData();
+			readMeasurementData();
+			updateTestData();
+		} finally {
+			deleteTestData();
+		}
 	}
 
 	private void createTestData() throws DataAccessException {
 		Transaction transaction = entityManager.startTransaction();
+
+		Status testStatus = entityManager.loadAllStatus(Test.class).get(0);
+		Status testStepStatus = entityManager.loadAllStatus(TestStep.class).get(0);
 
 		try {
 			int numberOfTests = 2; 			// number of tests
 			int numberOfTestSteps = 3; 		// number of test steps per test
 			int numberOfMeasurements = 1; 	// number of measurements per test step
 			int numberOfChannels = 9;		// number of channels per measurement
-			int numberOfChannelGroups = 1;  // number of channel groups per measurement
 			Quantity quantity = getQuantity();
 
-			EntityFactory entityFactory = entityManager.getEntityFactory().get();
+			DefaultEntityFactory entityFactory = (DefaultEntityFactory)entityManager.getEntityFactory().get();
 
 			List<Test> tests = new ArrayList<>();
+			List<WriteRequest> writeRequests = new ArrayList<>();
 			for(int i = 0; i < numberOfTests; i++) {
-				tests.add(entityFactory.createTest(USER + "_Test_" + i, entityManager.loadLoggedOnUser().get()));
+				tests.add(entityFactory.createTest(USER + "_Test_" + i, testStatus, entityManager.loadLoggedOnUser().get()));
 			}
 
-			transaction.create(tests);
 
 			// create test steps for each test
 			for (Test test : tests) {
 				List<TestStep> testSteps = new ArrayList<>();
 				for(int i = 0; i < numberOfTestSteps; i++) {
-					testSteps.add(entityFactory.createTestStep(USER + "_TestStep_" + i, test));
+					testSteps.add(entityFactory.createTestStep(USER + "_TestStep_" + i, test, testStepStatus));
 				}
-
-				transaction.create(testSteps);
 
 				// create measurements for each test step
 				for (TestStep testStep : testSteps) {
@@ -109,8 +122,6 @@ public class ODSAdapterTest {
 					for(int i = 0; i < numberOfMeasurements; i++) {
 						measurements.add(entityFactory.createMeasurement(USER + "_Measurement_" + i, testStep));
 					}
-
-					transaction.create(measurements);
 
 					// create channels and channel group for each measurement
 					for (Measurement measurement : measurements) {
@@ -120,19 +131,15 @@ public class ODSAdapterTest {
 							channels.add(entityFactory.createChannel(USER + "_Channel_ " + i, measurement, quantity));
 						}
 
-						transaction.create(channels);
-
 						// create channel group
-						List<ChannelGroup> channelGroups = new ArrayList<>();
-						for(int i = 0; i < numberOfChannelGroups; i++) {
-							channelGroups.add(entityFactory.createChannelGroup(USER + "_ChannelGroup_ " + i, 0, measurement));
-						}
-
-						transaction.create(channelGroups);
+						ChannelGroup channelGroup = entityFactory.createChannelGroup(USER + "_ChannelGroup_ ", 10, measurement);
+						writeRequests.addAll(createMeasurementData(measurement, channelGroup, channels));
 					}
 				}
 			}
 
+			transaction.create(tests);
+			transaction.writeMeasuredValues(writeRequests);
 			transaction.commit();
 		} catch(DataAccessException e) {
 			e.printStackTrace();
@@ -160,88 +167,70 @@ public class ODSAdapterTest {
 		}
 	}
 
-	private void createMeasurementData() throws DataAccessException {
-		int valueSEQLength = 10; // number of values per channel
+	private List<WriteRequest> createMeasurementData(Measurement measurement, ChannelGroup channelGroup, List<Channel> channels) {
+		// set length of the channel value sequence
+		List<WriteRequest> writeRequests = new ArrayList<>();
 
-		Transaction transaction = entityManager.startTransaction();
+		// populate channel value write requests - one per channel
+		Collections.sort(channels, (c1, c2) -> c1.getName().compareTo(c2.getName()));
 
-		try {
-			List<WriteRequest> writeRequests = new ArrayList<>();
-			for(Measurement measurement : entityManager.loadAll(Measurement.class, USER + "_Measurement_*")) {
-				// set length of the channel value sequence
-				ChannelGroup channelGroup = entityManager.loadChildren(measurement, Measurement.CHILD_TYPE_CHANNELGROUP).get(0);
-				channelGroup.getValue(ChannelGroup.ATTR_NUMBER_OF_VALUES).set(valueSEQLength);
-				transaction.update(Collections.singletonList(channelGroup));
+		WriteRequestBuilder wrb = WriteRequest.create(channelGroup, channels.get(0), AxisType.X_AXIS);
+		writeRequests.add(wrb
+				.implicitLinear(ScalarType.FLOAT, 0, 1)
+				.independent()
+				.build());
 
-				// populate channel value write requests - one per channel
-				List<Channel> channels = entityManager.loadChildren(measurement, Measurement.CHILD_TYPE_CHANNEL);
-				Collections.sort(channels, (c1, c2) -> c1.getName().compareTo(c2.getName()));
+		wrb = WriteRequest.create(channelGroup, channels.get(1), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.explicit()
+				.booleanValues(new boolean[] { true,true,false,true,true,false,true,false,false,false })
+				.build());
 
-				WriteRequestBuilder wrb = WriteRequest.create(channelGroup, channels.get(0), AxisType.X_AXIS);
-				writeRequests.add(wrb
-						.implicitLinear(ScalarType.FLOAT, 0, 1)
-						.independent()
-						.build());
+		wrb = WriteRequest.create(channelGroup, channels.get(2), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.explicit()
+				.byteValues(new byte[] { 5,32,42,9,17,65,13,8,15,21 })
+				.build());
 
-				wrb = WriteRequest.create(channelGroup, channels.get(1), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.explicit()
-						.booleanValues(new boolean[] { true,true,false,true,true,false,true,false,false,false })
-						.build());
+		wrb = WriteRequest.create(channelGroup, channels.get(3), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.explicit()
+				.integerValues(new int[] { 423,645,221,111,675,353,781,582,755,231 })
+				.build());
 
-				wrb = WriteRequest.create(channelGroup, channels.get(2), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.explicit()
-						.byteValues(new byte[] { 5,32,42,9,17,65,13,8,15,21 })
-						.build());
+		wrb = WriteRequest.create(channelGroup, channels.get(4), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.explicit()
+				.stringValues(new String[] { "s1","s2","s3","s4","s5","s6","s7","s8","s9","s10" })
+				.build());
 
-				wrb = WriteRequest.create(channelGroup, channels.get(3), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.explicit()
-						.integerValues(new int[] { 423,645,221,111,675,353,781,582,755,231 })
-						.build());
+		LocalDateTime now = LocalDateTime.now();
+		wrb = WriteRequest.create(channelGroup, channels.get(5), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.explicit()
+				.dateValues(new LocalDateTime[] { now,now.plusDays(1),now.plusDays(2),
+						now.plusDays(3),now.plusDays(4),now.plusDays(5), now.plusDays(6),now.plusDays(7),
+						now.plusDays(8),now.plusDays(9) })
+				.independent().build());
 
-				wrb = WriteRequest.create(channelGroup, channels.get(4), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.explicit()
-						.stringValues(new String[] { "s1","s2","s3","s4","s5","s6","s7","s8","s9","s10" })
-						.build());
+		wrb = WriteRequest.create(channelGroup, channels.get(6), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.explicit()
+				.byteStreamValues(new byte[][] {{1,2},{3,4,5},{6,7,8},{9,10},{11},{12,13,14},
+					{15,16},{17,18,19,20},{21,22},{23} })
+				.build());
 
+		wrb = WriteRequest.create(channelGroup, channels.get(7), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.implicitConstant(ScalarType.SHORT, Short.MAX_VALUE)
+				.build());
 
-				LocalDateTime now = LocalDateTime.now();
-				wrb = WriteRequest.create(channelGroup, channels.get(5), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.explicit()
-						.dateValues(new LocalDateTime[] { now,now.plusDays(1),now.plusDays(2),
-								now.plusDays(3),now.plusDays(4),now.plusDays(5), now.plusDays(6),now.plusDays(7),
-								now.plusDays(8),now.plusDays(9) })
-						.independent().build());
+		wrb = WriteRequest.create(channelGroup, channels.get(8), AxisType.Y_AXIS);
+		writeRequests.add(wrb
+				.implicitSaw(ScalarType.FLOAT, 0, 1, 4)
+				.build());
 
-				wrb = WriteRequest.create(channelGroup, channels.get(6), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.explicit()
-						.byteStreamValues(new byte[][] {{1,2},{3,4,5},{6,7,8},{9,10},{11},{12,13,14},
-							{15,16},{17,18,19,20},{21,22},{23} })
-						.build());
-
-				wrb = WriteRequest.create(channelGroup, channels.get(7), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.implicitConstant(ScalarType.SHORT, Short.MAX_VALUE)
-						.build());
-
-				wrb = WriteRequest.create(channelGroup, channels.get(8), AxisType.Y_AXIS);
-				writeRequests.add(wrb
-						.implicitSaw(ScalarType.FLOAT, 0, 1, 4)
-						.build());
-			}
-
-			transaction.writeMeasuredValues(writeRequests);
-			transaction.commit();
-		} catch(DataAccessException e) {
-			e.printStackTrace();
-			transaction.abort();
-			throw e;
-		}
+		return writeRequests;
 	}
 
 	private void readMeasurementData() throws DataAccessException {

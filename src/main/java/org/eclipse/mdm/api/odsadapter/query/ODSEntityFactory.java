@@ -13,9 +13,12 @@ import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
 import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Core;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.ScalarType;
+import org.eclipse.mdm.api.base.model.Test;
+import org.eclipse.mdm.api.base.model.TestStep;
+import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DefaultCore;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
@@ -31,15 +34,15 @@ public final class ODSEntityFactory extends DefaultEntityFactory {
 		this.modelManager = modelManager;
 	}
 
-	//	@Override
-	//	public Test createTest(String name, User responsiblePerson) {
-	//		throw new UnsupportedOperationException("Test requires a status."); // TODO this is ugly, isn't it?
-	//	}
-	//
-	//	@Override
-	//	public TestStep createTestStep(String name, Test test) {
-	//		throw new UnsupportedOperationException("Test step requires a status."); // TODO this is ugly, isn't it?
-	//	}
+	@Override
+	public Test createTest(String name, User responsiblePerson) {
+		throw new UnsupportedOperationException("Test requires a status."); // TODO ...
+	}
+
+	@Override
+	public TestStep createTestStep(String name, Test test) {
+		throw new UnsupportedOperationException("Test step requires a status."); // TODO ...
+	}
 
 	@Override
 	protected <T extends Entity> Core createCore(Class<T> entityClass) {

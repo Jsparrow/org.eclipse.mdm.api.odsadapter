@@ -8,14 +8,16 @@
 
 package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
-import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Core;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -74,6 +76,10 @@ public final class WriteRequestHandler {
 			//flags
 			if(writeRequest.areAllValid()) {
 				values.get(AE_LC_ATTR_GLOBAL_FLAG).set((short) 15);
+				// TODO PEAK ODS server issue!
+				short[] flags = new short[Array.getLength(writeRequest.getValues())];
+				Arrays.fill(flags, (short) 15);
+				values.get(AE_LC_ATTR_FLAGS).set(flags);
 			} else {
 				short[] flags = ODSConverter.toODSValidFlagSeq(writeRequest.getFlags());
 				values.get(AE_LC_ATTR_FLAGS).set(flags);
