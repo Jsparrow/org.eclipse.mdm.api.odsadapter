@@ -24,7 +24,6 @@ import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 import org.eclipse.mdm.api.base.query.SearchService;
@@ -71,23 +70,23 @@ public final class ODSSearchService implements SearchService {
 	}
 
 	@Override
-	public <T extends Entity> Map<T, List<Record>> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes, Filter filter) throws DataAccessException {
+	public <T extends Entity> Map<T, Result> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes, Filter filter) throws DataAccessException {
 		return createResult(entityClass, findSearchQuery(entityClass).fetchComplete(entityTypes, filter));
 	}
 
 	@Override
-	public <T extends Entity> Map<T, List<Record>> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter) throws DataAccessException {
+	public <T extends Entity> Map<T, Result> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter) throws DataAccessException {
 		return createResult(entityClass, findSearchQuery(entityClass).fetch(attributes, filter));
 	}
 
-	private <T extends Entity> Map<T, List<Record>> createResult(Class<T> entityClass, List<Result> results) throws DataAccessException {
+	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results) throws DataAccessException {
 		EntityType entityType = modelManager.getEntityType(entityClass);
-		Map<Long, List<Record>> recordsByEntityID = new HashMap<>();
+		Map<Long, Result> recordsByEntityID = new HashMap<>();
 		for(Result result : results) {
-			recordsByEntityID.put(result.getRecord(entityType).getID(), result.getRecords());
+			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
 		}
 
-		Map<T, List<Record>> resultsByEntity = new HashMap<>();
+		Map<T, Result> resultsByEntity = new HashMap<>();
 		for(T entity : entityLoader.loadAll(new Key<>(entityClass), recordsByEntityID.keySet())) {
 			resultsByEntity.put(entity, recordsByEntityID.get(entity.getID()));
 		}
