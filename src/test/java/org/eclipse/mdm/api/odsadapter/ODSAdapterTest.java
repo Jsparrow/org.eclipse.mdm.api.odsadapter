@@ -37,6 +37,8 @@ import org.eclipse.mdm.api.dflt.model.DefaultEntityFactory;
 import org.eclipse.mdm.api.dflt.model.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ODSAdapterTest {
 
@@ -48,6 +50,8 @@ public class ODSAdapterTest {
 	 * MDM default model and any database constraint which enforces
 	 * a relation of Test to a parent entity is deactivated!
 	 */
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ODSAdapterTest.class);
 
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
 	private static final String NAME_SERVICE = "corbaloc::1.2@<SERVER_IP>:2809/NameService";
@@ -245,11 +249,8 @@ public class ODSAdapterTest {
 				.createIterable();
 
 		for(ReadRequest readRequest : readRequestIterable) {
-			System.out.println(entityManager.readMeasuredValues(readRequest));
+			LOGGER.debug(entityManager.readMeasuredValues(readRequest).toString());
 		}
-
-		ReadRequest readRequest = ReadRequest.create(channelGroup).allChannels().allValues();
-		System.out.println(entityManager.readMeasuredValues(readRequest));
 	}
 
 	private void deleteTestData() throws DataAccessException {
@@ -278,6 +279,8 @@ public class ODSAdapterTest {
 				transaction.abort();
 				throw e;
 			}
+			
+			return quantity;
 		}
 
 		return quantities.get(0);
