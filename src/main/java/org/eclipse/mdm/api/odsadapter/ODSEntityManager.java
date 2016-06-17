@@ -33,7 +33,6 @@ import org.eclipse.mdm.api.base.model.EntityFactory;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
 import org.eclipse.mdm.api.base.model.StatusAttachable;
-import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -49,7 +48,6 @@ import org.eclipse.mdm.api.dflt.model.Status;
 import org.eclipse.mdm.api.odsadapter.filetransfer.ODSFileService;
 import org.eclipse.mdm.api.odsadapter.filetransfer.ODSFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
-import org.eclipse.mdm.api.odsadapter.lookup.EntityRequest;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -133,24 +131,6 @@ public class ODSEntityManager implements EntityManager {
 	@Override
 	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, Long instanceID) throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass, contextType), instanceID);
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	@Deprecated
-	public <T extends Entity> T load(URI uri) throws DataAccessException {
-		// TODO: type safety
-		List<T> entities = (List<T>) createRequest(uri.getTypeName()).loadAll(Collections.singleton(uri.getID()));
-		if(entities.size() != 1) {
-			throw new DataAccessException("TODO"); // TODO either none or multiple!
-		}
-
-		return entities.get(0);
-	}
-
-	@Deprecated
-	private EntityRequest<?> createRequest(String typeName) {
-		return new EntityRequest<>(modelManager, modelManager.getEntityConfig(typeName));
 	}
 
 	@Override

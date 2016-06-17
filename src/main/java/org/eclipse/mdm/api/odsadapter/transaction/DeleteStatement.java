@@ -90,7 +90,7 @@ final class DeleteStatement extends BaseStatement {
 	@Override
 	public List<URI> execute(Collection<Entity> entities) throws AoException, DataAccessException {
 		for(Entity entity : entities) {
-			addInstance(entity.getURI());
+			addInstance(new URI(entity.getSourceName(), entity.getTypeName(), entity.getID()));
 		}
 
 		long start = System.currentTimeMillis();
@@ -158,7 +158,7 @@ final class DeleteStatement extends BaseStatement {
 			}
 
 			for(Result result : executeChildrenQuery(parentEntityType, uri, childEntityType)) {
-				lookupChildren(result.getRecord(childEntityType).createURI());
+				lookupChildren(create(result.getRecord(childEntityType)));
 			}
 		}
 	}
@@ -230,7 +230,7 @@ final class DeleteStatement extends BaseStatement {
 		measurementsQuery.join(measurementEntityType, testStepEntityType);
 		List<Result> results = measurementsQuery.fetch(Filter.idOnly(testStepEntityType, testStepID));
 
-		return results.stream().map(r -> r.getRecord(measurementEntityType)).map(Record::createURI)
+		return results.stream().map(r -> r.getRecord(measurementEntityType)).map(DeleteStatement::create)
 				.collect(Collectors.toList());
 	}
 
@@ -243,7 +243,7 @@ final class DeleteStatement extends BaseStatement {
 			}
 
 			DeleteStatement forkedStatement = new DeleteStatement(this, infoEntityType);
-			forkedStatement.addInstance(result.get().getRecord(infoEntityType).createURI());
+			forkedStatement.addInstance(create(result.get().getRecord(infoEntityType)));
 			forkedStatements.add(forkedStatement);
 		}
 	}
@@ -277,6 +277,10 @@ final class DeleteStatement extends BaseStatement {
 			}
 		}
 		return false;
+	}
+	
+	private static URI create(Record record) {
+		return new URI(record.getEntityType().getSourceName(), record.getEntityType().getName(), record.getID());
 	}
 
 }

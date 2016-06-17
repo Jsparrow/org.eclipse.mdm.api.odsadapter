@@ -20,9 +20,9 @@ import org.asam.ods.AIDNameValueSeqUnitId;
 import org.asam.ods.AoException;
 import org.asam.ods.ElemId;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -88,7 +88,6 @@ final class InsertStatement extends BaseStatement {
 		for(int i = 0; i < elemIds.length; i++) {
 			long instanceID = ODSConverter.fromODSLong(elemIds[i].iid);
 			URI uri = new URI(getEntityType().getSourceName(), getEntityType().getName(), instanceID);
-			cores.get(i).setURI(uri);
 			cores.get(i).setID(instanceID);
 			uris.add(uri);
 		}

@@ -20,10 +20,10 @@ import org.asam.ods.AIDName;
 import org.asam.ods.AIDNameValueSeqUnitId;
 import org.asam.ods.AoException;
 import org.asam.ods.T_LONGLONG;
-import org.eclipse.mdm.api.base.model.Deletable;
-import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Core.EntityStore;
+import org.eclipse.mdm.api.base.model.Deletable;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -78,6 +78,7 @@ final class UpdateStatement extends BaseStatement {
 		getApplElemAccess().updateInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
 		long stop = System.currentTimeMillis();
 
+		// TODO this uris.size is ZERO!
 		LOGGER.debug("{} " + getEntityType() + " instances updated in {} ms.", uris.size(), stop - start);
 
 		// delete first to make sure naming collisions do not occur!
@@ -121,8 +122,6 @@ final class UpdateStatement extends BaseStatement {
 
 		// replace "empty" relation values with corresponding instance IDs
 		setRelationIDs(mutableStore.getCurrent());
-
-		uris.add(core.getURI());
 
 		collectChildEntities(core);
 

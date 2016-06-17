@@ -82,6 +82,8 @@ public class ODSAdapterTest {
 			createTestData();
 			readMeasurementData();
 			updateTestData();
+		} catch(DataAccessException e) {
+			org.junit.Assert.fail("unable to write data");
 		} finally {
 			deleteTestData();
 		}
