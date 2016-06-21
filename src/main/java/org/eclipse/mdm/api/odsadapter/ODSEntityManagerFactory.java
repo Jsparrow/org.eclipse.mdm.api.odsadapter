@@ -84,7 +84,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 
 			CORBAFileServerIF fileServer = CORBAFileServerIFHelper.narrow(nameService.resolve(nameOfService, "CORBA-FT"));
 
-			return new ODSEntityManager(new ODSModelManager(aoSession, fileServer));
+			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer));
 		} catch(AoException e) {
 			e.printStackTrace();
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
@@ -115,7 +115,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		public Object resolve(String id, String kind) throws  ConnectionException {
 			try {
 				return getNameService().resolve(new NameComponent[] { new NameComponent(id, kind) });
-			} catch (NotFound | CannotProceed | InvalidName e) {
+			} catch(NotFound | CannotProceed | InvalidName e) {
 				throw new ConnectionException("Unable to resolve service '" + id + "." + kind + "'.", e);
 			}
 		}

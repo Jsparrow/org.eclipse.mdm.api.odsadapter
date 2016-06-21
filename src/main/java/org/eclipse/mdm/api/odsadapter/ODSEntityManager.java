@@ -45,8 +45,8 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.Status;
-import org.eclipse.mdm.api.odsadapter.filetransfer.ODSFileService;
-import org.eclipse.mdm.api.odsadapter.filetransfer.ODSFileService.Transfer;
+import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
+import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
@@ -88,7 +88,7 @@ public class ODSEntityManager implements EntityManager {
 
 	@Override
 	public Optional<FileService> getFileService() {
-		return Optional.of(new ODSFileService(modelManager, Transfer.STREAM));
+		return Optional.of(new CORBAFileService(modelManager, Transfer.SOCKET));
 	}
 
 	@Override
@@ -116,8 +116,10 @@ public class ODSEntityManager implements EntityManager {
 			try {
 				if(ieUser != null) {
 					ieUser.destroy();
+					ieUser._release();
 				}
 			} catch(AoException aoe) {
+				// TODO -> log instead of throw!
 				throw new DataAccessException(aoe.reason, aoe);
 			}
 		}
@@ -293,7 +295,7 @@ public class ODSEntityManager implements EntityManager {
 	public Transaction startTransaction() throws DataAccessException {
 		try {
 			return new ODSTransaction(modelManager);
-		} catch (AoException e) {
+		} catch(AoException e) {
 			throw new DataAccessException("Unable to start transaction due to: " + e.reason, e);
 		}
 	}
@@ -302,7 +304,7 @@ public class ODSEntityManager implements EntityManager {
 	public void close() throws ConnectionException {
 		try {
 			modelManager.close();
-		} catch (AoException e) {
+		} catch(AoException e) {
 			throw new ConnectionException("Unable to close the connection to the data source due to: " + e.reason, e);
 		}
 	}

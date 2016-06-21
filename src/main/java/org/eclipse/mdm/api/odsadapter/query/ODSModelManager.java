@@ -66,6 +66,7 @@ import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfigRepository;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSEnumerations;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
+import org.omg.CORBA.ORB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +79,7 @@ public class ODSModelManager implements ModelManager {
 	private final Map<String, EntityType> entityTypesByName = new HashMap<>();
 
 	private final CORBAFileServerIF fileServer;
+	private final ORB orb;
 
 	private final Lock write;
 	private final Lock read;
@@ -93,9 +95,10 @@ public class ODSModelManager implements ModelManager {
 		read = reentrantReadWriteLock.readLock();
 	}
 
-	public ODSModelManager(AoSession aoSession, CORBAFileServerIF fileServer) throws AoException {
+	public ODSModelManager(ORB orb, AoSession aoSession, CORBAFileServerIF fileServer) throws AoException {
 		this.fileServer = fileServer;
 		this.aoSession = aoSession;
+		this.orb = orb;
 		applElemAccess = aoSession.getApplElemAccess();
 
 		loadApplicationModel();
@@ -104,11 +107,15 @@ public class ODSModelManager implements ModelManager {
 
 
 	public ODSModelManager newSession() throws AoException {
-		return new ODSModelManager(getAoSession().createCoSession(), fileServer);
+		return new ODSModelManager(orb, getAoSession().createCoSession(), fileServer);
 	}
 
 	public CORBAFileServerIF getFileServer() {
 		return fileServer;
+	}
+
+	public ORB getORB() {
+		return orb;
 	}
 
 	/*

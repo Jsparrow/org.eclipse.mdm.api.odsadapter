@@ -13,7 +13,7 @@ import java.io.InputStream;
 
 import org.eclipse.mdm.api.base.FileService.ProgressListener;
 
-final class TraceInputStream extends InputStream {
+final class TracedInputStream extends InputStream {
 
 	private final ProgressListener progressListener;
 	private final InputStream inputStream;
@@ -21,7 +21,7 @@ final class TraceInputStream extends InputStream {
 
 	private double transferred = 0;
 
-	TraceInputStream(InputStream inputStream, ProgressListener progressListener, long length) {
+	TracedInputStream(InputStream inputStream, ProgressListener progressListener, long length) {
 		this.progressListener = progressListener;
 		this.inputStream = inputStream;
 		size = length;
