@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
+
 package org.eclipse.mdm.api.odsadapter.filetransfer;
 
 import java.io.IOException;
@@ -31,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 public class CORBAFileService implements FileService {
 
-	// TODO: this is CORBA FT specific!
 	public enum Transfer {
 
 		STREAM,
@@ -49,10 +56,6 @@ public class CORBAFileService implements FileService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CORBAFileService.class);
 
 	private static final int THREAD_POOL_SIZE = 5;
-
-	/*
-	 * TODO: Buffering is used / done in CORBAFileServer
-	 */
 
 	private final CORBAFileServer fileServer;
 	private final ODSModelManager modelManager;
@@ -299,7 +302,6 @@ public class CORBAFileService implements FileService {
 			sourceStream = new TracedInputStream(sourceStream, progressListener, fileLink.getSize());
 		}
 
-		// TODO: method 'consumes' given input stream -> its close method is invoked internally!
 		Path absolutePath = fileLink.getLocalPath().toAbsolutePath();
 		LOGGER.debug("Starting upload of file '{}'.", absolutePath);
 		LocalTime start = LocalTime.now();
