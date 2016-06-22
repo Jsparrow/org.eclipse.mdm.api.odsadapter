@@ -23,7 +23,6 @@ import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -45,17 +44,17 @@ final class InsertStatement extends BaseStatement {
 	}
 
 	@Override
-	public List<URI> execute(Collection<Entity> entities) throws AoException, DataAccessException {
+	public void execute(Collection<Entity> entities) throws AoException, DataAccessException {
 		entities.forEach(e -> readEntityCore(extract(e)));
-		return execute();
+		execute();
 	}
 
-	public List<URI> executeWithCores(Collection<Core> cores) throws AoException, DataAccessException {
+	public void executeWithCores(Collection<Core> cores) throws AoException, DataAccessException {
 		cores.forEach(this::readEntityCore);
-		return execute();
+		execute();
 	}
 
-	private List<URI> execute() throws AoException, DataAccessException {
+	private void execute() throws AoException, DataAccessException {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
 
@@ -69,30 +68,22 @@ final class InsertStatement extends BaseStatement {
 
 		long start = System.currentTimeMillis();
 		ElemId[] elemIds = getApplElemAccess().insertInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
+		writeInstanceIDs(elemIds);
 		long stop = System.currentTimeMillis();
 
 		LOGGER.debug("{} " + getEntityType() + " instances created in {} ms.", elemIds.length, stop - start);
 
-		List<URI> uris = updateURIs(elemIds);
 		// URIs have to be up to date before children may be created!
 		for(List<Entity> children : childrenMap.values()) {
 			getTransaction().create(children);
 		}
-
-		return uris;
 	}
 
-	private List<URI> updateURIs(ElemId[] elemIds) {
-		List<URI> uris = new ArrayList<>();
-
+	private void writeInstanceIDs(ElemId[] elemIds) {
 		for(int i = 0; i < elemIds.length; i++) {
 			long instanceID = ODSConverter.fromODSLong(elemIds[i].iid);
-			URI uri = new URI(getEntityType().getSourceName(), getEntityType().getName(), instanceID);
 			cores.get(i).setID(instanceID);
-			uris.add(uri);
 		}
-
-		return uris;
 	}
 
 	private void readEntityCore(Core core) {

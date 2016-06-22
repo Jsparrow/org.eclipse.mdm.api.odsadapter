@@ -172,6 +172,7 @@ public final class ODSTransaction implements Transaction {
 			}
 
 			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
+			//			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
 		} catch (AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
 		}

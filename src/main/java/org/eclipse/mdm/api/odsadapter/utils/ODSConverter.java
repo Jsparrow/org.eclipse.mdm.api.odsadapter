@@ -674,7 +674,7 @@ public final class ODSConverter {
 		try {
 			return LocalDateTime.parse(input, formatter);
 		} catch (DateTimeParseException e) {
-			throw new IllegalArgumentException("Invalid ODS date: " + input);
+			throw new IllegalArgumentException("Invalid ODS date: " + input, e);
 		}
 	}
 

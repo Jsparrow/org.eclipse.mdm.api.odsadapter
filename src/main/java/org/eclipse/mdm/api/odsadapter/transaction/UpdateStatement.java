@@ -24,7 +24,6 @@ import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Core.EntityStore;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.URI;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -41,7 +40,6 @@ final class UpdateStatement extends BaseStatement {
 	private final Map<Class<? extends Entity>, List<Entity>> childrenToUpdate = new HashMap<>();
 	private final Map<Class<? extends Deletable>, List<Deletable>> childrenToRemove = new HashMap<>();
 	private Map<String, List<Value>> updateMap = new HashMap<>();
-	private final List<URI> uris = new ArrayList<>();
 
 	private final List<String> nonUpdatableRelationNames;
 
@@ -52,12 +50,9 @@ final class UpdateStatement extends BaseStatement {
 	}
 
 	@Override
-	public List<URI> execute(Collection<Entity> entities) throws AoException, DataAccessException {
+	public void execute(Collection<Entity> entities) throws AoException, DataAccessException {
 		entities.forEach(e -> readEntityCore(extract(e)));
-		return execute();
-	}
 
-	private List<URI> execute() throws AoException, DataAccessException {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
 
@@ -79,7 +74,7 @@ final class UpdateStatement extends BaseStatement {
 		long stop = System.currentTimeMillis();
 
 		// TODO this uris.size is ZERO!
-		LOGGER.debug("{} " + getEntityType() + " instances updated in {} ms.", uris.size(), stop - start);
+		LOGGER.debug("{} " + getEntityType() + " instances updated in {} ms.", entities.size(), stop - start);
 
 		// delete first to make sure naming collisions do not occur!
 		for(List<Deletable> children : childrenToRemove.values()) {
@@ -91,8 +86,6 @@ final class UpdateStatement extends BaseStatement {
 		for(List<Entity> children : childrenToUpdate.values()) {
 			getTransaction().update(children);
 		}
-
-		return uris;
 	}
 
 	private void readEntityCore(Core core) {

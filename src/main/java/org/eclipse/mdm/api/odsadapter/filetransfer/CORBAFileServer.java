@@ -212,7 +212,7 @@ final class CORBAFileServer {
 				}
 				return receivedBytes;
 			} catch(CORBAFileServerException e) {
-				throw new IOException("Failed to retrieve bytes from CORBA input stream due to: " +e.reason, e);
+				throw new IOException("Failed to retrieve bytes from CORBA input stream due to: " + e.reason, e);
 			}
 		}
 
