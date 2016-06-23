@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,9 +26,12 @@ import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.FileLink;
+import org.eclipse.mdm.api.base.model.FilesAttachable;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.ParameterSet;
 import org.eclipse.mdm.api.base.model.TestStep;
+import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
@@ -35,6 +39,7 @@ import org.eclipse.mdm.api.base.query.Join;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
+import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.slf4j.Logger;
@@ -65,18 +70,28 @@ final class DeleteStatement extends BaseStatement {
 
 	private int delete(EntityType entityType, Collection<Long> instanceIDs, boolean ignoreSiblings)
 			throws AoException, DataAccessException {
+		if(instanceIDs.isEmpty()) {
+			return 0;
+		}
+
 		Query query = getModelManager().createQuery();
 		for(Relation relation : entityType.getChildRelations()) {
 			if(useAutoDelete && AUTO_DELETABLE.contains(relation.getTarget().getName())) {
 				continue;
 			}
 
-			query.join(relation).selectID(relation.getTarget());
+			query.join(relation, Join.OUTER).selectID(relation.getTarget());
 		}
 
 		EntityType testStep = getModelManager().getEntityType(TestStep.class);
 		EntityType measurement = getModelManager().getEntityType(Measurement.class);
 		EntityType channel = getModelManager().getEntityType(Channel.class);
+
+		// select attributes containing file links only for entity types implementing FilesAttachable
+		EntityConfig<?> entityConfig = getModelManager().getEntityConfig(entityType);
+		if(FilesAttachable.class.isAssignableFrom(entityConfig.getEntityClass())) {
+			entityType.getAttributes().stream().filter(a -> a.getValueType().isFileLinkType()).forEach(query::select);
+		}
 
 		EntityType unitUnderTest = getModelManager().getEntityType(ContextRoot.class, ContextType.UNITUNDERTEST);
 		EntityType testSequence = getModelManager().getEntityType(ContextRoot.class, ContextType.TESTSEQUENCE);
@@ -98,9 +113,24 @@ final class DeleteStatement extends BaseStatement {
 		// query child IDs
 		Map<EntityType, Set<Long>> children = new HashMap<>();
 		for(Result result : query.fetch(Filter.idsOnly(entityType, instanceIDs))) {
-			result.stream().filter(r -> r.getID().longValue() > 0).forEach(r -> {
+			result.stream().filter(r -> !r.getEntityType().equals(entityType)).filter(r -> r.getID().longValue() > 0)
+			.forEach(r -> {
 				children.computeIfAbsent(r.getEntityType(), k -> new HashSet<>()).add(r.getID());
 			});
+
+			// collect file links to remove
+			List<FileLink> fileLinks = new ArrayList<>();
+			for(Value value : result.getRecord(entityType).getValues().values()) {
+				if(value.getValueType().isFileLink()) {
+					fileLinks.add(value.extract());
+				} else if(value.getValueType().isFileLinkSequence()) {
+					fileLinks.addAll(Arrays.asList((FileLink[]) value.extract()));
+				}
+			}
+
+			if(!fileLinks.isEmpty()) {
+				getTransaction().getFileService().addToRemove(fileLinks);
+			}
 		}
 
 		// omit context roots with references to not removed measurements
@@ -126,13 +156,13 @@ final class DeleteStatement extends BaseStatement {
 			}
 		}
 
-		int numberOfDeletedInstances = 0;
+		int amount = 0;
 		for(Entry<EntityType, Set<Long>> entry : children.entrySet()) {
-			numberOfDeletedInstances += delete(entry.getKey(), entry.getValue(), true);
+			amount += delete(entry.getKey(), entry.getValue(), true);
 		}
 
 		getApplElemAccess().deleteInstances(((ODSEntityType)entityType).getODSID(), toODSIDs(instanceIDs));
-		return numberOfDeletedInstances + instanceIDs.size();
+		return amount + instanceIDs.size();
 	}
 
 	private T_LONGLONG[] toODSIDs(Collection<Long> instanceIDs) {

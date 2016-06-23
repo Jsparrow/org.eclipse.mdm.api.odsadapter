@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -43,7 +44,7 @@ abstract class BaseStatement {
 		this.entityType = (ODSEntityType) entityType;
 	}
 
-	public abstract void execute(Collection<Entity> entities) throws AoException, DataAccessException;
+	public abstract void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException;
 
 	protected Core extract(Entity entity) {
 		try {

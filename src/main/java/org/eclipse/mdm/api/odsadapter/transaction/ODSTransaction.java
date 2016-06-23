@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
 import org.eclipse.mdm.api.dflt.model.TemplateComponent;
 import org.eclipse.mdm.api.dflt.model.TemplateRoot;
+import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,11 +57,17 @@ public final class ODSTransaction implements Transaction {
 	private final String id = UUID.randomUUID().toString();
 
 	private final List<Core> modifiedCores = new ArrayList<>();
+	private final Entity entity;
+	private final Transfer transfer;
+
+	private UploadService uploadService;
 
 	private CatalogManager catalogManager;
 
-	public ODSTransaction(ODSModelManager parentModelManager) throws AoException {
+	public ODSTransaction(ODSModelManager parentModelManager, Entity entity, Transfer transfer) throws AoException {
 		this.parentModelManager = parentModelManager;
+		this.entity = entity;
+		this.transfer = transfer;
 		modelManager = parentModelManager.newSession();
 
 		// TODO track duration
@@ -99,7 +107,8 @@ public final class ODSTransaction implements Transaction {
 			executeStatements(et -> new InsertStatement(this, et), entities);
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
-
+		} catch(IOException e) {
+			throw new DataAccessException(e.getMessage(), e); // TODO
 		}
 	}
 
@@ -126,6 +135,8 @@ public final class ODSTransaction implements Transaction {
 			executeStatements(et -> new UpdateStatement(this, et), entities);
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
+		} catch(IOException e) {
+			throw new DataAccessException(e.getMessage(), e); // TODO
 		}
 	}
 
@@ -175,6 +186,8 @@ public final class ODSTransaction implements Transaction {
 			//			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
 		} catch (AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
+		} catch(IOException e) {
+			throw new DataAccessException(e.getMessage(), e); // TODO
 		}
 	}
 
@@ -205,27 +218,28 @@ public final class ODSTransaction implements Transaction {
 			}
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
+		} catch(IOException e) {
+			throw new DataAccessException(e.getMessage(), e); // TODO
 		}
 	}
 
 	@Override
 	public void commit() throws DataAccessException {
 		try {
-			/*
-			 * TODO upload of files has to be done BEFORE creating / updating instances
-			 */
 			modelManager.getAoSession().commitTransaction();
 
 			// commit succeed -> apply changes in entity cores
 			modifiedCores.forEach(Core::apply);
 
+			// remove deleted remote files
+			if(uploadService != null) {
+				uploadService.commit();
+			}
+
 			if(catalogManager != null) {
 				// application model has been modified -> reload
 				parentModelManager.reloadApplicationModel();
 			}
-			/*
-			 * TODO trigger an delete of removed file links and log in case of errors (Delete- or Update-Statements)
-			 */
 
 			// TODO add statistics to logging (how many created / updated / deleted)
 			LOGGER.debug("Transaction '{}' committed.", id);
@@ -238,12 +252,11 @@ public final class ODSTransaction implements Transaction {
 	@Override
 	public void abort() {
 		try {
-			modelManager.getAoSession().abortTransaction();
+			if(uploadService != null) {
+				uploadService.abort();
+			}
 
-			/*
-			 * TODO in case of uploaded files trigger an delete operation to remove them from the server
-			 * (log in case of errors)
-			 */
+			modelManager.getAoSession().abortTransaction();
 
 			// TODO add statistics to logging (how many discarded created / updated / deleted)
 			LOGGER.debug("Transaction '{}' aborted.", id);
@@ -262,6 +275,14 @@ public final class ODSTransaction implements Transaction {
 		return modelManager;
 	}
 
+	UploadService getFileService() {
+		if(uploadService == null) {
+			uploadService = new UploadService(modelManager, entity, transfer);
+		}
+
+		return uploadService;
+	}
+
 	private CatalogManager getCatalogManager() {
 		if(catalogManager == null) {
 			catalogManager = new CatalogManager(this);
@@ -271,7 +292,7 @@ public final class ODSTransaction implements Transaction {
 	}
 
 	private <T extends Entity> void executeStatements(Function<EntityType, BaseStatement> statementFactory, Collection<T> entities)
-			throws AoException, DataAccessException {
+			throws AoException, DataAccessException, IOException {
 		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(modelManager::getEntityType));
 		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
 			statementFactory.apply(entry.getKey()).execute(entry.getValue());

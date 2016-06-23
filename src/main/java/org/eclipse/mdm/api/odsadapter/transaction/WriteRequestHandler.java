@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +50,7 @@ public final class WriteRequestHandler {
 		cores.add(createCore(writeRequest));
 	}
 
-	public void execute() throws AoException, DataAccessException {
+	public void execute() throws AoException, DataAccessException, IOException {
 		insertStatement.executeWithCores(cores);
 	}
 

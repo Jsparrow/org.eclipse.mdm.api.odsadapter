@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Core.EntityStore;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -41,6 +43,8 @@ final class UpdateStatement extends BaseStatement {
 	private final Map<Class<? extends Deletable>, List<Deletable>> childrenToRemove = new HashMap<>();
 	private Map<String, List<Value>> updateMap = new HashMap<>();
 
+	private final List<FileLink> fileLinkToUpload = new ArrayList<>();
+
 	private final List<String> nonUpdatableRelationNames;
 
 	UpdateStatement(ODSTransaction transaction, EntityType entityType) {
@@ -50,11 +54,15 @@ final class UpdateStatement extends BaseStatement {
 	}
 
 	@Override
-	public void execute(Collection<Entity> entities) throws AoException, DataAccessException {
+	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
 		entities.forEach(e -> readEntityCore(extract(e)));
 
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
+
+		if(!fileLinkToUpload.isEmpty()) {
+			getTransaction().getFileService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
+		}
 
 		for(Entry<String, List<Value>> entry : updateMap.entrySet()) {
 			if(nonUpdatableRelationNames.contains(entry.getKey())) {
@@ -73,7 +81,6 @@ final class UpdateStatement extends BaseStatement {
 		getApplElemAccess().updateInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
 		long stop = System.currentTimeMillis();
 
-		// TODO this uris.size is ZERO!
 		LOGGER.debug("{} " + getEntityType() + " instances updated in {} ms.", entities.size(), stop - start);
 
 		// delete first to make sure naming collisions do not occur!
@@ -96,8 +103,14 @@ final class UpdateStatement extends BaseStatement {
 
 		// add all entity values
 		for(Value value : core.getAllValues().values()) {
-			// TODO scan for values with file links and collect them!
 			updateMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
+		}
+
+		// collect file links
+		fileLinkToUpload.addAll(core.getAddedFileLinks());
+		List<FileLink> fileLinksToRemove = core.getRemovedFileLinks();
+		if(!fileLinksToRemove.isEmpty()) {
+			getTransaction().getFileService().addToRemove(fileLinksToRemove);
 		}
 
 		updateMap.computeIfAbsent(getEntityType().getIDAttribute().getName(), k -> new ArrayList<>())

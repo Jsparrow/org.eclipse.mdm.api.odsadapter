@@ -60,6 +60,8 @@ public class ODSEntityManager implements EntityManager {
 	private final ODSModelManager modelManager;
 	private final EntityLoader entityLoader;
 
+	private final Transfer transfer = Transfer.SOCKET;
+
 	public ODSEntityManager(ODSModelManager modelManager) throws ConnectionException {
 		this.modelManager = modelManager;
 		entityLoader = new EntityLoader(modelManager);
@@ -88,7 +90,7 @@ public class ODSEntityManager implements EntityManager {
 
 	@Override
 	public Optional<FileService> getFileService() {
-		return Optional.of(new CORBAFileService(modelManager, Transfer.SOCKET));
+		return Optional.of(new CORBAFileService(modelManager, transfer));
 	}
 
 	@Override
@@ -294,7 +296,7 @@ public class ODSEntityManager implements EntityManager {
 	@Override
 	public Transaction startTransaction() throws DataAccessException {
 		try {
-			return new ODSTransaction(modelManager);
+			return new ODSTransaction(modelManager, loadEnvironment(), transfer);
 		} catch(AoException e) {
 			throw new DataAccessException("Unable to start transaction due to: " + e.reason, e);
 		}

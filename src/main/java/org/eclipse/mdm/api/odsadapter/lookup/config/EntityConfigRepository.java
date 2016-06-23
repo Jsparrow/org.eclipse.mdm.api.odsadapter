@@ -6,12 +6,10 @@ import java.util.Optional;
 
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 
 public final class EntityConfigRepository {
-
-	@Deprecated // TODO required for URI....
-	private final Map<String, EntityConfig<?>> allEntityConfigs = new HashMap<>();
 
 	// root types
 	private final Map<Key<?>, EntityConfig<?>> entityConfigs = new HashMap<>();
@@ -38,24 +36,19 @@ public final class EntityConfigRepository {
 		return get(childConfigs, key).orElseThrow(() ->new IllegalArgumentException("Entity configuration not found."));
 	}
 
-	// ################################################################################################################
-
-	@Deprecated
-	public EntityConfig<?> find(String typeName) {
-		EntityConfig<?> entityConfig = allEntityConfigs.get(typeName);
-		if(entityConfig == null) {
-			throw new IllegalArgumentException("Entity configuration not found.");
-		}
-
-		return entityConfig;
+	public EntityConfig<?> find(EntityType entityType) {
+		return entityConfigs.values().stream().filter(ec -> ec.getEntityType().equals(entityType)).findAny()
+				.orElseThrow(() -> new IllegalArgumentException("Entity configuration for type '" + entityType + "' not found."));
 	}
+
+
+	// ################################################################################################################
 
 	public /* TODO HIDE */ void register(EntityConfig<?> entityConfig) {
 		registerChildConfigs(entityConfig);
 
 		EntityConfig<?> currentByClass = entityConfigs.put(entityConfig.getKey(), entityConfig);
-		EntityConfig<?> currentByType = allEntityConfigs.put(entityConfig.getEntityType().getName(), entityConfig);
-		if(currentByClass != null || currentByType != null) {
+		if(currentByClass != null) {
 			throw new IllegalArgumentException("It is not allowed to overwrite existing configurations.");
 		}
 	}
@@ -77,5 +70,4 @@ public final class EntityConfigRepository {
 	private static <T extends Entity> Optional<EntityConfig<T>> get(Map<Key<?>, EntityConfig<?>> entityConfigs, Key<T> key) {
 		return Optional.ofNullable((EntityConfig<T>) entityConfigs.get(key));
 	}
-
 }

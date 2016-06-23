@@ -142,12 +142,11 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
-	@Deprecated // TODO remove as soon as possible!
-	public EntityConfig<?> getEntityConfig(String typeName) {
+	public EntityConfig<?> getEntityConfig(EntityType entityType) {
 		read.lock();
 
 		try {
-			return entityConfigRepository.find(typeName);
+			return entityConfigRepository.find(entityType);
 		} finally {
 			read.unlock();
 		}

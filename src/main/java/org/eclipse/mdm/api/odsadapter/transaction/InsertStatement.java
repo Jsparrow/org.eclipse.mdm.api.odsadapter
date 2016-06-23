@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.transaction;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -39,24 +41,31 @@ final class InsertStatement extends BaseStatement {
 	private final List<Core> cores = new ArrayList<>();
 	private final Map<String, List<Value>> insertMap = new HashMap<>();
 
+	private final List<FileLink> fileLinkToUpload = new ArrayList<>();
+
 	InsertStatement(ODSTransaction transaction, EntityType entityType) {
 		super(transaction, entityType);
 	}
 
 	@Override
-	public void execute(Collection<Entity> entities) throws AoException, DataAccessException {
+	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
 		entities.forEach(e -> readEntityCore(extract(e)));
 		execute();
 	}
 
-	public void executeWithCores(Collection<Core> cores) throws AoException, DataAccessException {
+	public void executeWithCores(Collection<Core> cores) throws AoException, DataAccessException, IOException {
 		cores.forEach(this::readEntityCore);
 		execute();
 	}
 
-	private void execute() throws AoException, DataAccessException {
+	private void execute() throws AoException, DataAccessException, IOException {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
+
+		// TODO Task 1
+		if(!fileLinkToUpload.isEmpty()) {
+			getTransaction().getFileService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
+		}
 
 		for(Entry<String, List<Value>> entry : insertMap.entrySet()) {
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
@@ -73,7 +82,7 @@ final class InsertStatement extends BaseStatement {
 
 		LOGGER.debug("{} " + getEntityType() + " instances created in {} ms.", elemIds.length, stop - start);
 
-		// URIs have to be up to date before children may be created!
+		// TODO Task 2
 		for(List<Entity> children : childrenMap.values()) {
 			getTransaction().create(children);
 		}
@@ -96,15 +105,11 @@ final class InsertStatement extends BaseStatement {
 
 		// add all entity values
 		for(Value value : core.getAllValues().values()) {
-			/*
-			 * TODO: in case of ContextComponent instances we have to
-			 * add missing Value containers (this are those we have
-			 * omitted due to the underlying template component)
-			 */
-
-			// TODO scan for values with file links and collect them!
 			insertMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
 		}
+
+		// collect file links
+		fileLinkToUpload.addAll(core.getAddedFileLinks());
 
 		// define "empty" values for informative relations
 		for(Relation relation : getEntityType().getInfoRelations()) {
