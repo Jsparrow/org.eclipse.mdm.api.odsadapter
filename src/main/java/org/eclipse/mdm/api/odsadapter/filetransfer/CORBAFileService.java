@@ -80,7 +80,9 @@ public class CORBAFileService implements FileService {
 
 			download(entity, target, fileLink, (b, p) -> {
 				double tranferredBytes = transferred.addAndGet(b);
-				progressListener.progress(b, (float) (tranferredBytes / totalSize));
+				if(progressListener != null) {
+					progressListener.progress(b, (float) (tranferredBytes / totalSize));
+				}
 			});
 
 			for(FileLink other : group.subList(1, group.size())) {
@@ -104,7 +106,9 @@ public class CORBAFileService implements FileService {
 
 				download(entity, target, fileLink, (b, p) -> {
 					double tranferredBytes = transferred.addAndGet(b);
-					progressListener.progress(b, (float) (tranferredBytes / totalSize));
+					if(progressListener != null) {
+						progressListener.progress(b, (float) (tranferredBytes / totalSize));
+					}
 				});
 
 				for(FileLink other : group.subList(1, group.size())) {
@@ -212,7 +216,9 @@ public class CORBAFileService implements FileService {
 
 			upload(entity, fileLink, (b, p) -> {
 				double tranferredBytes = transferred.addAndGet(b);
-				progressListener.progress(b, (float) (tranferredBytes / totalSize));
+				if(progressListener != null) {
+					progressListener.progress(b, (float) (tranferredBytes / totalSize));
+				}
 			});
 
 			for(FileLink other : group.subList(1, group.size())) {
@@ -235,7 +241,9 @@ public class CORBAFileService implements FileService {
 
 				upload(entity, fileLink, (b, p) -> {
 					double tranferredBytes = transferred.addAndGet(b);
-					progressListener.progress(b, (float) (tranferredBytes / totalSize));
+					if(progressListener != null) {
+						progressListener.progress(b, (float) (tranferredBytes / totalSize));
+					}
 				});
 
 				for(FileLink other : group.subList(1, group.size())) {
@@ -284,6 +292,7 @@ public class CORBAFileService implements FileService {
 
 		try {
 			fileServer.delete(fileLink, toElemID(entity));
+			LOGGER.debug("File '{}' sucessfully deleted.", fileLink.getRemotePath());
 		} catch (IOException e) {
 			LOGGER.warn("Failed to delete remote file.", e);
 		}
