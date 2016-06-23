@@ -289,9 +289,9 @@ final class CORBAFileServer {
 		@Override
 		public int length() throws CORBAFileServerException {
 			/*
-			 * NOTE: a file length is of type long and therefore,
-			 * for very large files an arithmetic overflow is
-			 * enforced by this method's return type!
+			 * NOTE: A file length is of type long and therefore,
+			 * for very large files (> 2.14 GB), the exact length
+			 * is lost due to narrowing conversion!
 			 */
 			return (int) length;
 		}

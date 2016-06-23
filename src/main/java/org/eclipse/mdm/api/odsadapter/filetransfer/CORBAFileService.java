@@ -107,7 +107,7 @@ public class CORBAFileService implements FileService {
 					progressListener.progress(b, (float) (tranferredBytes / totalSize));
 				});
 
-				for(FileLink other : group) {
+				for(FileLink other : group.subList(1, group.size())) {
 					other.setLocalPath(fileLink.getLocalPath());
 				}
 
@@ -238,7 +238,7 @@ public class CORBAFileService implements FileService {
 					progressListener.progress(b, (float) (tranferredBytes / totalSize));
 				});
 
-				for(FileLink other : group) {
+				for(FileLink other : group.subList(1, group.size())) {
 					other.setRemotePath(fileLink.getRemotePath());
 				}
 
