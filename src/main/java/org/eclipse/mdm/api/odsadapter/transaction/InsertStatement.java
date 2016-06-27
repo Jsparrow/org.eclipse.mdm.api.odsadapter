@@ -25,10 +25,18 @@ import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
+import org.eclipse.mdm.api.base.model.Sortable;
+import org.eclipse.mdm.api.base.model.Test;
+import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.query.Aggregation;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.Filter;
+import org.eclipse.mdm.api.base.query.Query;
+import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
+import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +51,13 @@ final class InsertStatement extends BaseStatement {
 
 	private final List<FileLink> fileLinkToUpload = new ArrayList<>();
 
+	private final Map<Long, SortIndexTestSteps> testStepSorts = new HashMap<>();
+	private boolean loadSortIndex;
+
 	InsertStatement(ODSTransaction transaction, EntityType entityType) {
 		super(transaction, entityType);
+
+		loadSortIndex = getModelManager().getEntityType(TestStep.class).equals(getEntityType());
 	}
 
 	@Override
@@ -61,6 +74,10 @@ final class InsertStatement extends BaseStatement {
 	private void execute() throws AoException, DataAccessException, IOException {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
+
+		if(loadSortIndex && !testStepSorts.isEmpty()) {
+			adjustMissingSortIndices();
+		}
 
 		// TODO Task 1
 		if(!fileLinkToUpload.isEmpty()) {
@@ -102,6 +119,12 @@ final class InsertStatement extends BaseStatement {
 		}
 
 		cores.add(core);
+
+		if(loadSortIndex) {
+			if((Integer) core.getValues().get(Sortable.ATTR_SORT_INDEX).extract() < 0) {
+				testStepSorts.computeIfAbsent(core.getPermanentStore().get(Test.class).getID(), k -> new SortIndexTestSteps()).testStepCores.add(core);
+			}
+		}
 
 		// add all entity values
 		for(Value value : core.getAllValues().values()) {
@@ -146,6 +169,39 @@ final class InsertStatement extends BaseStatement {
 			}
 			relationValues.get(relationValues.size() - 1).set(relatedEntity.getID());
 		}
+	}
+
+	private void adjustMissingSortIndices() throws DataAccessException {
+		EntityType testStep = getEntityType();
+		EntityType test = getModelManager().getEntityType(Test.class);
+		Relation parentRelation = testStep.getRelation(test);
+
+		Query query = getModelManager().createQuery().select(parentRelation.getAttribute())
+				.select(testStep.getAttribute(Sortable.ATTR_SORT_INDEX), Aggregation.MAXIMUM)
+				.group(parentRelation.getAttribute());
+
+		Filter filter = Filter.idsOnly(parentRelation, testStepSorts.keySet());
+		for(Result result : query.fetch(filter)) {
+			Record record = result.getRecord(testStep);
+			int sortIndex = (Integer) record.getValues().get(Sortable.ATTR_SORT_INDEX).extract();
+			testStepSorts.remove(record.getID(parentRelation).get()).setIndices(sortIndex + 1);
+		}
+
+		// start at 1 for all remaining
+		testStepSorts.values().forEach(tss -> tss.setIndices(0));
+	}
+
+	private static final class SortIndexTestSteps {
+
+		private List<Core> testStepCores = new ArrayList<>();
+
+		private void setIndices(int startIndex) {
+			int index = startIndex;
+			for(Core core : testStepCores) {
+				core.getValues().get(Sortable.ATTR_SORT_INDEX).set(index++);
+			}
+		}
+
 	}
 
 }
