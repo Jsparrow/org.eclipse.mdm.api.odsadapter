@@ -275,8 +275,11 @@ public final class ODSTransaction implements Transaction {
 		return modelManager;
 	}
 
-	UploadService getFileService() {
+	UploadService getFileService() throws DataAccessException {
 		if(uploadService == null) {
+			if(modelManager.getFileServer() == null) {
+				throw new DataAccessException("CORBA file server is not available.");
+			}
 			uploadService = new UploadService(modelManager, entity, transfer);
 		}
 

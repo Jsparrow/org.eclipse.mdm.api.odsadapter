@@ -66,10 +66,11 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	 */
 	@Override
 	public EntityManager connect(Map<String, String> parameters) throws ConnectionException {
+		AoSession aoSession = null;
 		try(NameService nameService = new NameService(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
 			String nameOfService = getParameter(parameters, PARAM_SERVICENAME).replace(".ASAM-ODS", "");
 
-			AoFactory aoFactory = AoFactoryHelper.narrow(nameService.resolve(nameOfService, "ASAM-ODS"));
+			AoFactory aoFactory = nameService.resolveFactory(nameOfService);
 			LOGGER.info("Connecting to ODS Server ...");
 
 			LOGGER.info("AoFactory name: {}", aoFactory.getName());
@@ -77,17 +78,27 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			LOGGER.info("AoFactory interface version: {}", aoFactory.getInterfaceVersion());
 			LOGGER.info("AoFactory type: {}", aoFactory.getType());
 
-			AoSession aoSession = aoFactory.newSession(String.format(AUTH_TEMPLATE,
-					getParameter(parameters, PARAM_USER),
+			aoSession = aoFactory.newSession(String.format(AUTH_TEMPLATE, getParameter(parameters, PARAM_USER),
 					getParameter(parameters, PARAM_PASSWORD)));
 			LOGGER.info("Connection to ODS server established.");
 
-			CORBAFileServerIF fileServer = CORBAFileServerIFHelper.narrow(nameService.resolve(nameOfService, "CORBA-FT"));
-
+			CORBAFileServerIF fileServer = nameService.resolveFileServer(nameOfService);
 			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer));
 		} catch(AoException e) {
-			e.printStackTrace();
+			closeSession(aoSession);
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
+		}
+	}
+
+	private static void closeSession(AoSession aoSession) {
+		if(aoSession == null) {
+			return;
+		}
+
+		try {
+			aoSession.close();
+		} catch (AoException e) {
+			LOGGER.warn("Unable to close sesssion due to: " + e.reason, e);
 		}
 	}
 
@@ -112,7 +123,20 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			this.orb = orb;
 		}
 
-		public Object resolve(String id, String kind) throws  ConnectionException {
+		public AoFactory resolveFactory(String id) throws ConnectionException {
+			return AoFactoryHelper.narrow(resolve(id, "ASAM-ODS"));
+		}
+
+		public CORBAFileServerIF resolveFileServer(String id) {
+			try {
+				return CORBAFileServerIFHelper.narrow(resolve(id, "CORBA-FT"));
+			} catch(ConnectionException e) {
+				LOGGER.warn("CORBA file server not found.", e);
+				return null;
+			}
+		}
+
+		private Object resolve(String id, String kind) throws  ConnectionException {
 			try {
 				return getNameService().resolve(new NameComponent[] { new NameComponent(id, kind) });
 			} catch(NotFound | CannotProceed | InvalidName e) {

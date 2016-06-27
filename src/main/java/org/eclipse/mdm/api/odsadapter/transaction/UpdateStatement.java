@@ -55,7 +55,9 @@ final class UpdateStatement extends BaseStatement {
 
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
-		entities.forEach(e -> readEntityCore(extract(e)));
+		for(Entity entity : entities) {
+			readEntityCore(extract(entity));
+		}
 
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
@@ -95,7 +97,7 @@ final class UpdateStatement extends BaseStatement {
 		}
 	}
 
-	private void readEntityCore(Core core) {
+	private void readEntityCore(Core core) throws DataAccessException {
 		if(!core.getTypeName().equals(getEntityType().getName())) {
 			throw new IllegalArgumentException("Given entity core '" + core.getTypeName()
 			+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");

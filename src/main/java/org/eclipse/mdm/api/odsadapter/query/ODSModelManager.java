@@ -105,7 +105,6 @@ public class ODSModelManager implements ModelManager {
 		loadEntityConfigurations();
 	}
 
-
 	public ODSModelManager newSession() throws AoException {
 		return new ODSModelManager(orb, getAoSession().createCoSession(), fileServer);
 	}

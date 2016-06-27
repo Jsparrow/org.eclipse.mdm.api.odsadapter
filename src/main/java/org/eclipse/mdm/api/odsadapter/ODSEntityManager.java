@@ -90,6 +90,9 @@ public class ODSEntityManager implements EntityManager {
 
 	@Override
 	public Optional<FileService> getFileService() {
+		if(modelManager.getFileServer() == null) {
+			return Optional.empty();
+		}
 		return Optional.of(new CORBAFileService(modelManager, transfer));
 	}
 
