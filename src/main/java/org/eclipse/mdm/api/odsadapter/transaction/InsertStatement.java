@@ -51,7 +51,7 @@ final class InsertStatement extends BaseStatement {
 
 	private final List<FileLink> fileLinkToUpload = new ArrayList<>();
 
-	private final Map<Long, SortIndexTestSteps> testStepSorts = new HashMap<>();
+	private final Map<Long, SortIndexTestSteps> sortIndexTestSteps = new HashMap<>();
 	private boolean loadSortIndex;
 
 	InsertStatement(ODSTransaction transaction, EntityType entityType) {
@@ -75,7 +75,7 @@ final class InsertStatement extends BaseStatement {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
 
-		if(loadSortIndex && !testStepSorts.isEmpty()) {
+		if(loadSortIndex && !sortIndexTestSteps.isEmpty()) {
 			adjustMissingSortIndices();
 		}
 
@@ -122,7 +122,7 @@ final class InsertStatement extends BaseStatement {
 
 		if(loadSortIndex) {
 			if((Integer) core.getValues().get(Sortable.ATTR_SORT_INDEX).extract() < 0) {
-				testStepSorts.computeIfAbsent(core.getPermanentStore().get(Test.class).getID(), k -> new SortIndexTestSteps()).testStepCores.add(core);
+				sortIndexTestSteps.computeIfAbsent(core.getPermanentStore().get(Test.class).getID(), k -> new SortIndexTestSteps()).testStepCores.add(core);
 			}
 		}
 
@@ -180,15 +180,15 @@ final class InsertStatement extends BaseStatement {
 				.select(testStep.getAttribute(Sortable.ATTR_SORT_INDEX), Aggregation.MAXIMUM)
 				.group(parentRelation.getAttribute());
 
-		Filter filter = Filter.idsOnly(parentRelation, testStepSorts.keySet());
+		Filter filter = Filter.idsOnly(parentRelation, sortIndexTestSteps.keySet());
 		for(Result result : query.fetch(filter)) {
 			Record record = result.getRecord(testStep);
 			int sortIndex = (Integer) record.getValues().get(Sortable.ATTR_SORT_INDEX).extract();
-			testStepSorts.remove(record.getID(parentRelation).get()).setIndices(sortIndex + 1);
+			sortIndexTestSteps.remove(record.getID(parentRelation).get()).setIndices(sortIndex + 1);
 		}
 
 		// start at 1 for all remaining
-		testStepSorts.values().forEach(tss -> tss.setIndices(0));
+		sortIndexTestSteps.values().forEach(tss -> tss.setIndices(0));
 	}
 
 	private static final class SortIndexTestSteps {
