@@ -29,6 +29,7 @@ import org.eclipse.mdm.api.base.model.Sortable;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Aggregation;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -150,6 +151,14 @@ final class InsertStatement extends BaseStatement {
 
 		for(Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent().entrySet()) {
 			childrenMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(entry.getValue());
+		}
+
+		if(core.getTypeName().equals(Test.class.getSimpleName())) {
+			// TODO REMOVE THIS!!
+			Value id = ValueType.LONG.create("StructureLevel");
+			id.set(1L);
+			List<Value> list = insertMap.get(id.getName());
+			list.set(list.size()-1, id);
 		}
 
 		getTransaction().addCore(core);

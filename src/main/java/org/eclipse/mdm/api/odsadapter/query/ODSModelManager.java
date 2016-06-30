@@ -49,7 +49,6 @@ import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
-import org.eclipse.mdm.api.dflt.model.Status;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.dflt.model.TemplateComponent;
 import org.eclipse.mdm.api.dflt.model.TemplateRoot;
@@ -385,11 +384,11 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(templateTestStepConfig);
 
 		// Status TestStep
-		entityConfigRepository.register(create(new Key<>(Status.class, TestStep.class), "StatusTestStep", "application/x-asam.aoany.statusteststep")); // TODO <-- correct?!
+		//		entityConfigRepository.register(create(new Key<>(Status.class, TestStep.class), "StatusTestStep", "application/x-asam.aoany.statusteststep")); // TODO <-- correct?!
 
 		// TestStep
 		EntityConfig<TestStep> testStepConfig = create(new Key<>(TestStep.class), "TestStep", "application/x-asam.aosubtest.teststep");
-		testStepConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, TestStep.class)));
+		//		testStepConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, TestStep.class)));
 		testStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateTestStep.class)));
 		testStepConfig.setComparator(Sortable.COMPARATOR);
 		entityConfigRepository.register(testStepConfig);
@@ -404,12 +403,12 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(templateTestConfig);
 
 		// Status Test
-		entityConfigRepository.register(create(new Key<>(Status.class, Test.class), "StatusTest", "application/x-asam.aoany.statustest")); // TODO <-- correct?!
+		//		entityConfigRepository.register(create(new Key<>(Status.class, Test.class), "StatusTest", "application/x-asam.aoany.statustest")); // TODO <-- correct?!
 
 		// Test
 		EntityConfig<Test> testConfig = create(new Key<>(Test.class), "Test", "application/x-asam.aotest");
 		testConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(User.class)));
-		testConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, Test.class)));
+		//		testConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, Test.class)));
 		testConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateTest.class)));
 		entityConfigRepository.register(testConfig);
 
