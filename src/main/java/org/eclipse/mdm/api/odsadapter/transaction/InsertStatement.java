@@ -153,7 +153,7 @@ final class InsertStatement extends BaseStatement {
 			childrenMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(entry.getValue());
 		}
 
-		if(core.getTypeName().equals(Test.class.getSimpleName())) {
+		if(!getModelManager().isAthos() && core.getTypeName().equals(Test.class.getSimpleName())) {
 			// TODO REMOVE THIS!!
 			Value id = ValueType.LONG.create("StructureLevel");
 			id.set(1L);

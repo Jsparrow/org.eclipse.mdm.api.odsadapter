@@ -24,6 +24,7 @@ import org.asam.ods.ApplElemAccess;
 import org.asam.ods.ApplRel;
 import org.asam.ods.ApplicationStructureValue;
 import org.asam.ods.EnumerationAttributeStructure;
+import org.asam.ods.NameValue;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.ContextComponent;
@@ -85,6 +86,9 @@ public class ODSModelManager implements ModelManager {
 
 	private EntityConfigRepository entityConfigRepository;
 
+	// TODO quick fix => REMOVE THSI AS SOON AS POSSIBLE!
+	@Deprecated private boolean isAthos;
+
 	private ApplElemAccess applElemAccess;
 	private AoSession aoSession;
 
@@ -100,6 +104,13 @@ public class ODSModelManager implements ModelManager {
 		this.orb = orb;
 		applElemAccess = aoSession.getApplElemAccess();
 
+		try {
+			NameValue nv = aoSession.getContextByName("ATHOS_VERSION");
+			isAthos = nv != null;
+		} catch(AoException e) {
+			isAthos = false;
+		}
+
 		loadApplicationModel();
 		loadEntityConfigurations();
 	}
@@ -110,6 +121,10 @@ public class ODSModelManager implements ModelManager {
 
 	public CORBAFileServerIF getFileServer() {
 		return fileServer;
+	}
+
+	public boolean isAthos() {
+		return isAthos;
 	}
 
 	public ORB getORB() {

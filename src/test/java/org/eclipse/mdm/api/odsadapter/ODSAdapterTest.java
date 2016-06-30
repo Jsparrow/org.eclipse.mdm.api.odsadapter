@@ -75,7 +75,9 @@ public class ODSAdapterTest {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws ConnectionException {
-		entityManager.close();
+		if(entityManager != null) {
+			entityManager.close();
+		}
 	}
 
 	@org.junit.Test
