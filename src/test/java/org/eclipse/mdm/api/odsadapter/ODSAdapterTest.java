@@ -33,7 +33,6 @@ import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
-import org.eclipse.mdm.api.dflt.model.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -95,8 +94,8 @@ public class ODSAdapterTest {
 	private void createTestData() throws DataAccessException {
 		Transaction transaction = entityManager.startTransaction();
 
-		Status testStatus = entityManager.loadAllStatus(Test.class).get(0);
-		Status testStepStatus = entityManager.loadAllStatus(TestStep.class).get(0);
+		//		Status testStatus = entityManager.loadAllStatus(Test.class).get(0);
+		//		Status testStepStatus = entityManager.loadAllStatus(TestStep.class).get(0);
 
 		try {
 			int numberOfTests = 2; 			// number of tests
@@ -110,7 +109,7 @@ public class ODSAdapterTest {
 			List<Test> tests = new ArrayList<>();
 			List<WriteRequest> writeRequests = new ArrayList<>();
 			for(int i = 0; i < numberOfTests; i++) {
-				tests.add(entityFactory.createTest(USER + "_Test_" + i, testStatus));
+				tests.add(entityFactory.createTest(USER + "_Test_" + i/*, testStatus*/));
 			}
 
 
@@ -118,7 +117,7 @@ public class ODSAdapterTest {
 			for (Test test : tests) {
 				List<TestStep> testSteps = new ArrayList<>();
 				for(int i = 0; i < numberOfTestSteps; i++) {
-					testSteps.add(entityFactory.createTestStep(USER + "_TestStep_" + i, test, testStepStatus));
+					testSteps.add(entityFactory.createTestStep(USER + "_TestStep_" + i, test/*, testStepStatus*/));
 				}
 
 				// create measurements for each test step
