@@ -12,6 +12,8 @@ import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
+import java.util.Optional;
+
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
@@ -22,26 +24,33 @@ import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DefaultCore;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
-import org.eclipse.mdm.api.dflt.model.DefaultEntityFactory;
+import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 
-public final class ODSEntityFactory extends DefaultEntityFactory {
+public final class ODSEntityFactory extends EntityFactory {
 
 	private final ODSModelManager modelManager;
+	private final User loggedInUser;
 
-	public ODSEntityFactory(ODSModelManager modelManager) {
+	public ODSEntityFactory(ODSModelManager modelManager, User loggedInUser) {
 		this.modelManager = modelManager;
+		this.loggedInUser = loggedInUser;
 	}
 
 	@Override
-	public Test createTest(String name, User responsiblePerson) {
+	public Test createTest(String name) {
 		throw new UnsupportedOperationException("Test requires a status."); // TODO ...
 	}
 
 	@Override
 	public TestStep createTestStep(String name, Test test) {
 		throw new UnsupportedOperationException("Test step requires a status."); // TODO ...
+	}
+
+	@Override
+	protected Optional<User> getLoggedInUser() {
+		return Optional.ofNullable(loggedInUser);
 	}
 
 	@Override
@@ -52,6 +61,19 @@ public final class ODSEntityFactory extends DefaultEntityFactory {
 	@Override
 	protected <T extends Entity> Core createCore(Class<T> entityClass, ContextType contextType) {
 		return createCore(new Key<>(entityClass, contextType));
+	}
+
+	@Override
+	protected <T extends Entity> Core createCore(String name, Class<T> entityClass) {
+		EntityConfig<?> entityConfig = modelManager.getEntityConfig(modelManager.getEntityType(name));
+		if(!entityClass.equals(entityConfig.getEntityClass())) {
+			throw new IllegalArgumentException("Incompatible entity class expected '" + entityClass.getName()
+			+ "' but got '" + entityConfig.getEntityClass().getName() + "'");
+		}
+		Core core = new DefaultCore(entityConfig.getEntityType());
+		core.getValues().get(Entity.ATTR_MIMETYPE).set(entityConfig.getMimeType());
+
+		return core;
 	}
 
 	private <T extends Entity> Core createCore(Key<T> key) {

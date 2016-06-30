@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
@@ -74,10 +75,18 @@ public final class WriteRequestHandler {
 			String unitName = writeRequest.getChannel().getUnit().getName();
 			values.put(AE_LC_ATTR_VALUES, valueType.create(AE_LC_ATTR_VALUES, unitName, true, writeRequest.getValues()));
 
+			if(writeRequest.getSequenceRepresentation().isImplicit()) {
+				// PEAK ODS server: expects values written as generation parameters
+				Object genParamValues = writeRequest.getValues();
+				double[] genParamD = new double[Array.getLength(genParamValues)];
+				IntStream.range(0, genParamD.length).forEach(i -> genParamD[i] = ((Number)Array.get(genParamValues, i)).doubleValue());
+				values.get(AE_LC_ATTR_PARAMETERS).set(genParamD);
+			}
+
 			//flags
 			if(writeRequest.areAllValid()) {
 				values.get(AE_LC_ATTR_GLOBAL_FLAG).set((short) 15);
-				// TODO PEAK ODS server issue!
+				// PEAK ODS server issue: though global flag is true a flags array is expected
 				short[] flags = new short[Array.getLength(writeRequest.getValues())];
 				Arrays.fill(flags, (short) 15);
 				values.get(AE_LC_ATTR_FLAGS).set(flags);

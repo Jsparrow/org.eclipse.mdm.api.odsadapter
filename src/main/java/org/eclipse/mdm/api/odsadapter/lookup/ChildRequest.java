@@ -134,11 +134,9 @@ final class ChildRequest<T extends Deletable> extends EntityRequest<T> {
 			}
 
 			boolean isContextTypeDefined = entityConfig.getContextType().isPresent();
-			// TODO: iterate over Map id to entity !
 			for(Entity relatedEntity : cachedResult.getEntities()) {
 				boolean setByContextType = !isContextTypeDefined && relatedConfig.getContextType().isPresent();
 				List<EntityRecord<?>> entityRecords = relationConfig.dependants.remove(relatedEntity.getID());
-				// TODO entityRecords may be null!
 				for(EntityRecord<?> entityRecord : entityRecords == null ? new ArrayList<EntityRecord<?>>() : entityRecords) {
 					setRelatedEntity(entityRecord, relatedEntity,  setByContextType ? relatedConfig.getContextType().get() : null);
 				}

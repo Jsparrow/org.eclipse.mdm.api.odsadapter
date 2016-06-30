@@ -29,7 +29,6 @@ import org.eclipse.mdm.api.base.model.ContextDescribable;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.EntityFactory;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
 import org.eclipse.mdm.api.base.model.StatusAttachable;
@@ -44,6 +43,7 @@ import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.EntityManager;
+import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.eclipse.mdm.api.dflt.model.Status;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
@@ -69,11 +69,16 @@ public class ODSEntityManager implements EntityManager {
 		/**
 		 * TODO provide context properties from AoSession!
 		 */
+
 	}
 
 	@Override
 	public Optional<EntityFactory> getEntityFactory() {
-		return Optional.of(new ODSEntityFactory(modelManager));
+		try {
+			return Optional.of(new ODSEntityFactory(modelManager, loadLoggedOnUser().get()));
+		} catch (DataAccessException e) {
+			throw new IllegalStateException("Unable to load instance of the logged in user.");
+		}
 	}
 
 	@Override
@@ -279,9 +284,9 @@ public class ODSEntityManager implements EntityManager {
 		if(result.isPresent()) {
 			Map<ContextType, ContextRoot> contextRoots = new EnumMap<>(ContextType.class);
 			for(Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
-				Optional<Long> instanceID = result.map(r -> r.getRecord(entry.getValue())).map(Record::getID);
-				if(instanceID.isPresent()) {
-					contextRoots.put(entry.getKey(), entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID.get()));
+				Long instanceID = result.get().getRecord(entry.getValue()).getID();
+				if(instanceID > 0) {
+					contextRoots.put(entry.getKey(), entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
 				}
 			}
 

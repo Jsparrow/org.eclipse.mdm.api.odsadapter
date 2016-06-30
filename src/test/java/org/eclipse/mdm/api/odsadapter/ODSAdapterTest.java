@@ -22,7 +22,6 @@ import org.eclipse.mdm.api.base.massdata.WriteRequestBuilder;
 import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
-import org.eclipse.mdm.api.base.model.EntityFactory;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
@@ -33,7 +32,7 @@ import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.dflt.EntityManager;
-import org.eclipse.mdm.api.dflt.model.DefaultEntityFactory;
+import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.eclipse.mdm.api.dflt.model.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,7 +49,7 @@ public class ODSAdapterTest {
 	 * MDM default model and any database constraint which enforces
 	 * a relation of Test to a parent entity is deactivated!
 	 */
-	
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSAdapterTest.class);
 
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
@@ -106,12 +105,12 @@ public class ODSAdapterTest {
 			int numberOfChannels = 9;		// number of channels per measurement
 			Quantity quantity = getQuantity();
 
-			DefaultEntityFactory entityFactory = (DefaultEntityFactory)entityManager.getEntityFactory().get();
+			EntityFactory entityFactory = entityManager.getEntityFactory().get();
 
 			List<Test> tests = new ArrayList<>();
 			List<WriteRequest> writeRequests = new ArrayList<>();
 			for(int i = 0; i < numberOfTests; i++) {
-				tests.add(entityFactory.createTest(USER + "_Test_" + i, testStatus, entityManager.loadLoggedOnUser().get()));
+				tests.add(entityFactory.createTest(USER + "_Test_" + i, testStatus));
 			}
 
 
@@ -279,7 +278,7 @@ public class ODSAdapterTest {
 				transaction.abort();
 				throw e;
 			}
-			
+
 			return quantity;
 		}
 

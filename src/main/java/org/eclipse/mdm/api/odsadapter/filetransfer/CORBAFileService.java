@@ -149,7 +149,7 @@ public class CORBAFileService implements FileService {
 	public void download(Entity entity, Path target, FileLink fileLink, ProgressListener progressListener) throws IOException {
 		if(Files.exists(target)) {
 			if(!Files.isDirectory(target)) {
-				throw new IllegalArgumentException("Given target path is not a directory.");
+				throw new IllegalArgumentException("Target path is not a directory.");
 			}
 		} else {
 			Files.createDirectory(target);
@@ -175,7 +175,7 @@ public class CORBAFileService implements FileService {
 		} else if(fileLink.isRemote()) {
 			sourceStream = fileServer.openStream(fileLink, toElemID(entity));
 		} else {
-			throw new IllegalArgumentException("Given file link is neither in local nor remote state: " + fileLink);
+			throw new IllegalArgumentException("File link is neither in local nor remote state: " + fileLink);
 		}
 
 		// NOTE: Access to immediate input stream is buffered.
@@ -198,7 +198,7 @@ public class CORBAFileService implements FileService {
 		} else if(fileLink.isRemote()) {
 			fileLink.setFileSize(fileServer.loadSize(fileLink, toElemID(entity)));
 		} else {
-			throw new IllegalArgumentException("Given file link is neither in local nor remote state: " + fileLink);
+			throw new IllegalArgumentException("File link is neither in local nor remote state: " + fileLink);
 		}
 	}
 
@@ -303,7 +303,7 @@ public class CORBAFileService implements FileService {
 			// nothing to do
 			return;
 		} else if(!fileLink.isLocal()) {
-			throw new IllegalArgumentException("Given file link does not have a local path.");
+			throw new IllegalArgumentException("File link does not have a local path.");
 		}
 
 		InputStream sourceStream = Files.newInputStream(fileLink.getLocalPath());

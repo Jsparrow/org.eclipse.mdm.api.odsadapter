@@ -129,6 +129,15 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public Relation getRelation(EntityType target) {
 		Relation relation = relationsByEntity.get(target);
+		if(relation == null) {
+			// multiple relations to target exist, try to use a default
+			Map<String, Relation> relationsByName = relationsByEntityName.get(target);
+			if(relationsByName == null) {
+				throw new IllegalArgumentException("Relations to '" + target + "' not found!");
+			}
+
+			relation = relationsByName.get(target.getName());
+		}
 		return relation == null ? getParentRelation(target) : relation;
 	}
 

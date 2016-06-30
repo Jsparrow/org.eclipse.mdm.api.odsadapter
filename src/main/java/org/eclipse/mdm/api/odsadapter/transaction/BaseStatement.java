@@ -50,7 +50,7 @@ abstract class BaseStatement {
 		try {
 			return (Core) GET_CORE_METHOD.invoke(entity);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new IllegalArgumentException("Given entity of type '" + entity.getClass().getSimpleName() +
+			throw new IllegalArgumentException("Entity of type '" + entity.getClass().getSimpleName() +
 					"' does not extend '" + BaseEntity.class.getName() + "'", e);
 		}
 	}

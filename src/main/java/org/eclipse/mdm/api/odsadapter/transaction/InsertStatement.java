@@ -114,7 +114,7 @@ final class InsertStatement extends BaseStatement {
 
 	private void readEntityCore(Core core) {
 		if(!core.getTypeName().equals(getEntityType().getName())) {
-			throw new IllegalArgumentException("Given entity core '" + core.getTypeName()
+			throw new IllegalArgumentException("Entity core '" + core.getTypeName()
 			+ "' is incompatible with current insert statement for entity type '" + getEntityType() + "'.");
 		}
 

@@ -99,7 +99,7 @@ final class UpdateStatement extends BaseStatement {
 
 	private void readEntityCore(Core core) throws DataAccessException {
 		if(!core.getTypeName().equals(getEntityType().getName())) {
-			throw new IllegalArgumentException("Given entity core '" + core.getTypeName()
+			throw new IllegalArgumentException("Entity core '" + core.getTypeName()
 			+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");
 		}
 

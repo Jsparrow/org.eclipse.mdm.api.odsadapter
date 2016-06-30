@@ -436,7 +436,6 @@ public class ODSModelManager implements ModelManager {
 					EntityType contextSensorEntityType = contextSensorRelation.getTarget();
 					EntityConfig<ContextSensor> contextSensorConfig = create(new Key<>(ContextSensor.class), contextSensorEntityType.getName(), "application/x-asam.ao" + odsNameLC + "part." + contextComponentEntityType.getName());
 					contextSensorConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateSensor.class)));
-					contextSensorConfig.setComparator(Sortable.COMPARATOR);
 					contextComponentConfig.addChild(contextSensorConfig);
 				}
 			}
