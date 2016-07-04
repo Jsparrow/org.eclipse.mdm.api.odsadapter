@@ -74,18 +74,16 @@ final class DeleteStatement extends BaseStatement {
 			return 0;
 		}
 
-		Query query = getModelManager().createQuery();
+		Query query = getModelManager().createQuery().selectID(entityType);
 		for(Relation relation : entityType.getChildRelations()) {
 			if(useAutoDelete && AUTO_DELETABLE.contains(relation.getTarget().getName())) {
 				continue;
 			}
 
-			query.join(relation, Join.OUTER).selectID(relation.getTarget());
+			if(!relation.getTarget().equals(relation.getSource())) {
+				query.join(relation, Join.OUTER).selectID(relation.getTarget());
+			}
 		}
-
-		EntityType testStep = getModelManager().getEntityType(TestStep.class);
-		EntityType measurement = getModelManager().getEntityType(Measurement.class);
-		EntityType channel = getModelManager().getEntityType(Channel.class);
 
 		// select attributes containing file links only for entity types implementing FilesAttachable
 		EntityConfig<?> entityConfig = getModelManager().getEntityConfig(entityType);
@@ -93,27 +91,42 @@ final class DeleteStatement extends BaseStatement {
 			entityType.getAttributes().stream().filter(a -> a.getValueType().isFileLinkType()).forEach(query::select);
 		}
 
+		EntityType testStep = getModelManager().getEntityType(TestStep.class);
+		EntityType measurement = getModelManager().getEntityType(Measurement.class);
+		EntityType channel = getModelManager().getEntityType(Channel.class);
+
 		EntityType unitUnderTest = getModelManager().getEntityType(ContextRoot.class, ContextType.UNITUNDERTEST);
 		EntityType testSequence = getModelManager().getEntityType(ContextRoot.class, ContextType.TESTSEQUENCE);
 		EntityType testEquipment = getModelManager().getEntityType(ContextRoot.class, ContextType.TESTEQUIPMENT);
+
+		// type in this list must be deleted AFTER this this instances have been deleted
+		// informative relation is considered as a child relation
+		List<EntityType> delayedDelete = new ArrayList<>();
 
 		// join context roots
 		if(measurement.equals(entityType) || testStep.equals(entityType)) {
 			query.join(entityType.getRelation(unitUnderTest), Join.OUTER).selectID(unitUnderTest);
 			query.join(entityType.getRelation(testSequence), Join.OUTER).selectID(testSequence);
 			query.join(entityType.getRelation(testEquipment), Join.OUTER).selectID(testEquipment);
+			delayedDelete.addAll(Arrays.asList(unitUnderTest, testSequence, testEquipment));
 		}
 
 		// join parameter sets
 		if(measurement.equals(entityType) || channel.equals(entityType)) {
 			EntityType parameterSet = getModelManager().getEntityType(ParameterSet.class);
 			query.join(entityType.getRelation(parameterSet), Join.OUTER).selectID(parameterSet);
+			delayedDelete.add(parameterSet);
 		}
+
+		Filter filter = Filter.or().ids(entityType, instanceIDs);
+		entityType.getParentRelations().stream().filter(r -> r.getTarget().equals(entityType))
+		.forEach(relation -> filter.ids(relation, instanceIDs));
 
 		// query child IDs
 		Map<EntityType, Set<Long>> children = new HashMap<>();
-		for(Result result : query.fetch(Filter.idsOnly(entityType, instanceIDs))) {
-			result.stream().filter(r -> !r.getEntityType().equals(entityType)).filter(r -> r.getID().longValue() > 0)
+		for(Result result : query.fetch(filter)) {
+			// load children of other types
+			result.stream().filter(r -> r.getID().longValue() > 0)
 			.forEach(r -> {
 				children.computeIfAbsent(r.getEntityType(), k -> new HashSet<>()).add(r.getID());
 			});
@@ -157,11 +170,27 @@ final class DeleteStatement extends BaseStatement {
 		}
 
 		int amount = 0;
+		// delete real children
+		List<Entry<EntityType, Set<Long>>> consideredChildren = new ArrayList<>();
 		for(Entry<EntityType, Set<Long>> entry : children.entrySet()) {
-			amount += delete(entry.getKey(), entry.getValue(), true);
+			EntityType childType = entry.getKey();
+			Set<Long> childInstanceIDs = entry.getValue();
+			if(entityType.equals(childType)) {
+				childInstanceIDs.removeAll(instanceIDs);
+			} else if(delayedDelete.contains(entry.getKey())) {
+				consideredChildren.add(entry);
+				continue;
+			}
+			amount += delete(entry.getKey(), childInstanceIDs, true);
 		}
 
 		getApplElemAccess().deleteInstances(((ODSEntityType)entityType).getODSID(), toODSIDs(instanceIDs));
+
+		// delete considered children (informative relation)
+		for(Entry<EntityType, Set<Long>> entry : consideredChildren) {
+			amount += delete(entry.getKey(), entry.getValue(), true);
+		}
+
 		return amount + instanceIDs.size();
 	}
 

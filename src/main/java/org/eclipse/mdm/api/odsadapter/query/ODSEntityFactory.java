@@ -36,16 +36,6 @@ public final class ODSEntityFactory extends EntityFactory {
 		this.loggedInUser = loggedInUser;
 	}
 
-	//	@Override
-	//	public Test createTest(String name) {
-	//		throw new UnsupportedOperationException("Test requires a status."); // TODO ...
-	//	}
-	//
-	//	@Override
-	//	public TestStep createTestStep(String name, Test test) {
-	//		throw new UnsupportedOperationException("Test step requires a status."); // TODO ...
-	//	}
-
 	@Override
 	protected Optional<User> getLoggedInUser() {
 		return Optional.ofNullable(loggedInUser);

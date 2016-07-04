@@ -22,17 +22,17 @@ import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
+import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.ScalarType;
+import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
-import org.eclipse.mdm.api.dflt.model.TemplateComponent;
-import org.eclipse.mdm.api.dflt.model.TemplateRoot;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
@@ -104,6 +104,11 @@ public final class ODSTransaction implements Transaction {
 				getCatalogManager().createCatalogAttributes(catalogAttributes);
 			}
 
+			List<TestStep> testSteps = (List<TestStep>) entitiesByClassType.get(TestStep.class);
+			if(testSteps != null) {
+				create(testSteps.stream().map(ContextRoot::of).collect(ArrayList::new, List::addAll, List::addAll));
+			}
+
 			executeStatements(et -> new InsertStatement(this, et), entities);
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
@@ -170,20 +175,11 @@ public final class ODSTransaction implements Transaction {
 				getCatalogManager().deleteCatalogAttributes(catalogAttributes);
 			}
 
-			List<TemplateRoot> templateRoots = (List<TemplateRoot>) entitiesByClassType.get(TemplateRoot.class);
-			if(templateRoots != null) {
-				delete(templateRoots.stream().map(TemplateRoot::getTemplateComponents)
-						.collect(ArrayList::new, List::addAll, List::addAll));
-			}
-
-			List<TemplateComponent> templateComponents = (List<TemplateComponent>) entitiesByClassType.get(TemplateComponent.class);
-			if(templateComponents != null) {
-				delete(templateComponents.stream().map(TemplateComponent::getTemplateComponents)
-						.collect(ArrayList::new, List::addAll, List::addAll));
-			}
+			/*
+			 * TODO: for any template that has to be deleted it is required to ensure there are no link to it...
+			 */
 
 			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
-			//			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
 		} catch (AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
 		} catch(IOException e) {

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -16,6 +17,7 @@ public final class EntityConfigRepository {
 
 	// child types (implicit load only!)
 	private final Map<Key<?>, EntityConfig<?>> childConfigs = new HashMap<>();
+	private final Map<String, EntityConfig<?>> contextConfigs = new HashMap<>();
 
 	// ################################################################################################################
 
@@ -37,8 +39,25 @@ public final class EntityConfigRepository {
 	}
 
 	public EntityConfig<?> find(EntityType entityType) {
-		return entityConfigs.values().stream().filter(ec -> ec.getEntityType().equals(entityType)).findAny()
-				.orElseThrow(() -> new IllegalArgumentException("Entity configuration for type '" + entityType + "' not found."));
+		Optional<EntityConfig<?>> entityConfig = entityConfigs.values().stream().filter(ec -> ec.getEntityType().equals(entityType)).findFirst();
+		if(entityConfig.isPresent()) {
+			// entity config is a root type
+			return entityConfig.get();
+		}
+
+		entityConfig = childConfigs.values().stream().filter(ec -> ec.getEntityType().equals(entityType)).findFirst();
+		if(entityConfig.isPresent()) {
+			// entity config is an implicitly loaded child type
+			return entityConfig.get();
+		}
+
+		EntityConfig<?> config = contextConfigs.get(entityType.getName());
+		if(config == null) {
+			new IllegalArgumentException("Entity configuration for type '" + entityType + "' not found.");
+		}
+
+		// config is either a context component or sensor type
+		return config;
 	}
 
 
@@ -54,7 +73,15 @@ public final class EntityConfigRepository {
 	}
 
 	private void registerChildConfigs(EntityConfig<?> entityConfig) {
-		if(ContextRoot.class.equals(entityConfig.getEntityClass())) {
+		if(ContextRoot.class.equals(entityConfig.getEntityClass()) || ContextComponent.class.equals(entityConfig.getEntityClass())) {
+			for(EntityConfig<?> childConfig : entityConfig.getChildConfigs()) {
+				if(contextConfigs.put(childConfig.getEntityType().getName(), childConfig) != null) {
+					throw new IllegalArgumentException("It is not allowed to overwrite existing configurations.");
+				}
+
+				registerChildConfigs(childConfig);
+			}
+
 			return;
 		}
 		for(EntityConfig<?> childConfig : entityConfig.getChildConfigs()) {

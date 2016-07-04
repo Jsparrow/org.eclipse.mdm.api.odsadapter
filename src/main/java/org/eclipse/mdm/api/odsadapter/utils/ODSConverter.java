@@ -759,6 +759,9 @@ public final class ODSConverter {
 	}
 
 	private static FileLink fromODSExternalReference(T_ExternalReference input) {
+		if(input == null) {
+			return null;
+		}
 		return FileLink.newRemote(input.location, new MimeType(input.mimeType), input.description);
 	}
 
@@ -772,6 +775,9 @@ public final class ODSConverter {
 	}
 
 	private static T_ExternalReference toODSExternalReference(FileLink input) {
+		if(input == null) {
+			return new T_ExternalReference("", "", "");
+		}
 		return new T_ExternalReference(input.getDescription(), input.getMimeType().toString(), input.getRemotePath());
 	}
 
