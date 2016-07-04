@@ -161,7 +161,8 @@ final class InsertStatement extends BaseStatement {
 			list.set(list.size()-1, id);
 		}
 
-		getTransaction().addCore(core);
+		getTransaction().addModified(core);
+		getTransaction().addCreated(core);
 	}
 
 	private void setRelationIDs(Collection<Entity> relatedEntities) {

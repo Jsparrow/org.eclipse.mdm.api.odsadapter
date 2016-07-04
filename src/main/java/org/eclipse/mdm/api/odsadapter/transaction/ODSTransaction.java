@@ -59,7 +59,15 @@ public final class ODSTransaction implements Transaction {
 
 	private final String id = UUID.randomUUID().toString();
 
-	private final List<Core> modifiedCores = new ArrayList<>();
+	// need to write version == instanceID -> update after create
+	private final List<ContextRoot> contextRoots = new ArrayList<>();
+
+	// reset instance IDs on abort
+	private final List<Core> created = new ArrayList<>();
+
+	// apply changes
+	private final List<Core> modified = new ArrayList<>();
+
 	private final Entity entity;
 	private final Transfer transfer;
 
@@ -118,8 +126,18 @@ public final class ODSTransaction implements Transaction {
 				create(measurements.stream().map(ContextRoot::of).collect(HashSet::new, Set::addAll, Set::addAll));
 			}
 
-
 			executeStatements(et -> new InsertStatement(this, et), entities);
+
+			List<ContextRoot> contextRoots = (List<ContextRoot>) entitiesByClassType.get(ContextRoot.class);
+			if(contextRoots != null) {
+				contextRoots.forEach(contextRoot -> {
+					contextRoot.setVersion(contextRoot.getID().toString());
+				});
+
+				// this will restore the ASAM path of each context root
+				update(contextRoots);
+				contextRoots.addAll(contextRoots);
+			}
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
 		} catch(IOException e) {
@@ -235,7 +253,7 @@ public final class ODSTransaction implements Transaction {
 			modelManager.getAoSession().commitTransaction();
 
 			// commit succeed -> apply changes in entity cores
-			modifiedCores.forEach(Core::apply);
+			modified.forEach(Core::apply);
 
 			// remove deleted remote files
 			if(uploadService != null) {
@@ -262,9 +280,16 @@ public final class ODSTransaction implements Transaction {
 				uploadService.abort();
 			}
 
+			// reset version, since creation failed or was aborted
+			contextRoots.forEach(cr -> cr.setVersion(null));
+
+			// reset instance IDs
+			Long virtualID = Long.valueOf(0L);
+			created.forEach(c -> c.setID(virtualID));
+
 			modelManager.getAoSession().abortTransaction();
 
-			// TODO add statistics to logging (how many discarded created / updated / deleted)
+			// TODO add statistics to logging (how many created / updated / deleted)
 			LOGGER.debug("Transaction '{}' aborted.", id);
 		} catch(AoException e) {
 			LOGGER.error("Unable to abort transaction '" + id + "' due to: " + e.reason, e);
@@ -273,8 +298,12 @@ public final class ODSTransaction implements Transaction {
 		}
 	}
 
-	void addCore(Core core) {
-		modifiedCores.add(core);
+	void addCreated(Core core) {
+		created.add(core);
+	}
+
+	void addModified(Core core) {
+		modified.add(core);
 	}
 
 	ODSModelManager getModelManager() {
@@ -286,6 +315,8 @@ public final class ODSTransaction implements Transaction {
 			if(modelManager.getFileServer() == null) {
 				throw new DataAccessException("CORBA file server is not available.");
 			}
+
+			// upload service starts a periodic session refresh task -> lazy instantiation
 			uploadService = new UploadService(modelManager, entity, transfer);
 		}
 

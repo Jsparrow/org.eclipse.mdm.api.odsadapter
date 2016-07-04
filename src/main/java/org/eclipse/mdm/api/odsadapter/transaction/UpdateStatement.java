@@ -133,7 +133,7 @@ final class UpdateStatement extends BaseStatement {
 
 		collectChildEntities(core);
 
-		getTransaction().addCore(core);
+		getTransaction().addModified(core);
 	}
 
 	private void collectChildEntities(Core core) {
