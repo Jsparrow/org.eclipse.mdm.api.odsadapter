@@ -4,24 +4,33 @@ import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMES
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_SERVICENAME;
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_USER;
+import static org.junit.Assert.fail;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.Transaction;
-import org.eclipse.mdm.api.base.massdata.ReadRequest;
-import org.eclipse.mdm.api.base.massdata.ReadRequestIterable;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.massdata.WriteRequestBuilder;
 import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
+import org.eclipse.mdm.api.base.model.ContextRoot;
+import org.eclipse.mdm.api.base.model.ContextType;
+import org.eclipse.mdm.api.base.model.Deletable;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
@@ -29,10 +38,15 @@ import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Unit;
-import org.eclipse.mdm.api.base.model.User;
+import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.dflt.EntityManager;
+import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
+import org.eclipse.mdm.api.dflt.model.TemplateComponent;
+import org.eclipse.mdm.api.dflt.model.TemplateRoot;
+import org.eclipse.mdm.api.dflt.model.TemplateTest;
+import org.eclipse.mdm.api.dflt.model.TemplateTestStep;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -52,7 +66,7 @@ public class ODSAdapterTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSAdapterTest.class);
 
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
-	private static final String NAME_SERVICE = "corbaloc::1.2@<SERVER_IP>:2809/NameService";
+	private static final String NAME_SERVICE = "corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService";
 
 	// TODO service name: <SERVICE_NAME>.ASAM-ODS
 	private static final String SERVICE_NAME = "<SERVICE_NAME>.ASAM-ODS";
@@ -61,6 +75,7 @@ public class ODSAdapterTest {
 	private static final String PASSWORD = "sa";
 
 	private static EntityManager entityManager;
+	private static EntityFactory entityFactory;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
@@ -71,6 +86,8 @@ public class ODSAdapterTest {
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
 		entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
+		entityFactory = entityManager.getEntityFactory()
+				.orElseThrow(() -> new IllegalStateException("Entity manager factory not available."));
 	}
 
 	@AfterClass
@@ -82,95 +99,107 @@ public class ODSAdapterTest {
 
 	@org.junit.Test
 	public void runtTestScript() throws DataAccessException {
+		List<CatalogComponent> catalogComponents = createCatalogComponents();
+		List<TemplateRoot> templateRoots = createTemplateRoots(catalogComponents);
+		List<TemplateTestStep> templateTestSteps = createTemplateTestSteps(templateRoots);
+		TemplateTest templateTest = createTemplateTest(templateTestSteps);
+		PhysicalDimension physicalDimension = entityFactory.createPhysicalDimension("any_physical_dimension");
+		Unit unit = entityFactory.createUnit("any_unit", physicalDimension);
+		Quantity quantity = entityFactory.createQuantity("any_quantity", unit);
+
+
+		Transaction transaction = entityManager.startTransaction();
 		try {
-			createTestData();
-			readMeasurementData();
-			updateTestData();
-		} catch(DataAccessException e) {
-			org.junit.Assert.fail("unable to write data");
-		} finally {
-			deleteTestData();
+			create(transaction, "catalog components", catalogComponents);
+			create(transaction, "template roots", templateRoots);
+			create(transaction, "template test steps", templateTestSteps);
+			create(transaction, "template test", Collections.singletonList(templateTest));
+			create(transaction, "physical dimension", Collections.singletonList(physicalDimension));
+			create(transaction, "unit", Collections.singletonList(unit));
+			create(transaction, "quantity", Collections.singletonList(quantity));
+
+			transaction.commit();
+		} catch(RuntimeException e) {
+			transaction.abort();
+			fail("Unable to create test data due to: " + e.getMessage());
+		}
+
+		List<Test> tests = Collections.emptyList();
+		try {
+			tests = createTestData(templateTest, quantity);
+		} catch(DataAccessException | RuntimeException e) {
+			e.printStackTrace();
+		}
+
+		transaction = entityManager.startTransaction();
+		try {
+			// delete in reverse order!
+			if(!tests.isEmpty()) {
+				delete(transaction, "tests and their children", tests);
+			}
+
+			delete(transaction, "quantity", Collections.singletonList(quantity));
+			delete(transaction, "unit", Collections.singletonList(unit));
+			delete(transaction, "physical dimension", Collections.singletonList(physicalDimension));
+			delete(transaction, "template test", Collections.singletonList(templateTest));
+			delete(transaction, "template test steps", templateTestSteps);
+			delete(transaction, "template roots", templateRoots);
+			delete(transaction, "catalog components", catalogComponents);
+
+			transaction.commit();
+		} catch(RuntimeException e) {
+			transaction.abort();
+			fail("Unable to delete test data due to: " + e.getMessage());
+		}
+
+		if(tests.isEmpty()) {
+			fail("Was unable to create test data.");
 		}
 	}
 
-	private void createTestData() throws DataAccessException {
+	private List<Test> createTestData(TemplateTest templateTest, Quantity quantity) throws DataAccessException {
+		List<Test> tests = createTests(2, templateTest);
+
+		// create measurement test data
+		List<WriteRequest> writeRequests = new ArrayList<>();
+		for(Test test : tests) {
+			for(TestStep testStep : TestStep.of(test)) {
+				Optional<TemplateTestStep> templateTestStep = TemplateTestStep.of(testStep);
+				ContextRoot[] contextRoots = new ContextRoot[0];
+				if(templateTestStep.isPresent()) {
+					contextRoots = templateTestStep.get().getTemplateRoots().stream()
+							.map(templateRoot -> entityFactory.createContextRoot(templateRoot))
+							.toArray(ContextRoot[]::new);
+				}
+				for(int i = 1; i < 3; i++) {
+					Measurement measurement = entityFactory.createMeasurement("measurement_" + i, testStep, contextRoots);
+
+					// create channels
+					List<Channel> channels = new ArrayList<>();
+					for(int j = 0; j < 9; j++) {
+						channels.add(entityFactory.createChannel("channel_ " + j, measurement, quantity));
+					}
+
+					// create channel group
+					ChannelGroup channelGroup = entityFactory.createChannelGroup("group", 10, measurement);
+					writeRequests.addAll(createMeasurementData(measurement, channelGroup, channels));
+				}
+			}
+		}
+
 		Transaction transaction = entityManager.startTransaction();
-
-		//		Status testStatus = entityManager.loadAllStatus(Test.class).get(0);
-		//		Status testStepStatus = entityManager.loadAllStatus(TestStep.class).get(0);
-
 		try {
-			int numberOfTests = 2; 			// number of tests
-			int numberOfTestSteps = 3; 		// number of test steps per test
-			int numberOfMeasurements = 1; 	// number of measurements per test step
-			int numberOfChannels = 9;		// number of channels per measurement
-			Quantity quantity = getQuantity();
+			create(transaction, "tests based on teamplates with mass data", tests);
 
-			EntityFactory entityFactory = entityManager.getEntityFactory().get();
-
-			List<Test> tests = new ArrayList<>();
-			List<WriteRequest> writeRequests = new ArrayList<>();
-			for(int i = 0; i < numberOfTests; i++) {
-				tests.add(entityFactory.createTest(USER + "_Test_" + i/*, testStatus*/));
-			}
-
-
-			// create test steps for each test
-			for (Test test : tests) {
-				List<TestStep> testSteps = new ArrayList<>();
-				for(int i = 0; i < numberOfTestSteps; i++) {
-					testSteps.add(entityFactory.createTestStep(USER + "_TestStep_" + i, test/*, testStepStatus*/));
-				}
-
-				// create measurements for each test step
-				for (TestStep testStep : testSteps) {
-					List<Measurement> measurements = new ArrayList<>();
-					for(int i = 0; i < numberOfMeasurements; i++) {
-						measurements.add(entityFactory.createMeasurement(USER + "_Measurement_" + i, testStep));
-					}
-
-					// create channels and channel group for each measurement
-					for (Measurement measurement : measurements) {
-						// create channels
-						List<Channel> channels = new ArrayList<>();
-						for(int i = 0; i < numberOfChannels; i++) {
-							channels.add(entityFactory.createChannel(USER + "_Channel_ " + i, measurement, quantity));
-						}
-
-						// create channel group
-						ChannelGroup channelGroup = entityFactory.createChannelGroup(USER + "_ChannelGroup_ ", 10, measurement);
-						writeRequests.addAll(createMeasurementData(measurement, channelGroup, channels));
-					}
-				}
-			}
-
-			transaction.create(tests);
 			transaction.writeMeasuredValues(writeRequests);
 			transaction.commit();
-		} catch(DataAccessException e) {
+			return tests;
+		} catch(DataAccessException | RuntimeException e) {
 			e.printStackTrace();
 			transaction.abort();
-			throw e;
-		}
-	}
-
-	private void updateTestData() throws DataAccessException {
-		// update description and responsible person
-		List<Test> tests = entityManager.loadAll(Test.class, USER + "_Test_*");
-		for(Test test : tests) {
-			test.setDescription("new description");
-			test.setResponsiblePerson(entityManager.loadAll(User.class).get(0));
 		}
 
-		Transaction transaction = entityManager.startTransaction();
-		try {
-			transaction.update(tests);
-			transaction.commit();
-		} catch(DataAccessException e) {
-			e.printStackTrace();
-			transaction.abort();
-			throw e;
-		}
+		return Collections.emptyList();
 	}
 
 	private List<WriteRequest> createMeasurementData(Measurement measurement, ChannelGroup channelGroup, List<Channel> channels) {
@@ -239,93 +268,89 @@ public class ODSAdapterTest {
 		return writeRequests;
 	}
 
-	private void readMeasurementData() throws DataAccessException {
-		List<Measurement> measurements = entityManager.loadAll(Measurement.class, USER + "_Measurement_*");
-		ChannelGroup channelGroup = entityManager.loadChildren(measurements.get(0), Measurement.CHILD_TYPE_CHANNELGROUP).get(0);
-
-		ReadRequestIterable readRequestIterable = ReadRequest.create(channelGroup)
-				.allChannels()
-				.requestSize(3)
-				.createIterable();
-
-		for(ReadRequest readRequest : readRequestIterable) {
-			LOGGER.debug(entityManager.readMeasuredValues(readRequest).toString());
-		}
+	private static void delete(Transaction transaction, String key, Collection<? extends Deletable> entities) throws DataAccessException {
+		LOGGER.info(">>>>>>>>>>>>>>>>> deleting " + key + "...");
+		long start = System.currentTimeMillis();
+		transaction.delete(entities);
+		LOGGER.info(">>>>>>>>>>>>>>>>> " + key + " deleted in " + (System.currentTimeMillis() - start) + " ms");
 	}
 
-	private void deleteTestData() throws DataAccessException {
-		Transaction transaction = entityManager.startTransaction();
-		try {
-			transaction.delete(entityManager.loadAll(Test.class, USER + "_Test_*"));
-			transaction.commit();
-		} catch(DataAccessException e) {
-			e.printStackTrace();
-			transaction.abort();
-			throw e;
-		}
+	private static void create(Transaction transaction, String key, Collection<? extends Entity> entities) throws DataAccessException {
+		LOGGER.info(">>>>>>>>>>>>>>>>> creating " + key + "...");
+		long start = System.currentTimeMillis();
+		transaction.create(entities);
+		LOGGER.info(">>>>>>>>>>>>>>>>> " + key + " written in " + (System.currentTimeMillis() - start) + " ms");
 	}
 
-	private Quantity getQuantity() throws DataAccessException {
-		List<Quantity> quantities = entityManager.loadAll(Quantity.class);
-		if(quantities.isEmpty()) {
-			Quantity quantity = getEntityFactory().createQuantity("default", getUnit());
-
-			Transaction transaction = entityManager.startTransaction();
-			try {
-				transaction.create(Arrays.asList(quantity));
-				transaction.commit();
-			} catch(DataAccessException e) {
-				e.printStackTrace();
-				transaction.abort();
-				throw e;
-			}
-
-			return quantity;
-		}
-
-		return quantities.get(0);
+	private List<Test> createTests(int count, TemplateTest templateTest) {
+		return IntStream.range(1, ++count).mapToObj(i -> entityFactory.createTest("simple_test_" + i, templateTest))
+				.collect(Collectors.toList());
 	}
 
-	private Unit getUnit() throws DataAccessException {
-		List<Unit> units = entityManager.loadAll(Unit.class);
-		if(units.isEmpty()) {
-			Unit unit = getEntityFactory().createUnit("-", getPhysicalDimension());
-
-			Transaction transaction = entityManager.startTransaction();
-			try {
-				transaction.create(Arrays.asList(unit));
-				transaction.commit();
-			} catch(DataAccessException e) {
-				e.printStackTrace();
-				transaction.abort();
-				throw e;
-			}
-		}
-
-		return units.get(0);
+	private TemplateTest createTemplateTest(List<TemplateTestStep> templateTestSteps) {
+		TemplateTest templateTest = entityFactory.createTemplateTest("tpl_test");
+		templateTestSteps.forEach(tts -> {
+			entityFactory.createTemplateTestStepUsage(UUID.randomUUID().toString(), templateTest, tts);
+		});
+		return templateTest;
 	}
 
-	private PhysicalDimension getPhysicalDimension() throws DataAccessException {
-		List<PhysicalDimension> physicalDimensions = new ArrayList<>();
-		if(physicalDimensions.isEmpty()) {
-			PhysicalDimension physicalDimension = getEntityFactory().createPhysicalDimension("dimensionless");
+	private List<TemplateTestStep> createTemplateTestSteps(List<TemplateRoot> templateRoots) {
+		// make sure each context type is given only once
+		templateRoots.stream().collect(Collectors.toMap(TemplateRoot::getContextType, Function.identity()));
 
-			Transaction transaction = entityManager.startTransaction();
-			try {
-				transaction.create(Arrays.asList(physicalDimension));
-				transaction.commit();
-			} catch(DataAccessException e) {
-				e.printStackTrace();
-				transaction.abort();
-				throw e;
-			}
-		}
+		List<TemplateTestStep> templateTestSteps = new ArrayList<>();
+		TemplateTestStep templateTestStep1 = entityFactory.createTemplateTestStep("tpl_test_step_1");
+		templateRoots.forEach(tr -> templateTestStep1.setTemplateRoot(tr));
+		templateTestSteps.add(templateTestStep1);
+		TemplateTestStep templateTestStep2 = entityFactory.createTemplateTestStep("tpl_test_step_2");
+		templateRoots.forEach(tr -> templateTestStep2.setTemplateRoot(tr));
+		templateTestSteps.add(templateTestStep2);
 
-		return physicalDimensions.get(0);
+		return templateTestSteps;
 	}
 
-	private EntityFactory getEntityFactory() {
-		return entityManager.getEntityFactory().orElseThrow(() -> new IllegalStateException("Entity factory is not available."));
+	private List<TemplateRoot> createTemplateRoots(List<CatalogComponent> catalogComponents) {
+		Map<ContextType, List<CatalogComponent>> groups = catalogComponents.stream().collect(Collectors.groupingBy(CatalogComponent::getContextType));
+
+		List<TemplateRoot> templateRoots = new ArrayList<>();
+		groups.forEach((contextType, catalogComps) -> {
+			TemplateRoot templateRoot = entityFactory.createTemplateRoot(contextType, "tpl_" + toLower(contextType.name()) + "_root");
+			// create child template components for template root
+			catalogComps.forEach(catalogComp -> {
+				TemplateComponent templateComponent = entityFactory.createTemplateComponent("tpl_" + catalogComp.getName() + "_parent", templateRoot, catalogComp);
+				entityFactory.createTemplateComponent("tpl_" + catalogComp.getName() + "_child", templateComponent, catalogComp);
+			});
+
+			templateRoots.add(templateRoot);
+		});
+
+		return templateRoots;
+	}
+
+	private List<CatalogComponent> createCatalogComponents() {
+		List<CatalogComponent> catalogComponents = new ArrayList<>();
+		catalogComponents.add(createCatalogComponent(ContextType.UNITUNDERTEST));
+		catalogComponents.add(createCatalogComponent(ContextType.TESTSEQUENCE));
+		catalogComponents.add(createCatalogComponent(ContextType.TESTEQUIPMENT));
+		return catalogComponents;
+	}
+
+	private CatalogComponent createCatalogComponent(ContextType contextType) {
+		CatalogComponent catalogComponent = entityFactory.createCatalogComponent(contextType, toLower(contextType.name()));
+
+		entityFactory.createCatalogAttribute("string", ValueType.STRING, catalogComponent);
+		entityFactory.createCatalogAttribute("date", ValueType.DATE, catalogComponent);
+		entityFactory.createCatalogAttribute("long", ValueType.LONG, catalogComponent);
+		entityFactory.createCatalogAttribute("file_link", ValueType.FILE_LINK, catalogComponent);
+		entityFactory.createCatalogAttribute("file_link_array", ValueType.FILE_LINK_SEQUENCE, catalogComponent);
+		entityFactory.createCatalogAttribute("scalar_type", ScalarType.class, catalogComponent);
+
+		return catalogComponent;
+	}
+
+	private static String toLower(String name) {
+		return name.toLowerCase(Locale.ROOT);
 	}
 
 }
