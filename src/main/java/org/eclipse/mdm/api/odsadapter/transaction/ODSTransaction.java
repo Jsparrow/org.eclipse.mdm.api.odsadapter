@@ -11,9 +11,11 @@ package org.eclipse.mdm.api.odsadapter.transaction;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +28,7 @@ import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.query.DataAccessException;
@@ -108,6 +111,13 @@ public final class ODSTransaction implements Transaction {
 			if(testSteps != null) {
 				create(testSteps.stream().map(ContextRoot::of).collect(ArrayList::new, List::addAll, List::addAll));
 			}
+
+			List<Measurement> measurements = (List<Measurement>) entitiesByClassType.get(Measurement.class);
+			if(measurements != null) {
+				// use set here, since measurement sibling point to the same context roots
+				create(measurements.stream().map(ContextRoot::of).collect(HashSet::new, Set::addAll, Set::addAll));
+			}
+
 
 			executeStatements(et -> new InsertStatement(this, et), entities);
 		} catch(AoException e) {
