@@ -16,15 +16,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Stream;
 
+import org.asam.ods.AIDName;
+import org.asam.ods.AggrFunc;
 import org.asam.ods.AoException;
 import org.asam.ods.AoSession;
 import org.asam.ods.ApplElem;
 import org.asam.ods.ApplElemAccess;
 import org.asam.ods.ApplRel;
 import org.asam.ods.ApplicationStructureValue;
+import org.asam.ods.ElemResultSetExt;
 import org.asam.ods.EnumerationAttributeStructure;
+import org.asam.ods.JoinDef;
 import org.asam.ods.NameValue;
+import org.asam.ods.QueryStructureExt;
+import org.asam.ods.ResultSetExt;
+import org.asam.ods.SelAIDNameUnitId;
+import org.asam.ods.SelItem;
+import org.asam.ods.SelOrder;
+import org.asam.ods.T_LONGLONG;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.ContextComponent;
@@ -303,13 +314,17 @@ public class ODSModelManager implements ModelManager {
 			.put(eas.aaName, ODSEnumerations.getEnumClass(eas.enumName));
 		}
 
+		ApplicationStructureValue asv = aoSession.getApplicationStructureValue();
+		Map<Long, String> units = getUnitMapping(asv);
+
 		// create entity types (incl. attributes)
 		Map<Long, ODSEntityType> entityTypesByID = new HashMap<>();
-		ApplicationStructureValue asv = aoSession.getApplicationStructureValue();
 		String sourceName = aoSession.getName();
 		for(ApplElem applElem : asv.applElems) {
 			Long odsID = ODSConverter.fromODSLong(applElem.aid);
-			ODSEntityType entityType = new ODSEntityType(sourceName, applElem, enumClassMap.getOrDefault(odsID, new HashMap<>()));
+			Map<String, Class<? extends Enum<?>>> entityEnumMap = enumClassMap.getOrDefault(odsID, new HashMap<>());
+
+			ODSEntityType entityType = new ODSEntityType(sourceName, applElem, units, entityEnumMap);
 			entityTypesByName.put(applElem.aeName, entityType);
 			entityTypesByID.put(odsID, entityType);
 		}
@@ -327,6 +342,32 @@ public class ODSModelManager implements ModelManager {
 
 		long stop = System.currentTimeMillis();
 		LOGGER.debug("{} entity types with {} relations found in {} ms.", entityTypesByName.size(), relations.size(), stop - start);
+	}
+
+	private Map<Long, String> getUnitMapping(ApplicationStructureValue asv) throws AoException {
+		ApplElem unitElem = Stream.of(asv.applElems).filter(ae -> ae.beName.equals("AoUnit")).findAny()
+				.orElseThrow(() -> new IllegalStateException("Application element 'Unit' is not defined."));
+
+		QueryStructureExt qse = new QueryStructureExt();
+		qse.anuSeq = new SelAIDNameUnitId[] {
+				new SelAIDNameUnitId(new AIDName(unitElem.aid, "Id"), new T_LONGLONG(), AggrFunc.NONE),
+				new SelAIDNameUnitId(new AIDName(unitElem.aid, "Name"), new T_LONGLONG(), AggrFunc.NONE)};
+		qse.condSeq = new SelItem[0];
+		qse.groupBy = new AIDName[0];
+		qse.joinSeq = new JoinDef[0];
+		qse.orderBy = new SelOrder[0];
+
+		Map<Long, String> units = new HashMap<>();
+		for(ResultSetExt resultSetExt : getApplElemAccess().getInstancesExt(qse, 0)) {
+			ElemResultSetExt unitResultSetExt = resultSetExt.firstElems[0];
+			for(int i = 0; i < unitResultSetExt.values[0].value.flag.length; i++) {
+				Long unitID = ODSConverter.fromODSLong(unitResultSetExt.values[0].value.u.longlongVal()[i]);
+				String unitName = unitResultSetExt.values[1].value.u.stringVal()[i];
+				units.put(unitID, unitName);
+			}
+		}
+
+		return units;
 	}
 
 	private void loadEntityConfigurations() {

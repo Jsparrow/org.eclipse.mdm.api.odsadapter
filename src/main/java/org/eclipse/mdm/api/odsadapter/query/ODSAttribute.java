@@ -20,12 +20,14 @@ final class ODSAttribute implements Attribute {
 
 	private final Class<? extends Enum<?>> enumClass;
 	private final String name;
+	private final String unit;
 	private final EntityType entityType;
 	private final ValueType valueType;
 
-	ODSAttribute(EntityType entityType, ApplAttr applAttr, Class<? extends Enum<?>> enumClass) {
+	ODSAttribute(EntityType entityType, ApplAttr applAttr, String unit, Class<? extends Enum<?>> enumClass) {
 		this.entityType = entityType;
 		name = applAttr.aaName;
+		this.unit = unit == null ? "" : unit;
 		valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);
 
 		if(valueType.isEnumerationType() && enumClass == null) {
@@ -39,6 +41,11 @@ final class ODSAttribute implements Attribute {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public String getUnit() {
+		return unit;
 	}
 
 	@Override

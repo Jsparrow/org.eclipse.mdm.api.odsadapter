@@ -61,7 +61,7 @@ final class ODSRelation implements Relation {
 	@Override
 	public Attribute getAttribute() {
 		if(attribute == null) {
-			attribute = new ODSAttribute(getSource(), new ApplAttr(getName(), "", DataType.DT_LONGLONG, 0, true, false, null), null);
+			attribute = new ODSAttribute(getSource(), new ApplAttr(getName(), "", DataType.DT_LONGLONG, 0, true, false, null), null, null);
 		}
 
 		return attribute;

@@ -305,7 +305,7 @@ public class ODSQuery implements Query {
 
 		public ODSValueSeq(Attribute attribute, NameValueSeqUnitId nvsui) throws DataAccessException {
 			length = nvsui.value.flag.length;
-			unit = ""; // TODO UNIT MAPPING => attribute.getUnit();
+			unit = attribute.getUnit();
 			values = ODSConverter.fromODSValueSeq(attribute, unit, nvsui.value);
 		}
 

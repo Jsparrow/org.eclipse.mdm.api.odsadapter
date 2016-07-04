@@ -31,6 +31,7 @@ import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Relationship;
+import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 
 public final class ODSEntityType implements EntityType {
 
@@ -46,14 +47,14 @@ public final class ODSEntityType implements EntityType {
 	private final T_LONGLONG odsID;
 	private final String name;
 
-	ODSEntityType(String sourceName, ApplElem applElem, Map<String, Class<? extends Enum<?>>> enumClasses)
-			throws AoException {
+	ODSEntityType(String sourceName, ApplElem applElem, Map<Long, String> units,
+			Map<String, Class<? extends Enum<?>>> enumClasses) throws AoException {
 		this.sourceName = sourceName;
 		name = applElem.aeName;
 		odsID = applElem.aid;
 
 		attributeByName = Arrays.stream(applElem.attributes)
-				.map(a -> new ODSAttribute(this, a, enumClasses.get(a.aaName)))
+				.map(a -> new ODSAttribute(this, a, units.get(ODSConverter.fromODSLong(a.unitId)), enumClasses.get(a.aaName)))
 				.collect(toMap(Attribute::getName, Function.identity()));
 	}
 
