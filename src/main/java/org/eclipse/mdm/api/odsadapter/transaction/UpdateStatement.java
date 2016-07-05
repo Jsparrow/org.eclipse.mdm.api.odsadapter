@@ -63,7 +63,7 @@ final class UpdateStatement extends BaseStatement {
 		T_LONGLONG aID = getEntityType().getODSID();
 
 		if(!fileLinkToUpload.isEmpty()) {
-			getTransaction().getFileService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
+			getTransaction().getUploadService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
 		}
 
 		for(Entry<String, List<Value>> entry : updateMap.entrySet()) {
@@ -112,7 +112,7 @@ final class UpdateStatement extends BaseStatement {
 		fileLinkToUpload.addAll(core.getAddedFileLinks());
 		List<FileLink> fileLinksToRemove = core.getRemovedFileLinks();
 		if(!fileLinksToRemove.isEmpty()) {
-			getTransaction().getFileService().addToRemove(fileLinksToRemove);
+			getTransaction().getUploadService().addToRemove(fileLinksToRemove);
 		}
 
 		updateMap.computeIfAbsent(getEntityType().getIDAttribute().getName(), k -> new ArrayList<>())

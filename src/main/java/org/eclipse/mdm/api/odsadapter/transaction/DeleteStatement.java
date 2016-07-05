@@ -142,7 +142,7 @@ final class DeleteStatement extends BaseStatement {
 			}
 
 			if(!fileLinks.isEmpty()) {
-				getTransaction().getFileService().addToRemove(fileLinks);
+				getTransaction().getUploadService().addToRemove(fileLinks);
 			}
 		}
 

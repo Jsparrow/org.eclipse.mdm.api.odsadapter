@@ -31,11 +31,13 @@ import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.TestStep;
+import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
+import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
@@ -115,6 +117,14 @@ public final class ODSTransaction implements Transaction {
 				getCatalogManager().createCatalogAttributes(catalogAttributes);
 			}
 
+			List<TemplateAttribute> templateAttributes = (List<TemplateAttribute>) entitiesByClassType.get(TemplateAttribute.class);
+			if(templateAttributes != null) {
+				List<TemplateAttribute> filtered = getFileLinkTemplateAttributes(templateAttributes);
+				if(!filtered.isEmpty()) {
+					getUploadService().upload(filtered, null /* TODO progress listener */);
+				}
+			}
+
 			List<TestStep> testSteps = (List<TestStep>) entitiesByClassType.get(TestStep.class);
 			if(testSteps != null) {
 				create(testSteps.stream().map(ContextRoot::of).collect(ArrayList::new, List::addAll, List::addAll));
@@ -157,14 +167,21 @@ public final class ODSTransaction implements Transaction {
 		// TODO if entity instanceof Versionable -> VersionState.EDITING || VersionState.VALID (OLD STATE NOT CURRENT!)!
 		// -> if old state is EDITING -> anything may be modified
 		// -> if old state is VALID -> only the VersionState is allowed to be changed to ARCHIVED!
-
-		Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
-		List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
-		if(catalogAttributes != null) {
-			getCatalogManager().updateCatalogAttributes(catalogAttributes);
-		}
-
 		try {
+			Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
+			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
+			if(catalogAttributes != null) {
+				getCatalogManager().updateCatalogAttributes(catalogAttributes);
+			}
+
+			List<TemplateAttribute> templateAttributes = (List<TemplateAttribute>) entitiesByClassType.get(TemplateAttribute.class);
+			if(templateAttributes != null) {
+				List<TemplateAttribute> filtered = getFileLinkTemplateAttributes(templateAttributes);
+				if(!filtered.isEmpty()) {
+					getUploadService().upload(filtered, null /* TODO progress listener */);
+				}
+			}
+
 			executeStatements(et -> new UpdateStatement(this, et), entities);
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
@@ -310,7 +327,7 @@ public final class ODSTransaction implements Transaction {
 		return modelManager;
 	}
 
-	UploadService getFileService() throws DataAccessException {
+	UploadService getUploadService() throws DataAccessException {
 		if(uploadService == null) {
 			if(modelManager.getFileServer() == null) {
 				throw new DataAccessException("CORBA file server is not available.");
@@ -329,6 +346,13 @@ public final class ODSTransaction implements Transaction {
 		}
 
 		return catalogManager;
+	}
+
+	private List<TemplateAttribute> getFileLinkTemplateAttributes(List<TemplateAttribute> templateAttributes) {
+		return templateAttributes.stream().filter(ta -> {
+			Value value = ta.getDefaultValue();
+			return value.getValueType().isFileLinkType() && value.isValid();
+		}).collect(Collectors.toList());
 	}
 
 	private <T extends Entity> void executeStatements(Function<EntityType, BaseStatement> statementFactory, Collection<T> entities)

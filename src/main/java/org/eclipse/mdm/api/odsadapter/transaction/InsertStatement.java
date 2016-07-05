@@ -82,7 +82,7 @@ final class InsertStatement extends BaseStatement {
 
 		// TODO Task 1
 		if(!fileLinkToUpload.isEmpty()) {
-			getTransaction().getFileService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
+			getTransaction().getUploadService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
 		}
 
 		for(Entry<String, List<Value>> entry : insertMap.entrySet()) {

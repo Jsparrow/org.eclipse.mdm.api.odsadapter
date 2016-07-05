@@ -3,6 +3,7 @@ package org.eclipse.mdm.api.odsadapter.transaction;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -16,11 +17,15 @@ import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.FileService.ProgressListener;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
+import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 final class UploadService {
+
+	private final Map<TemplateAttribute, Value> templateAttributeFileLinks = new HashMap<>();
 
 	private final List<FileLink> uploaded = new ArrayList<>();
 
@@ -52,15 +57,29 @@ final class UploadService {
 		}, 5, 5, TimeUnit.MINUTES);
 	}
 
-	public void uploadSequential(Collection<FileLink> fileLinks, ProgressListener progressListener) throws IOException {
-		List<FileLink> filtered = retainForUpload(fileLinks);
-		try {
-			fileService.uploadSequential(entity, filtered, progressListener);
-		} finally {
-			filtered.stream().filter(FileLink::isRemote).forEach(fl -> {
-				remotePaths.put(fl.getLocalPath(), fl.getRemotePath());
-				uploaded.add(fl);
-			});
+	public void upload(Collection<TemplateAttribute> templateAttributes, ProgressListener progressListener) throws IOException {
+		List<FileLink> fileLinks = new ArrayList<>();
+		for(TemplateAttribute templateAttribute : templateAttributes) {
+			Value defaultValue = templateAttribute.getDefaultValue();
+			if(!defaultValue.isValid()) {
+				continue;
+			}
+
+			if(defaultValue.getValueType().isFileLink()) {
+				fileLinks.add(defaultValue.extract());
+			} else if(defaultValue.getValueType().isFileLinkSequence()) {
+				fileLinks.addAll(Arrays.asList((FileLink[])defaultValue.extract()));
+			} else {
+				throw new IllegalStateException("Template attribute's value type is not of type file link.");
+			}
+
+			templateAttributeFileLinks.put(templateAttribute, defaultValue);
+		}
+
+		if(!fileLinks.isEmpty()) {
+			uploadParallel(fileLinks, progressListener);
+			// remote paths available -> update template attribute
+			templateAttributeFileLinks.forEach((ta, v) -> ta.setDefaultValue(v.extract()));
 		}
 	}
 
@@ -80,7 +99,6 @@ final class UploadService {
 		toRemove.addAll(fileLinks);
 	}
 
-
 	public void commit() {
 		fileService.delete(entity, toRemove.stream().collect(Collectors.groupingBy(FileLink::getRemotePath))
 				.values().stream().map(l -> l.get(0)).collect(Collectors.toList()));
@@ -91,6 +109,7 @@ final class UploadService {
 		fileService.delete(entity, uploaded.stream().collect(Collectors.groupingBy(FileLink::getRemotePath))
 				.values().stream().map(l -> l.get(0)).collect(Collectors.toList()));
 		uploaded.forEach(fl -> fl.setRemotePath(null));
+		templateAttributeFileLinks.forEach((ta, v) -> ta.setDefaultValue(v.extract()));
 		scheduler.shutdown();
 	}
 
