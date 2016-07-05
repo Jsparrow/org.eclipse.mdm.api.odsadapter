@@ -45,11 +45,13 @@ public final class ODSEntityType implements EntityType {
 
 	private final String sourceName;
 	private final T_LONGLONG odsID;
+	private final String baseName;
 	private final String name;
 
 	ODSEntityType(String sourceName, ApplElem applElem, Map<Long, String> units,
 			Map<String, Class<? extends Enum<?>>> enumClasses) throws AoException {
 		this.sourceName = sourceName;
+		baseName = applElem.beName;
 		name = applElem.aeName;
 		odsID = applElem.aid;
 
@@ -66,6 +68,10 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	public String getBaseName() {
+		return baseName;
 	}
 
 	@Override

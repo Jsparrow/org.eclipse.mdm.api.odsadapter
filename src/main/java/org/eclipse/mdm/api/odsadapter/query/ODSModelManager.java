@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.groupingBy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -122,8 +123,7 @@ public class ODSModelManager implements ModelManager {
 			isAthos = false;
 		}
 
-		loadApplicationModel();
-		loadEntityConfigurations();
+		initialize();
 	}
 
 	public ODSModelManager newSession() throws AoException {
@@ -314,13 +314,13 @@ public class ODSModelManager implements ModelManager {
 			.put(eas.aaName, ODSEnumerations.getEnumClass(eas.enumName));
 		}
 
-		ApplicationStructureValue asv = aoSession.getApplicationStructureValue();
-		Map<Long, String> units = getUnitMapping(asv);
+		ApplicationStructureValue applicationStructureValue = aoSession.getApplicationStructureValue();
+		Map<Long, String> units = getUnitMapping(applicationStructureValue.applElems);
 
 		// create entity types (incl. attributes)
 		Map<Long, ODSEntityType> entityTypesByID = new HashMap<>();
 		String sourceName = aoSession.getName();
-		for(ApplElem applElem : asv.applElems) {
+		for(ApplElem applElem : applicationStructureValue.applElems) {
 			Long odsID = ODSConverter.fromODSLong(applElem.aid);
 			Map<String, Class<? extends Enum<?>>> entityEnumMap = enumClassMap.getOrDefault(odsID, new HashMap<>());
 
@@ -331,7 +331,7 @@ public class ODSModelManager implements ModelManager {
 
 		// create relations
 		List<Relation> relations = new ArrayList<>();
-		for(ApplRel applRel : asv.applRels) {
+		for(ApplRel applRel : applicationStructureValue.applRels) {
 			EntityType source = entityTypesByID.get(ODSConverter.fromODSLong(applRel.elem1));
 			EntityType target = entityTypesByID.get(ODSConverter.fromODSLong(applRel.elem2));
 			relations.add(new ODSRelation(applRel, source, target));
@@ -344,8 +344,8 @@ public class ODSModelManager implements ModelManager {
 		LOGGER.debug("{} entity types with {} relations found in {} ms.", entityTypesByName.size(), relations.size(), stop - start);
 	}
 
-	private Map<Long, String> getUnitMapping(ApplicationStructureValue asv) throws AoException {
-		ApplElem unitElem = Stream.of(asv.applElems).filter(ae -> ae.beName.equals("AoUnit")).findAny()
+	private Map<Long, String> getUnitMapping(ApplElem[] applElems) throws AoException {
+		ApplElem unitElem = Stream.of(applElems).filter(ae -> ae.beName.equals("AoUnit")).findAny()
 				.orElseThrow(() -> new IllegalStateException("Application element 'Unit' is not defined."));
 
 		QueryStructureExt qse = new QueryStructureExt();
@@ -376,48 +376,40 @@ public class ODSModelManager implements ModelManager {
 
 		entityConfigRepository = new EntityConfigRepository();
 
-		// Environment
-		entityConfigRepository.register(create(new Key<>(Environment.class), "Environment", "application/x-asam.aoenvironment"));
-
-		// PhysicalDimension
-		entityConfigRepository.register(create(new Key<>(PhysicalDimension.class), "PhysDimension", "application/x-asam.aophysicaldimension"));
-
-		// User
-		entityConfigRepository.register(create(new Key<>(User.class), "User", "application/x-asam.aouser"));
-
-		// Measurement
-		entityConfigRepository.register(create(new Key<>(Measurement.class), "MeaResult", "application/x-asam.aomeasurement"));
-
-		// ChannelGroup
-		entityConfigRepository.register(create(new Key<>(ChannelGroup.class), "SubMatrix", "application/x-asam.aosubmatrix"));
+		// Environment | PhysicalDimension | User | Measurement | ChannelGroup
+		entityConfigRepository.register(create(new Key<>(Environment.class), "Environment", false));
+		entityConfigRepository.register(create(new Key<>(PhysicalDimension.class), "PhysDimension", false));
+		entityConfigRepository.register(create(new Key<>(User.class), "User", false));
+		entityConfigRepository.register(create(new Key<>(Measurement.class), "MeaResult", false));
+		entityConfigRepository.register(create(new Key<>(ChannelGroup.class), "SubMatrix", false));
 
 		// Unit
-		EntityConfig<Unit> unitConfig = create(new Key<>(Unit.class), "Unit", "application/x-asam.aounit");
+		EntityConfig<Unit> unitConfig = create(new Key<>(Unit.class), "Unit", false);
 		unitConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(PhysicalDimension.class)));
 		entityConfigRepository.register(unitConfig);
 
 		// Quantity
-		EntityConfig<Quantity> quantityConfig = create(new Key<>(Quantity.class), "Quantity", "application/x-asam.aoquantity");
+		EntityConfig<Quantity> quantityConfig = create(new Key<>(Quantity.class), "Quantity", false);
 		quantityConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Unit.class)));
 		entityConfigRepository.register(quantityConfig);
 
 		// Channel
-		EntityConfig<Channel> channelConfig = create(new Key<>(Channel.class), "MeaQuantity", "application/x-asam.aomeasurementquantity");
+		EntityConfig<Channel> channelConfig = create(new Key<>(Channel.class), "MeaQuantity", false);
 		channelConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Unit.class)));
 		channelConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Quantity.class)));
 		entityConfigRepository.register(channelConfig);
 
 		// ValueList
-		EntityConfig<ValueListValue> valueListValueConfig = create(new Key<>(ValueListValue.class), "ValueListValue", "application/x-asam.aoparameter.valuelistvalue");
+		EntityConfig<ValueListValue> valueListValueConfig = create(new Key<>(ValueListValue.class), "ValueListValue", true);
 		valueListValueConfig.setComparator(Sortable.COMPARATOR);
-		EntityConfig<ValueList> valueListConfig = create(new Key<>(ValueList.class), "ValueList", "application/x-asam.aoparameterset.valuelist");
+		EntityConfig<ValueList> valueListConfig = create(new Key<>(ValueList.class), "ValueList", true);
 		valueListConfig.addChild(valueListValueConfig);
 		entityConfigRepository.register(valueListConfig);
 
 		// ParameterSet
-		EntityConfig<Parameter> parameterConfig = create(new Key<>(Parameter.class), "ResultParameter", "application/x-asam.aoparameter.resultparameter");
+		EntityConfig<Parameter> parameterConfig = create(new Key<>(Parameter.class), "ResultParameter", true);
 		parameterConfig.addOptional(entityConfigRepository.findRoot(new Key<>(Unit.class)));
-		EntityConfig<ParameterSet> parameterSetConfig = create(new Key<>(ParameterSet.class), "ResultParameterSet", "application/x-asam.aoparameterset.resultparameterset");
+		EntityConfig<ParameterSet> parameterSetConfig = create(new Key<>(ParameterSet.class), "ResultParameterSet", true);
 		parameterSetConfig.addChild(parameterConfig);
 		entityConfigRepository.register(parameterSetConfig);
 
@@ -432,7 +424,7 @@ public class ODSModelManager implements ModelManager {
 		registerTemplateRoot(ContextType.TESTEQUIPMENT);
 
 		// TemplateTestStep
-		EntityConfig<TemplateTestStep> templateTestStepConfig = create(new Key<>(TemplateTestStep.class), "TplTestStep", "application/x-asam.aoany.tplteststep");
+		EntityConfig<TemplateTestStep> templateTestStepConfig = create(new Key<>(TemplateTestStep.class), "TplTestStep", true);
 		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, ContextType.UNITUNDERTEST)));
 		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, ContextType.TESTSEQUENCE)));
 		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, ContextType.TESTEQUIPMENT)));
@@ -440,29 +432,29 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(templateTestStepConfig);
 
 		// Status TestStep
-		//		entityConfigRepository.register(create(new Key<>(Status.class, TestStep.class), "StatusTestStep", "application/x-asam.aoany.statusteststep")); // TODO <-- correct?!
+		//		entityConfigRepository.register(create(new Key<>(Status.class, TestStep.class), "StatusTestStep", true)); // TODO <-- correct?!
 
 		// TestStep
-		EntityConfig<TestStep> testStepConfig = create(new Key<>(TestStep.class), "TestStep", "application/x-asam.aosubtest.teststep");
+		EntityConfig<TestStep> testStepConfig = create(new Key<>(TestStep.class), "TestStep", false); // TODO true if project and structurelevel defined!
 		//		testStepConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, TestStep.class)));
 		testStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateTestStep.class)));
 		testStepConfig.setComparator(Sortable.COMPARATOR);
 		entityConfigRepository.register(testStepConfig);
 
 		// TemplateTest
-		EntityConfig<TemplateTestStepUsage> templateTestStepUsageConfig = create(new Key<>(TemplateTestStepUsage.class), "TplTestStepUsage", "application/x-asam.aoany.tplteststepusage");
+		EntityConfig<TemplateTestStepUsage> templateTestStepUsageConfig = create(new Key<>(TemplateTestStepUsage.class), "TplTestStepUsage", true);
 		templateTestStepUsageConfig.addMandatory(templateTestStepConfig);
 		templateTestStepUsageConfig.setComparator(Sortable.COMPARATOR);
-		EntityConfig<TemplateTest> templateTestConfig = create(new Key<>(TemplateTest.class), "TplTest", "application/x-asam.aoany.tpltest");
+		EntityConfig<TemplateTest> templateTestConfig = create(new Key<>(TemplateTest.class), "TplTest", true);
 		templateTestConfig.addChild(templateTestStepUsageConfig);
 		templateTestConfig.setComparator(Versionable.COMPARATOR);
 		entityConfigRepository.register(templateTestConfig);
 
 		// Status Test
-		//		entityConfigRepository.register(create(new Key<>(Status.class, Test.class), "StatusTest", "application/x-asam.aoany.statustest")); // TODO <-- correct?!
+		//		entityConfigRepository.register(create(new Key<>(Status.class, Test.class), "StatusTest", true)); // TODO <-- correct?!
 
 		// Test
-		EntityConfig<Test> testConfig = create(new Key<>(Test.class), "Test", "application/x-asam.aotest");
+		EntityConfig<Test> testConfig = create(new Key<>(Test.class), "Test", false);// TODO true if project and structurelevel defined!
 		testConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(User.class)));
 		//		testConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, Test.class)));
 		testConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateTest.class)));
@@ -477,19 +469,17 @@ public class ODSModelManager implements ModelManager {
 	}
 
 	private void registerContextRoot(ContextType contextType) {
-		String odsName = ODSUtils.CONTEXTTYPES.convert(contextType);
-		String odsNameLC = odsName.toLowerCase();
-		EntityConfig<ContextRoot> contextRootConfig = create(new Key<>(ContextRoot.class, contextType), odsName, "application/x-asam.ao" + odsNameLC + "." + odsNameLC);
+		EntityConfig<ContextRoot> contextRootConfig = create(new Key<>(ContextRoot.class, contextType), ODSUtils.CONTEXTTYPES.convert(contextType), true);
 		contextRootConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, contextType)));
 		for(Relation contextComponentRelation : contextRootConfig.getEntityType().getChildRelations()) {
 			EntityType contextComponentEntityType = contextComponentRelation.getTarget();
-			EntityConfig<ContextComponent> contextComponentConfig = create(new Key<>(ContextComponent.class, contextType), contextComponentEntityType.getName(), "application/x-asam.ao" + odsNameLC + "part." + contextComponentEntityType.getName());
+			EntityConfig<ContextComponent> contextComponentConfig = create(new Key<>(ContextComponent.class, contextType), contextComponentEntityType.getName(), true);
 			contextComponentConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateComponent.class, contextType)));
 			contextRootConfig.addChild(contextComponentConfig);
 			if(contextType.isTestEquipment()) {
 				for(Relation contextSensorRelation : contextComponentEntityType.getChildRelations()) {
 					EntityType contextSensorEntityType = contextSensorRelation.getTarget();
-					EntityConfig<ContextSensor> contextSensorConfig = create(new Key<>(ContextSensor.class), contextSensorEntityType.getName(), "application/x-asam.ao" + odsNameLC + "part." + contextComponentEntityType.getName());
+					EntityConfig<ContextSensor> contextSensorConfig = create(new Key<>(ContextSensor.class), contextSensorEntityType.getName(), true);
 					contextSensorConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateSensor.class)));
 					contextComponentConfig.addChild(contextSensorConfig);
 				}
@@ -500,26 +490,26 @@ public class ODSModelManager implements ModelManager {
 
 	private void registerTemplateRoot(ContextType contextType) {
 		String odsName = ODSUtils.CONTEXTTYPES.convert(contextType);
-		EntityConfig<TemplateAttribute> templateAttributeConfig = create(new Key<>(TemplateAttribute.class, contextType), "Tpl" + odsName + "Attr", "TODO"); // TODO MIMETYPE
+		EntityConfig<TemplateAttribute> templateAttributeConfig = create(new Key<>(TemplateAttribute.class, contextType), "Tpl" + odsName + "Attr", true);
 		templateAttributeConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(CatalogAttribute.class, contextType)));
 		templateAttributeConfig.setComparator(TemplateAttribute.COMPARATOR);
-		EntityConfig<TemplateComponent> templateComponentConfig = create(new Key<>(TemplateComponent.class, contextType), "Tpl" + odsName + "Comp", "TODO");  // TODO MIMETYPE
+		EntityConfig<TemplateComponent> templateComponentConfig = create(new Key<>(TemplateComponent.class, contextType), "Tpl" + odsName + "Comp", true);
 		templateComponentConfig.addChild(templateAttributeConfig);
 		templateComponentConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(CatalogComponent.class, contextType)));
 		templateComponentConfig.addChild(templateComponentConfig);
 		templateComponentConfig.setComparator(Sortable.COMPARATOR);
 		if(contextType.isTestEquipment()) {
-			EntityConfig<TemplateAttribute> templateSensorAttributeConfig = create(new Key<>(TemplateAttribute.class), "TplSensorAttr", "TODO");  // TODO MIMETYPE
+			EntityConfig<TemplateAttribute> templateSensorAttributeConfig = create(new Key<>(TemplateAttribute.class), "TplSensorAttr", true);
 			templateSensorAttributeConfig.setComparator(TemplateAttribute.COMPARATOR);
 			templateSensorAttributeConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(CatalogAttribute.class)));
-			EntityConfig<TemplateSensor> templateSensorConfig = create(new Key<>(TemplateSensor.class), "TplSensor", "TODO");  // TODO MIMETYPE
+			EntityConfig<TemplateSensor> templateSensorConfig = create(new Key<>(TemplateSensor.class), "TplSensor", true);
 			templateSensorConfig.addChild(templateSensorAttributeConfig);
 			templateSensorConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Quantity.class)));
 			templateSensorConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(CatalogSensor.class)));
 			templateSensorConfig.setComparator(Sortable.COMPARATOR);
 			templateComponentConfig.addChild(templateSensorConfig);
 		}
-		EntityConfig<TemplateRoot> templateRootConfig = create(new Key<>(TemplateRoot.class, contextType), "Tpl" + odsName + "Root", "TODO"); // TODO MIMETYPE
+		EntityConfig<TemplateRoot> templateRootConfig = create(new Key<>(TemplateRoot.class, contextType), "Tpl" + odsName + "Root", true);
 		templateRootConfig.addChild(templateComponentConfig);
 		templateRootConfig.setComparator(Versionable.COMPARATOR);
 		entityConfigRepository.register(templateRootConfig);
@@ -527,26 +517,37 @@ public class ODSModelManager implements ModelManager {
 
 	private void registerCatalogComponent(ContextType contextType) {
 		String odsName = ODSUtils.CONTEXTTYPES.convert(contextType);
-		EntityConfig<CatalogAttribute> catalogAttributeConfig = create(new Key<>(CatalogAttribute.class, contextType), "Cat" + odsName + "Attr", "TODO");  // TODO MIMETYPE
+		EntityConfig<CatalogAttribute> catalogAttributeConfig = create(new Key<>(CatalogAttribute.class, contextType), "Cat" + odsName + "Attr", true);
 		catalogAttributeConfig.addOptional(entityConfigRepository.findRoot(new Key<>(ValueList.class)));
 		catalogAttributeConfig.setComparator(Sortable.COMPARATOR);
-		EntityConfig<CatalogComponent> catalogComponentConfig = create(new Key<>(CatalogComponent.class, contextType), "Cat" + odsName + "Comp", "TODO");  // TODO MIMETYPE
+		EntityConfig<CatalogComponent> catalogComponentConfig = create(new Key<>(CatalogComponent.class, contextType), "Cat" + odsName + "Comp", true);
 		catalogComponentConfig.addChild(catalogAttributeConfig);
 		if(contextType.isTestEquipment()) {
-			EntityConfig<CatalogAttribute> catalogSensorAttributeConfig = create(new Key<>(CatalogAttribute.class), "CatSensorAttr", "TODO");  // TODO MIMETYPE
+			EntityConfig<CatalogAttribute> catalogSensorAttributeConfig = create(new Key<>(CatalogAttribute.class), "CatSensorAttr", true);
 			catalogSensorAttributeConfig.addOptional(entityConfigRepository.findRoot(new Key<>(ValueList.class)));
-			EntityConfig<CatalogSensor> catalogSensorConfig = create(new Key<>(CatalogSensor.class), "CatSensor", "TODO"); // TODO MIMETYPE
+			EntityConfig<CatalogSensor> catalogSensorConfig = create(new Key<>(CatalogSensor.class), "CatSensor", true);
 			catalogSensorConfig.addChild(catalogSensorAttributeConfig);
 			catalogComponentConfig.addChild(catalogSensorConfig);
 		}
 		entityConfigRepository.register(catalogComponentConfig);
 	}
 
-	private <T extends Entity> EntityConfig<T> create(Key<T> key, String typeName, String mimeType) {
+	private <T extends Entity> EntityConfig<T> create(Key<T> key, String typeName, boolean appendName) {
 		EntityConfig<T> entityConfig = new EntityConfig<>(key);
-		entityConfig.setEntityType(getEntityType(typeName));
-		entityConfig.setMimeType(mimeType);
+		ODSEntityType entityType = (ODSEntityType) getEntityType(typeName);
+		entityConfig.setEntityType(entityType);
+		entityConfig.setMimeType(buildDefaultMimeType(entityType, appendName));
 		return entityConfig;
+	}
+
+	private String buildDefaultMimeType(ODSEntityType entityType, boolean appendName) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("application/x-asam.");
+		sb.append(entityType.getBaseName().toLowerCase(Locale.ROOT));
+		if(appendName) {
+			sb.append('.').append(entityType.getName().toLowerCase(Locale.ROOT));
+		}
+		return sb.toString();
 	}
 
 }
