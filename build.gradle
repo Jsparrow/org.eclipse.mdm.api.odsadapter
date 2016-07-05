@@ -57,6 +57,24 @@ dependencies {
 }
 
 test {
+    if(project.hasProperty('host')) {
+        systemProperty 'host', project.property('host')
+    } else {
+        systemProperty 'host', '<host>'
+    }
+    
+    if(project.hasProperty('port')) {
+        systemProperty 'port', project.property('port')
+    } else {
+        systemProperty 'port', '2809'
+    }
+    
+    if(project.hasProperty('service')) {
+        systemProperty 'service', project.property('service')
+    } else {
+        systemProperty 'service', '<service>'
+    }
+    
 	jvmArgs '-Dorg.slf4j.simpleLogger.defaultLogLevel=debug'
 }
 

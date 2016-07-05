@@ -65,11 +65,7 @@ public class ODSAdapterTest {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSAdapterTest.class);
 
-	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
-	private static final String NAME_SERVICE = "corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService";
-
-	// TODO service name: <SERVICE_NAME>.ASAM-ODS
-	private static final String SERVICE_NAME = "<SERVICE_NAME>.ASAM-ODS";
+	private static final String NAME_SERVICE = "corbaloc::1.2@%s:%s/NameService";
 
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
@@ -79,9 +75,26 @@ public class ODSAdapterTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
+		String nameServiceHost = System.getProperty("host");
+		String nameServicePort = System.getProperty("port");
+		String serviceName = System.getProperty("service");
+
+		if(nameServiceHost == null || nameServiceHost.isEmpty()) {
+			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
+		}
+
+		nameServicePort = nameServicePort == null || nameServicePort.isEmpty() ? String.valueOf(2809) :  nameServicePort;
+		if(nameServicePort == null || nameServicePort.isEmpty()) {
+			throw new IllegalArgumentException("name service port is unknown: define system property 'port'");
+		}
+
+		if(serviceName == null || serviceName.isEmpty()) {
+			throw new IllegalArgumentException("service name is unknown: define system property 'service'");
+		}
+
 		Map<String, String> connectionParameters = new HashMap<>();
-		connectionParameters.put(PARAM_NAMESERVICE, NAME_SERVICE);
-		connectionParameters.put(PARAM_SERVICENAME, SERVICE_NAME);
+		connectionParameters.put(PARAM_NAMESERVICE, String.format(NAME_SERVICE, nameServiceHost, nameServicePort));
+		connectionParameters.put(PARAM_SERVICENAME, serviceName + ".ASAM-ODS");
 		connectionParameters.put(PARAM_USER, USER);
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
