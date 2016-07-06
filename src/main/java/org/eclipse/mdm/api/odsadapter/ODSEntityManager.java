@@ -31,7 +31,6 @@ import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
-import org.eclipse.mdm.api.base.model.StatusAttachable;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -44,7 +43,6 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
-import org.eclipse.mdm.api.dflt.model.Status;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
@@ -173,25 +171,25 @@ public class ODSEntityManager implements EntityManager {
 		return entityLoader.loadAll(new Key<>(entityClass), pattern);
 	}
 
-	@Override
-	public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern) throws DataAccessException {
-		EntityType entityType = modelManager.getEntityType(entityClass);
-		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
-
-		List<Long> instanceIDs = modelManager.createQuery()
-				.join(entityType, statusEntityType).selectID(entityType)
-				.fetch(Filter.and()
-						.id(statusEntityType, status.getID())
-						.name(entityType, pattern))
-				.stream().map(r -> r.getRecord(entityType)).map(Record::getID).collect(Collectors.toList());
-
-		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
-	}
-
-	@Override
-	public List<Status> loadAllStatus(Class<? extends StatusAttachable> entityClass, String pattern) throws DataAccessException {
-		return entityLoader.loadAll(new Key<>(Status.class, entityClass), pattern);
-	}
+	//	@Override
+	//	public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern) throws DataAccessException {
+	//		EntityType entityType = modelManager.getEntityType(entityClass);
+	//		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
+	//
+	//		List<Long> instanceIDs = modelManager.createQuery()
+	//				.join(entityType, statusEntityType).selectID(entityType)
+	//				.fetch(Filter.and()
+	//						.id(statusEntityType, status.getID())
+	//						.name(entityType, pattern))
+	//				.stream().map(r -> r.getRecord(entityType)).map(Record::getID).collect(Collectors.toList());
+	//
+	//		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
+	//	}
+	//
+	//	@Override
+	//	public List<Status> loadAllStatus(Class<? extends StatusAttachable> entityClass, String pattern) throws DataAccessException {
+	//		return entityLoader.loadAll(new Key<>(Status.class, entityClass), pattern);
+	//	}
 
 	@Override
 	public <T extends Entity> List<T> loadAll(Class<T> entityClass, ContextType contextType, String pattern) throws DataAccessException {
@@ -220,23 +218,23 @@ public class ODSEntityManager implements EntityManager {
 		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
 	}
 
-	@Override
-	public <T extends StatusAttachable> List<T> loadChildren(Entity parent, Class<T> entityClass, Status status, String pattern) throws DataAccessException {
-		EntityType parentEntityType = modelManager.getEntityType(parent);
-		EntityType childEntityType = modelManager.getEntityType(entityClass);
-		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
-
-		List<Long> instanceIDs = modelManager.createQuery()
-				.join(childEntityType, parentEntityType, statusEntityType)
-				.selectID(childEntityType)
-				.fetch(Filter.and()
-						.id(parentEntityType, parent.getID())
-						.id(statusEntityType, status.getID())
-						.name(childEntityType, pattern))
-				.stream().map(r -> r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
-
-		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
-	}
+	//	@Override
+	//	public <T extends StatusAttachable> List<T> loadChildren(Entity parent, Class<T> entityClass, Status status, String pattern) throws DataAccessException {
+	//		EntityType parentEntityType = modelManager.getEntityType(parent);
+	//		EntityType childEntityType = modelManager.getEntityType(entityClass);
+	//		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
+	//
+	//		List<Long> instanceIDs = modelManager.createQuery()
+	//				.join(childEntityType, parentEntityType, statusEntityType)
+	//				.selectID(childEntityType)
+	//				.fetch(Filter.and()
+	//						.id(parentEntityType, parent.getID())
+	//						.id(statusEntityType, status.getID())
+	//						.name(childEntityType, pattern))
+	//				.stream().map(r -> r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
+	//
+	//		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
+	//	}
 
 	@Override
 	public List<ContextType> loadContextTypes(ContextDescribable contextDescribable) throws DataAccessException {
