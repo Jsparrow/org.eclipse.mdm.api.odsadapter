@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
@@ -48,6 +49,11 @@ public final class ODSSearchService implements SearchService {
 
 	private final ODSModelManager modelManager;
 	private final EntityLoader entityLoader;
+
+	/**
+	 * lazy instantiated
+	 */
+	private ODSFreeTextSearch freeTextSearch;
 
 	// ======================================================================
 	// Constructors
@@ -137,16 +143,30 @@ public final class ODSSearchService implements SearchService {
 	 * 		corresponding results.
 	 * @throws DataAccessException Thrown if unable to load the {@code Entity}s.
 	 */
+	@Override
+	public Map<Class<? extends Entity>, List<Entity>> fetch(String query) throws DataAccessException {
+		if (freeTextSearch == null) {
+			initFreetextSearch();
+		}
+
+		return freeTextSearch.search(query);
+	}
+
+	@Override
+	public boolean isTextSearchAvailable() {
+		return true;
+	}
+
 	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results)
 			throws DataAccessException {
 		EntityType entityType = modelManager.getEntityType(entityClass);
 		Map<Long, Result> recordsByEntityID = new HashMap<>();
-		for(Result result : results) {
+		for (Result result : results) {
 			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
 		}
 
 		Map<T, Result> resultsByEntity = new HashMap<>();
-		for(T entity : entityLoader.loadAll(new Key<>(entityClass), recordsByEntityID.keySet())) {
+		for (T entity : entityLoader.loadAll(new Key<>(entityClass), recordsByEntityID.keySet())) {
 			resultsByEntity.put(entity, recordsByEntityID.get(entity.getID()));
 		}
 
@@ -180,4 +200,12 @@ public final class ODSSearchService implements SearchService {
 		searchQueries.put(entityClass, new MergedSearchQuery(modelManager.getEntityType(entityClass), factory));
 	}
 
+	private void initFreetextSearch() throws DataAccessException {
+		List<Environment> all = entityLoader.loadAll(new Key<>(Environment.class), "*");
+		if (all.isEmpty()) {
+			throw new DataAccessException("No environment loaded. So the Search does not know where to search");
+		}
+		String sourceName = all.get(0).getSourceName();
+		freeTextSearch = new ODSFreeTextSearch(entityLoader, sourceName);
+	}
 }
