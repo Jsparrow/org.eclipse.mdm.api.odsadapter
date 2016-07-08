@@ -90,6 +90,7 @@ public class ODSNotificationTest {
 		notificationParameters.put(ODSNotificationManagerFactory.PARAM_URL, NOTIFICATION_URL);
 		notificationParameters.put(ODSEntityManagerFactory.PARAM_USER, NOTIFICATION_USER);
 		notificationParameters.put(ODSEntityManagerFactory.PARAM_PASSWORD, NOTIFICATION_PASSWORD);
+		notificationParameters.put(ODSNotificationManagerFactory.PARAM_EVENT_MEDIATYPE, "application/json");
 		
 		notificationManager = new ODSNotificationManagerFactory().create((ODSEntityManager) entityManager, notificationParameters);
 	}

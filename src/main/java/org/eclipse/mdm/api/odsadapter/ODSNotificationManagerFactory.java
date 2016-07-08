@@ -6,11 +6,13 @@ import java.util.Optional;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateful;
 
+import org.eclipse.mdm.api.base.BaseEntityManager;
 import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.NotificationManagerFactory;
+import org.eclipse.mdm.api.base.model.BaseEntityFactory;
 import org.eclipse.mdm.api.base.notification.NotificationException;
 import org.eclipse.mdm.api.base.notification.NotificationManager;
 import org.eclipse.mdm.api.base.query.ModelManager;
-import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.odsadapter.notification.peak.PeakNotificationManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
@@ -18,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 @Stateful
 @LocalBean
-public class ODSNotificationManagerFactory
+public class ODSNotificationManagerFactory implements NotificationManagerFactory
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSNotificationManagerFactory.class);
 	
@@ -29,8 +31,8 @@ public class ODSNotificationManagerFactory
 	public static final String SERVER_TYPE_PEAK = "peak";
 
 	public static final String PARAM_NOTIFICATIONSERVICE_URL = "notificationserviceURL";
-	
-	public NotificationManager create(EntityManager entityManager, Map<String, String> parameters) throws ConnectionException {
+
+	public NotificationManager create(BaseEntityManager<? extends BaseEntityFactory> entityManager, Map<String, String> parameters) throws ConnectionException {
 		String type = getParameter(parameters, PARAM_SERVER_TYPE);
 		String notificationUser = getParameter(parameters, ODSEntityManagerFactory.PARAM_USER);
 		String notficationPassword = getParameter(parameters, ODSEntityManagerFactory.PARAM_PASSWORD);
@@ -51,7 +53,7 @@ public class ODSNotificationManagerFactory
 				{
 					throw new NotificationException("EntityManager has no ModelManager!");
 				}
-				if (mm.get() instanceof ODSModelManager)
+				if (!ODSModelManager.class.isInstance(mm.get()))
 				{
 					throw new NotificationException("ModelManager is not a ODSModelManager!");
 				}
