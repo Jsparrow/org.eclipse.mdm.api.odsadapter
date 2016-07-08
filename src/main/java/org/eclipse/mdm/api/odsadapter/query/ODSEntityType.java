@@ -148,6 +148,11 @@ public final class ODSEntityType implements EntityType {
 	 * {@inheritDoc}
 	 */
 	@Override
+	public long getId() {
+		return ODSConverter.fromODSLong(odsID);
+ 	}
+
+	@Override
 	public List<Relation> getRelations() {
 		return Collections.unmodifiableList(relations);
 	}

@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package com.peaksolution.ods.notification;
+option java_package = "com.peaksolution.ods.notification.protobuf";
+option java_outer_classname = "NotificationProtos";
+
+import "google/protobuf/timestamp.proto";
+
+enum ModificationType {
+  NEW = 0;
+  MODIFY = 1;
+  DELETE = 2;
+  MODEL = 3;
+  SECURITY = 4;
+}
+	
+message Registration {
+	enum NotificationMode {
+		PUSH = 0;
+		PULL = 1;
+	}
+	
+	NotificationMode mode = 1;
+	repeated ModificationType type = 2;
+	repeated int64 aid = 3;
+}
+
+message Notification {
+	ModificationType type = 1;
+	string uuid = 2;
+	google.protobuf.Timestamp creation = 3;
+	int64 userId = 4;
+	int64 aid = 5;
+	repeated int64 iid = 6;
+}

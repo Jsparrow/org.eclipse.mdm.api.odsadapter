@@ -12,7 +12,16 @@ version = '1.0.0'
 
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'com.google.protobuf'
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.7.7'
+    }
+}
 
 repositories {
 	mavenLocal()
@@ -23,6 +32,7 @@ sourceSets {
     generated {
         java {
             srcDir 'src/gen/java'
+            srcDir 'build/generated/source/proto/main/java'
         }
     }
     
@@ -38,6 +48,7 @@ sourceSets {
 }
 
 dependencies {
+	compile 'javax:javaee-api:7.0'
 
 	// logging	
 	compile 'org.slf4j:slf4j-api:1.7.19'
@@ -49,9 +60,18 @@ dependencies {
 	// compile CORBA idl using JDK tools
     generatedCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
     
+    	// Peak notification service
+ 	compile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
+ 	compile 'com.google.protobuf:protobuf-java-util:3.0.0-beta-3'
+	compile 'com.google.guava:guava:18.0'
+ 	compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
+ 	compile 'org.glassfish.jersey.media:jersey-media-sse:2.23.1'
+    
+    
     // testing
     testCompile 'junit:junit:4.12'
 	testRuntime 'org.slf4j:slf4j-simple:1.7.19'
+	testCompile 'org.mockito:mockito-core:1.+'
 }
 
 test {
@@ -75,6 +95,13 @@ test {
     
 	jvmArgs '-Dorg.slf4j.simpleLogger.defaultLogLevel=debug'
 }
+
+protobuf {
+  protoc {
+    artifact = 'com.google.protobuf:protoc:3.0.0-beta-3'
+  }
+}
+
 
 task compileIDL(type: JavaExec) {
     classpath = configurations.generatedCompile
