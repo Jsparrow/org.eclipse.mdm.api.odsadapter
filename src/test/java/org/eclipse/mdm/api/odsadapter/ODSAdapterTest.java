@@ -43,6 +43,8 @@ import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
+import org.eclipse.mdm.api.dflt.model.Pool;
+import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.dflt.model.TemplateComponent;
 import org.eclipse.mdm.api.dflt.model.TemplateRoot;
 import org.eclipse.mdm.api.dflt.model.TemplateTest;
@@ -75,9 +77,9 @@ public class ODSAdapterTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
-		String nameServiceHost = System.getProperty("host");
-		String nameServicePort = System.getProperty("port");
-		String serviceName = System.getProperty("service");
+		String nameServiceHost = "in-dbserv1"; //System.getProperty("host");
+		String nameServicePort = "2809"; //System.getProperty("port");
+		String serviceName = "MDM5API.ASAM-ODS"; //System.getProperty("service");
 
 		if(nameServiceHost == null || nameServiceHost.isEmpty()) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
@@ -137,9 +139,9 @@ public class ODSAdapterTest {
 			fail("Unable to create test data due to: " + e.getMessage());
 		}
 
-		List<Test> tests = Collections.emptyList();
+		List<Project> projects = Collections.emptyList();
 		try {
-			tests = createTestData(templateTest, quantity);
+			projects = createTestData(templateTest, quantity);
 		} catch(DataAccessException | RuntimeException e) {
 			e.printStackTrace();
 		}
@@ -147,8 +149,8 @@ public class ODSAdapterTest {
 		transaction = entityManager.startTransaction();
 		try {
 			// delete in reverse order!
-			if(!tests.isEmpty()) {
-				delete(transaction, "tests and their children", tests);
+			if(!projects.isEmpty()) {
+				delete(transaction, "tests and their children", projects);
 			}
 
 			delete(transaction, "quantity", Collections.singletonList(quantity));
@@ -165,13 +167,18 @@ public class ODSAdapterTest {
 			fail("Unable to delete test data due to: " + e.getMessage());
 		}
 
-		if(tests.isEmpty()) {
+		if(projects.isEmpty()) {
 			fail("Was unable to create test data.");
 		}
 	}
 
-	private List<Test> createTestData(TemplateTest templateTest, Quantity quantity) throws DataAccessException {
-		List<Test> tests = createTests(2, templateTest);
+	private List<Project> createTestData(TemplateTest templateTest, Quantity quantity) throws DataAccessException {
+		
+		Project project = entityFactory.createProject("Testproject_MDM5API");
+		Pool pool = entityFactory.createPool("Testpool_MDM5API", project);
+		
+		
+		List<Test> tests = createTests(2, pool, templateTest);
 
 		// create measurement test data
 		List<WriteRequest> writeRequests = new ArrayList<>();
@@ -202,11 +209,12 @@ public class ODSAdapterTest {
 
 		Transaction transaction = entityManager.startTransaction();
 		try {
-			create(transaction, "tests based on teamplates with mass data", tests);
+			create(transaction, "project and pool with tests based on teamplates with measurements and mass data", 
+				Collections.singleton(project));
 
 			transaction.writeMeasuredValues(writeRequests);
 			transaction.commit();
-			return tests;
+			return Collections.singletonList(project);
 		} catch(DataAccessException | RuntimeException e) {
 			e.printStackTrace();
 			transaction.abort();
@@ -295,8 +303,8 @@ public class ODSAdapterTest {
 		LOGGER.info(">>>>>>>>>>>>>>>>> " + key + " written in " + (System.currentTimeMillis() - start) + " ms");
 	}
 
-	private List<Test> createTests(int count, TemplateTest templateTest) {
-		return IntStream.range(1, ++count).mapToObj(i -> entityFactory.createTest("simple_test_" + i, templateTest))
+	private List<Test> createTests(int count, Pool pool, TemplateTest templateTest) {
+		return IntStream.range(1, ++count).mapToObj(i -> entityFactory.createTest("simple_test_" + i, pool, templateTest))
 				.collect(Collectors.toList());
 	}
 

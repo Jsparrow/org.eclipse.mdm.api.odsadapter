@@ -62,6 +62,8 @@ import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
+import org.eclipse.mdm.api.dflt.model.Pool;
+import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.dflt.model.TemplateComponent;
 import org.eclipse.mdm.api.dflt.model.TemplateRoot;
@@ -376,8 +378,10 @@ public class ODSModelManager implements ModelManager {
 
 		entityConfigRepository = new EntityConfigRepository();
 
-		// Environment | PhysicalDimension | User | Measurement | ChannelGroup
+		// Environment | Project | Pool | PhysicalDimension | User | Measurement | ChannelGroup
 		entityConfigRepository.register(create(new Key<>(Environment.class), "Environment", false));
+		entityConfigRepository.register(create(new Key<>(Project.class), "Project", false));		
+		entityConfigRepository.register(create(new Key<>(Pool.class), "StructureLevel", true));	
 		entityConfigRepository.register(create(new Key<>(PhysicalDimension.class), "PhysDimension", false));
 		entityConfigRepository.register(create(new Key<>(User.class), "User", false));
 		entityConfigRepository.register(create(new Key<>(Measurement.class), "MeaResult", false));
@@ -460,6 +464,7 @@ public class ODSModelManager implements ModelManager {
 		testConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateTest.class)));
 		entityConfigRepository.register(testConfig);
 
+				
 		// ContextRoots
 		registerContextRoot(ContextType.UNITUNDERTEST);
 		registerContextRoot(ContextType.TESTSEQUENCE);
