@@ -16,10 +16,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
@@ -27,6 +30,7 @@ import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
+import org.eclipse.mdm.property.GlobalProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +72,10 @@ public class ODSFreeTextSearch {
 	 */
 	private HttpClient client;
 
+	@Inject
+	@GlobalProperty(value="elasticsearch.url")
+	String host;
+	
 	/**
 	 * This will start up the FreeText Search. No upfron querries are done. Thus
 	 * this can be called as often as desired without any major performance loss
@@ -79,7 +87,6 @@ public class ODSFreeTextSearch {
 	public ODSFreeTextSearch(EntityLoader entityLoader, String sourceName) throws DataAccessException {
 		this.loader = entityLoader;
 
-		String host = "http://localhost:9301";
 		url = host + "/" + sourceName.toLowerCase() + "/_search?fields=_type,_id,_index&size=50";
 
 		client = new HttpClient();
@@ -93,15 +100,16 @@ public class ODSFreeTextSearch {
 	 * @return never null, but maybe empty
 	 */
 	public Map<Class<? extends Entity>, List<Entity>> search(String inputQuery) {
-		JsonElement root = queryElasticSearch(inputQuery);
-		JsonArray hits = root.getAsJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
-
-		Map<Class<? extends Entity>, List<Long>> instances = new HashMap<>();
-		hits.forEach(e -> put(e, instances));
-
 		Map<Class<? extends Entity>, List<Entity>> result = new HashMap<>();
-		instances.keySet().forEach(type -> convertIds2Entities(result, instances, type));
+		JsonElement root = queryElasticSearch(inputQuery);
+		if (root != null) {
+			JsonArray hits = root.getAsJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
 
+			Map<Class<? extends Entity>, List<Long>> instances = new HashMap<>();
+			hits.forEach(e -> put(e, instances));
+
+			instances.keySet().forEach(type -> convertIds2Entities(result, instances, type));
+		}
 		return result;
 	}
 
@@ -121,7 +129,7 @@ public class ODSFreeTextSearch {
 
 			convertedMap.put(type, list);
 		} catch (DataAccessException e) {
-			throw new IllegalArgumentException("Cannot load ids from ODS. This means no results are available", e);
+			throw new IllegalStateException("Cannot load ids from ODS. This means no results are available", e);
 		}
 
 	}
@@ -140,13 +148,15 @@ public class ODSFreeTextSearch {
 		String type = object.get("_type").getAsString();
 		Class<? extends Entity> clazz = getClass4Type(type);
 
-		List<Long> list = map.get(clazz);
-		if (!map.containsKey(TestStep.class)) {
-			list = new ArrayList<>();
-			map.put(clazz, list);
-		}
+		if (clazz != null) {
+			if (!map.containsKey(clazz)) {
+				List<Long> list = new ArrayList<>();
+				map.put(clazz, list);
+			}
 
-		list.add((long) object.get("_id").getAsInt());
+			List<Long> list = map.get(clazz);
+			list.add((long) object.get("_id").getAsInt());
+		}
 	}
 
 	/**
@@ -202,7 +212,8 @@ public class ODSFreeTextSearch {
 	 * @return
 	 */
 	private String buildRequestJson(String inputQuery) {
-		return String.format(ES_POSTDATA, inputQuery);
+		String query = StringEscapeUtils.escapeJson(inputQuery);
+		return String.format(ES_POSTDATA, query);
 	}
 
 	/**
@@ -215,6 +226,10 @@ public class ODSFreeTextSearch {
 	private JsonElement execute(HttpMethod method) {
 		try {
 			int status = client.executeMethod(method);
+			if (status == 404) {
+				return null;
+			}
+
 			checkError(status);
 			return buildResponseJson(method);
 		} catch (IOException e) {
@@ -248,17 +263,7 @@ public class ODSFreeTextSearch {
 	private void checkError(int status) {
 		String text = String.format("ElasticSearch answered %d. ", status);
 
-		int httpCategory = status / 100;
-		switch (httpCategory) {
-		case 4:
-			text = text + "This indicates a Client error";
-			break;
-		case 5:
-			text = text + "This indicates a Server error. The ES instance must be checked (" + url + ")";
-			break;
-		}
-
-		if (httpCategory != 2) {
+		if (status / 100 != 2) {
 			throw new IllegalStateException(text);
 		}
 	}

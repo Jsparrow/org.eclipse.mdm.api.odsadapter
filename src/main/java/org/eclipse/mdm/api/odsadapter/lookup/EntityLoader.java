@@ -17,8 +17,7 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
-public final class EntityLoader {
-
+public class EntityLoader {
 	// ======================================================================
 	// Instance variables
 	// ======================================================================

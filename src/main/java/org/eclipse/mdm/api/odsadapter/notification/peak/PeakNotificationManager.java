@@ -157,16 +157,20 @@ public class PeakNotificationManager implements NotificationManager {
 	void processNotification(Notification n, NotificationListener notificationListener) {
 		if (LOGGER.isDebugEnabled())
 		{
-			LOGGER.debug("Processing notification event: " + n);
+			LOGGER.debug("Processing notification event COMPILING WORKS: " + n);
 		}
 		
 		EntityType entityType = modelManager.getEntityType(n.getAid());
-		EntityConfig<?> entityConfig = modelManager.getEntityConfig(entityType);
+		LOGGER.debug("Entity type resolved");
+
 		
 		try {
 			User user = loader.load(new Key<>(User.class), n.getUserId());
+			LOGGER.debug("User loaded");
 
-			List<? extends Entity> entities = loader.loadAll(entityConfig.getKey(), n.getIidList());
+
+			List<? extends Entity> entities = loadEntities(entityType, n.getIidList());
+			LOGGER.debug(entities.size() + " entities found: " + entities);
 
 			switch (n.getType())
 			{
@@ -188,7 +192,7 @@ public class PeakNotificationManager implements NotificationManager {
 			default:
 				processException(new NotificationException("Invalid notification type!"));
 			}
-		} catch (DataAccessException e) {
+		} catch (Exception e) {
 			processException(new NotificationException("Cannot load data for notification!", e));
 		}
 	}
