@@ -231,7 +231,11 @@ public class PeakNotificationManager implements NotificationManager {
 				processException(new NotificationException("Invalid notification type!"));
 			}
 		} catch (Exception e) {
+<<<<<<< Upstream, based on eclipse/master
 			processException(new NotificationException("Could not process notification!", e));
+=======
+			processException(new NotificationException("Cannot load data for notification!", e));
+>>>>>>> 8820b82 Fixed git mess
 		}
 	}
 
