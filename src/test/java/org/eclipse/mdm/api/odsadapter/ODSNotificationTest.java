@@ -38,23 +38,29 @@ import org.eclipse.mdm.api.base.notification.NotificationManager;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
+import org.eclipse.mdm.api.odsadapter.notification.peak.EventProcessor;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test notification service. 
  * 
  * Needs a running ODS and Notification Server.
- * Assumes a existing Test with name defined in {@link ODSNotificationTest#PARENT_TEST}.
+ * Assumes an existing Test with name defined in {@link ODSNotificationTest#PARENT_TEST},
+ * an UnitUnderTest with ID 11 and an UnitUnderTestPart with ID 34.
  * 
- * @author mko
+ * @author Matthias Koller, Peak Solution GmbH
  *
  */
 public class ODSNotificationTest {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
+	
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
 	private static final String NAME_SERVICE = "corbaloc::1.2@127.0.0.1:2809/NameService";
 
@@ -109,7 +115,7 @@ public class ODSNotificationTest {
 	}
 	
 	@org.junit.Test
-	public void test() throws NotificationException, DataAccessException, InterruptedException
+	public void testCreateTestStep() throws NotificationException, DataAccessException, InterruptedException
 	{ 
 		String testStepName = USER + "_TestStep";
 		
@@ -143,7 +149,7 @@ public class ODSNotificationTest {
 
 	
 	@org.junit.Test
-	public void testContextRoot() throws NotificationException, DataAccessException, InterruptedException, IOException
+	public void testModifyContextRoot() throws NotificationException, DataAccessException, InterruptedException, IOException
 	{ 		
 		NotificationListener l = Mockito.mock(NotificationListener.class);
 	
@@ -173,7 +179,7 @@ public class ODSNotificationTest {
 	}
 	
 	@org.junit.Test
-	public void testContextComponent() throws NotificationException, DataAccessException, InterruptedException, IOException
+	public void testModifyContextComponent() throws NotificationException, DataAccessException, InterruptedException, IOException
 	{ 		
 		NotificationListener l = Mockito.mock(NotificationListener.class);
 	
@@ -202,6 +208,27 @@ public class ODSNotificationTest {
 		}
 	}
 	
+	private void createTestStep(String parentName, String name) throws DataAccessException {
+		Transaction transaction = entityManager.startTransaction();
+	
+		List<Test> tests = entityManager.loadAll(Test.class, parentName);
+	
+		assertThat("Parent test not found!", !tests.isEmpty());
+		
+		Optional<EntityFactory> entityFactory = entityManager.getEntityFactory();
+		if (!entityFactory.isPresent())
+		{
+			throw new IllegalStateException("Entity factory not present!");
+		}
+	
+		TestStep testStep = entityFactory.get().createTestStep(name, tests.get(0));
+		testStep.setSortIndex(0);
+		
+		transaction.create(Arrays.asList(testStep));
+		
+		transaction.commit();
+	}
+
 	private void deleteTestStep(String name) throws DataAccessException {
 		Transaction transaction = entityManager.startTransaction();
 
@@ -249,8 +276,7 @@ public class ODSNotificationTest {
 				try {
 					session.close();
 				} catch (AoException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LOGGER.warn("Exception when closing the ods session: " + e.reason, e);
 				}
 			}
 		}
@@ -293,30 +319,9 @@ public class ODSNotificationTest {
 				try {
 					session.close();
 				} catch (AoException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LOGGER.warn("Exception when closing the ods session: " + e.reason, e);
 				}
 			}
 		}
-	}
-	private void createTestStep(String parentName, String name) throws DataAccessException {
-		Transaction transaction = entityManager.startTransaction();
-
-		List<Test> tests = entityManager.loadAll(Test.class, parentName);
-
-		assertThat("Parent test not found!", !tests.isEmpty());
-		
-		Optional<EntityFactory> entityFactory = entityManager.getEntityFactory();
-		if (!entityFactory.isPresent())
-		{
-			throw new IllegalStateException("Entity factory not present!");
-		}
-
-		TestStep testStep = entityFactory.get().createTestStep(name, tests.get(0));
-		testStep.setSortIndex(0);
-		
-		transaction.create(Arrays.asList(testStep));
-		
-		transaction.commit();
 	}
 }

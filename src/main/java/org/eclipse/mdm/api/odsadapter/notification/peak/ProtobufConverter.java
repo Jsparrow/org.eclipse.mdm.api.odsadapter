@@ -8,8 +8,20 @@ import org.eclipse.mdm.api.base.notification.NotificationFilter.ModificationType
 import com.peaksolution.ods.notification.protobuf.NotificationProtos.Registration;
 import com.peaksolution.ods.notification.protobuf.NotificationProtos.Registration.NotificationMode;
 
+/**
+ * Helper class for converting between protobuf and mdm types.
+ * 
+ * @since 1.0.0
+ * @author Matthias Koller, Peak Solution GmbH
+ *
+ */
 public class ProtobufConverter {
 	
+	/**
+	 * Convert a notification filter to a registration.
+	 * @param filter notification filter.
+	 * @return registration corresponding to the given filter.
+	 */
 	public static Registration from(NotificationFilter filter)
 	{
 		return Registration.newBuilder()
@@ -19,6 +31,10 @@ public class ProtobufConverter {
 				.build();
 	}
 	
+	/**
+	 * @param t mdm modification type.
+	 * @return protobuf notification type.
+	 */
 	public static com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType from(ModificationType t)
 	{
 		switch (t)
@@ -38,6 +54,10 @@ public class ProtobufConverter {
 		}
 	}
 	
+	/**
+	 * @param t protobuf notification type
+	 * @return mdm notification type
+	 */
 	public static ModificationType to(com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType t)
 	{
 		switch (t)

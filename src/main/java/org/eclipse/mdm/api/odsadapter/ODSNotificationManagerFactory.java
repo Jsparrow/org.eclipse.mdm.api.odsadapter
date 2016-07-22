@@ -18,6 +18,15 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Factory for creating a notification manager.
+ * 
+ * Currently only supports creating a notification manager for server type 'peak'.
+ * 
+ * @since 1.0.0
+ * @author Matthias Koller, Peak Solution GmbH
+ *
+ */
 @Stateful
 @LocalBean
 public class ODSNotificationManagerFactory implements NotificationManagerFactory
@@ -58,7 +67,7 @@ public class ODSNotificationManagerFactory implements NotificationManagerFactory
 					throw new NotificationException("ModelManager is not a ODSModelManager!");
 				}
 					
-				return new PeakNotificationManager((ODSModelManager) mm.get(), url, notificationUser, notficationPassword, eventMediaType);
+				return new PeakNotificationManager((ODSModelManager) mm.get(), url, eventMediaType, true);
 			} catch (NotificationException e) {
 				throw new ConnectionException("Could not connect to notification service!", e);
 			}

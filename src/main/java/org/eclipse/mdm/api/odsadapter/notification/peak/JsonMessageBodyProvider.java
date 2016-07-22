@@ -25,6 +25,13 @@ import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.Parser;
 import com.google.protobuf.util.JsonFormat.Printer;
 
+/**
+ * MessageBodyProvider for handling json payloads.
+ * 
+ * @since 1.0.0
+ * @author Matthias Koller, Peak Solution GmbH
+ *
+ */
 @Provider
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)

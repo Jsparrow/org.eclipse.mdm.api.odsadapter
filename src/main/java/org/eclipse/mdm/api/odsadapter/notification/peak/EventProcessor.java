@@ -13,7 +13,10 @@ import org.slf4j.LoggerFactory;
 import com.peaksolution.ods.notification.protobuf.NotificationProtos.Notification;
 
 /**
- * @author mko
+ * Event processor responsible for receiving notification events from the notification server and redirect them to the manager.
+ * 
+ * @since 1.0.0
+ * @author Matthias Koller, Peak Solution GmbH
  *
  */
 public class EventProcessor implements Runnable {

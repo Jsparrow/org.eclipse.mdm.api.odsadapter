@@ -1,7 +1,6 @@
 package org.eclipse.mdm.api.odsadapter.notification.peak;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +16,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.eclipse.mdm.api.base.model.ContextComponent;
+import org.eclipse.mdm.api.base.model.ContextDescribable;
+import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.TestStep;
@@ -31,7 +33,6 @@ import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.Join;
 import org.eclipse.mdm.api.base.query.Operation;
 import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
@@ -45,6 +46,13 @@ import com.google.common.base.Strings;
 import com.google.common.primitives.Longs;
 import com.peaksolution.ods.notification.protobuf.NotificationProtos.Notification;
 
+/**
+ * Notification manager for handling notifications form the Peak ODS Server Notification Plugin
+ * 
+ * @since 1.0.0
+ * @author Matthias Koller, Peak Solution GmbH
+ *
+ */
 public class PeakNotificationManager implements NotificationManager {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PeakNotificationManager.class);
@@ -60,30 +68,51 @@ public class PeakNotificationManager implements NotificationManager {
 	
 	private final MediaType eventMediaType;
 	private final ODSModelManager modelManager;
+
+	private boolean loadContextDescribable;
 	
-	public PeakNotificationManager(ODSModelManager modelManager, String url, String notificationUser, String notficationPassword, String eventMediaType) throws NotificationException {
+	/**
+	 * @param modelManager
+	 * @param url URL of the notification plugin
+	 * @param eventMediaType MediaType to use.
+	 * @param loadContextDescribable if true, the corresponding context describable is loaded if a notification for a context root or context component is received. 
+	 * @throws NotificationException Thrown if the manager cannot connect to the notification server.
+	 */
+	public PeakNotificationManager(ODSModelManager modelManager, String url, String eventMediaType, boolean loadContextDescribable) throws NotificationException {
 		this.modelManager = modelManager;
-		loader = new EntityLoader(modelManager);
+		this.loadContextDescribable = loadContextDescribable;
 		
-		if (Strings.isNullOrEmpty(eventMediaType) || MediaType.APPLICATION_JSON.equalsIgnoreCase(eventMediaType))
+		try
 		{
-			this.eventMediaType = MediaType.APPLICATION_JSON_TYPE;
+			loader = new EntityLoader(modelManager);
+			
+			if (Strings.isNullOrEmpty(eventMediaType) || MediaType.APPLICATION_JSON.equalsIgnoreCase(eventMediaType))
+			{
+				this.eventMediaType = MediaType.APPLICATION_JSON_TYPE;
+			}
+			else
+			{
+				this.eventMediaType = ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE;
+			}
+			
+			client = ClientBuilder.newBuilder()
+		    		.register(SseFeature.class)
+		    		.register(ProtobufMessageBodyProvider.class)
+		    		.register(JsonMessageBodyProvider.class)
+		    		.build();
+		    
+		    endpoint = client.target(url)
+					.path("events");
 		}
-		else
+		catch (Exception e)
 		{
-			this.eventMediaType = ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE;
+			throw new NotificationException("Could not create " + PeakNotificationManager.class.getName() + "!", e);
 		}
-		
-		client = ClientBuilder.newBuilder()
-	    		.register(SseFeature.class)
-	    		.register(ProtobufMessageBodyProvider.class)
-	    		.register(JsonMessageBodyProvider.class)
-	    		.build();
-	    
-	    endpoint = client.target(url)
-				.path("events");
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.mdm.api.base.notification.NotificationManager#register(java.lang.String, org.eclipse.mdm.api.base.notification.NotificationFilter, org.eclipse.mdm.api.base.notification.NotificationListener)
+	 */
 	@Override
 	public void register(String registration, NotificationFilter filter, NotificationListener listener) throws NotificationException
 	{
@@ -98,8 +127,6 @@ public class PeakNotificationManager implements NotificationManager {
 			deregister(registration);
 			register(registration, filter, listener);
 			return;
-			// TODO should we automatically deregister and try again or simply throw an exception?
-//			throw new NotificationException("A registration with the name already exists: " + response.readEntity(String.class));
 		}
 		
 		if (response.getStatusInfo().getStatusCode() != Status.OK.getStatusCode())
@@ -134,6 +161,9 @@ public class PeakNotificationManager implements NotificationManager {
 			
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.mdm.api.base.notification.NotificationManager#deregister(java.lang.String)
+	 */
 	@Override
 	public void deregister(String registration)
 	{
@@ -149,29 +179,37 @@ public class PeakNotificationManager implements NotificationManager {
 			.delete();
 	}
 	
+	/**
+	 * Handler for Exceptions during event processing.
+	 * @param e Exception which occured during event processing.
+	 */
 	void processException(Exception e)
 	{
 		LOGGER.error("Exception during notification processing!", e);
 	}
 	
+	/**
+	 * Handler for notifications.
+	 * @param n notification to process.
+	 * @param notificationListener notification listener for handling the notification.
+	 */
 	void processNotification(Notification n, NotificationListener notificationListener) {
 		if (LOGGER.isDebugEnabled())
 		{
-			LOGGER.debug("Processing notification event COMPILING WORKS: " + n);
+			LOGGER.debug("Processing notification event: " + n);
 		}
-		
-		EntityType entityType = modelManager.getEntityType(n.getAid());
-		LOGGER.debug("Entity type resolved");
-
 		
 		try {
 			User user = loader.load(new Key<>(User.class), n.getUserId());
-			LOGGER.debug("User loaded");
 
+			EntityType entityType = modelManager.getEntityType(n.getAid());
+			List<? extends Entity> entities = loadEntities(entityType, n.getIidList());; 
 
-			List<? extends Entity> entities = loadEntities(entityType, n.getIidList());
-			LOGGER.debug(entities.size() + " entities found: " + entities);
-
+			if (LOGGER.isTraceEnabled())
+			{
+				LOGGER.trace("Notification event with: entityType=" + entityType + ", entities="  + entities + ", user=" + user);
+			}
+			
 			switch (n.getType())
 			{
 			case NEW:
@@ -193,83 +231,46 @@ public class PeakNotificationManager implements NotificationManager {
 				processException(new NotificationException("Invalid notification type!"));
 			}
 		} catch (Exception e) {
-			processException(new NotificationException("Cannot load data for notification!", e));
+			processException(new NotificationException("Could not process notification!", e));
 		}
 	}
 
-	public List<? extends Entity> loadEntities(EntityType entityType, List<Long> ids) throws DataAccessException {
+	/**
+	 * @param entityType entity type of the entities to load.
+	 * @param ids IDs of the entities to load.
+	 * @return loaded entities.
+	 * @throws DataAccessException Throw if the entities cannot be loaded.
+	 */
+	private List<? extends Entity> loadEntities(EntityType entityType, List<Long> ids) throws DataAccessException {
 		
 		if (ids.isEmpty())
 		{
 			return Collections.emptyList();
 		}
 		
-		EntityConfig<?> config = ((ODSModelManager) modelManager).getEntityConfig(entityType);
+		EntityConfig<?> config = getEntityConfig(entityType);
 		
-		Class<? extends Entity> entityClazz = config.getEntityClass();
-		
-		if (entityClazz == null)
+		if (config == null || isLoadContextDescribable(config))
 		{
+			// entityType not modelled in MDM, try to load its ContextDescribable if it is a ContextRoot/ContextComponent
 			final EntityType testStep = modelManager.getEntityType(TestStep.class);
 			final EntityType measurement = modelManager.getEntityType(Measurement.class);
-			final EntityConfig<?> testStepConfig = ((ODSModelManager) modelManager).getEntityConfig(testStep);
-			final EntityConfig<?> measurementConfig = ((ODSModelManager) modelManager).getEntityConfig(measurement);
 			
 			if (hasRelationTo(entityType, testStep, measurement))
 			{
-				// entityType is a ContextRoot
-				EntityType contextRoot = entityType;
-
-				List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
-						.join(testStep.getRelation(contextRoot), Join.OUTER)
-						.fetch(Filter.and().add(Operation.IN_SET.create(entityType.getIDAttribute(), Longs.toArray(ids))))
-						.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
-
-				List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
-						.join(testStep.getRelation(contextRoot), Join.OUTER)
-						.fetch(Filter.and().add(Operation.IN_SET.create(entityType.getIDAttribute(), Longs.toArray(ids))))
-						.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
-				
-				List<Entity> list = new ArrayList<>();
-				list.addAll(loader.loadAll(testStepConfig.getKey(), testStepIDs));
-				list.addAll(loader.loadAll(measurementConfig.getKey(), measurementIDs));
-				
-				return list;
-				
+				return loadEntityForContextRoot(entityType, ids);
 			}
-			else 
+			else if (hasRelationTo(entityType, 
+					modelManager.getEntityType("UnitUnderTest"), 
+					modelManager.getEntityType("TestSequence"), 
+					modelManager.getEntityType("TestEquipment")))
 			{
-				List<Relation> toParent = entityType.getParentRelations();
-				List<String> contextRoots = Arrays.asList("UnitUnderTest", "TestSequence", "TestEquipment");
-
-				if (!toParent.isEmpty() && contextRoots.contains(toParent.get(0).getTarget().getName()))
-				{
-					EntityType contextRoot = toParent.get(0).getTarget();
-					EntityType contextComponent = entityType;
-					
-					// entity is a ContextComponent
-					
-					List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
-							.join(testStep.getRelation(contextRoot), Join.OUTER)
-							.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-							.fetch(Filter.and().add(Operation.IN_SET.create(entityType.getIDAttribute(), Longs.toArray(ids))))
-							.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
-					
-					List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
-							.join(measurement.getRelation(contextRoot), Join.OUTER)
-							.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-							.fetch(Filter.and().add(Operation.IN_SET.create(entityType.getIDAttribute(), Longs.toArray(ids))))
-							.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
-					
-					List<Entity> list = new ArrayList<>();
-					list.addAll(loader.loadAll(testStepConfig.getKey(), testStepIDs));
-					list.addAll(loader.loadAll(measurementConfig.getKey(), measurementIDs));
-					return list;
-				}
-				else
-				{
-					return Collections.emptyList();
-				}
+				return loadEntityForContextComponent(entityType, ids);
+			}
+			else
+			{
+				LOGGER.debug("Cannot load entitis for entityType " + entityType + " and ids " + ids);
+				return Collections.emptyList();
 			}
 		}
 		else
@@ -278,6 +279,82 @@ public class PeakNotificationManager implements NotificationManager {
 		}
 	}
 
+	/**
+	 * Loads the ContextDescribables to the given context root instances
+	 * @param contextRoot entityType of the context root
+	 * @param ids IDs of the context roots.
+	 * @return the loaded ContextDescribables
+	 * @throws DataAccessException Throw if the ContextDescribables cannot be loaded.
+	 */
+	private List<ContextDescribable> loadEntityForContextRoot(EntityType contextRoot, List<Long> ids) throws DataAccessException {
+	
+		final EntityType testStep = modelManager.getEntityType(TestStep.class);
+		final EntityType measurement = modelManager.getEntityType(Measurement.class);
+	
+		List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
+				.join(testStep.getRelation(contextRoot), Join.OUTER)
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), Longs.toArray(ids))))
+				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
+	
+		List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
+				.join(measurement.getRelation(contextRoot), Join.OUTER)
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), Longs.toArray(ids))))
+				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
+		
+		List<ContextDescribable> list = new ArrayList<>();
+		list.addAll(loader.loadAll(new Key<>(TestStep.class), testStepIDs));
+		list.addAll(loader.loadAll(new Key<>(Measurement.class), measurementIDs));
+		
+		return list;
+	}
+
+	/**
+	 * Loads the ContextDescribables to the given context component instances
+	 * @param contextComponent entityType of the context component
+	 * @param ids IDs of the contextComponents to load.
+	 * @return the loaded ContextDescribables
+	 * @throws DataAccessException Throw if the ContextDescribables cannot be loaded.
+	 */
+	private List<ContextDescribable> loadEntityForContextComponent(EntityType contextComponent, List<Long> ids) throws DataAccessException {
+		
+		// ContextComponent can only have one parent
+		final EntityType contextRoot = contextComponent.getParentRelations().get(0).getTarget();
+
+		final EntityType testStep = modelManager.getEntityType(TestStep.class);
+		final EntityType measurement = modelManager.getEntityType(Measurement.class);
+		
+		List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
+				.join(testStep.getRelation(contextRoot), Join.OUTER)
+				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), Longs.toArray(ids))))
+				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
+		
+		List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
+				.join(measurement.getRelation(contextRoot), Join.OUTER)
+				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), Longs.toArray(ids))))
+				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
+		
+		List<ContextDescribable> list = new ArrayList<>();
+		list.addAll(loader.loadAll(new Key<>(TestStep.class), testStepIDs));
+		list.addAll(loader.loadAll(new Key<>(Measurement.class), measurementIDs));
+		return list;
+	}
+
+	/**
+	 * @param entityConfig
+	 * @return true, if the entityConfig belongs to a context root or context component and the option loadContextDescribable
+	 */
+	private boolean isLoadContextDescribable(EntityConfig<?> entityConfig) {
+		return loadContextDescribable && (entityConfig.getEntityClass().isAssignableFrom(ContextRoot.class) || entityConfig.getEntityClass().isAssignableFrom(ContextComponent.class));
+	}
+
+	/**
+	 * Checks if a relation between sourceEntityType and at least one entity type in targetEntityType exists.
+	 * @param sourceEntityType source entity type.
+	 * @param targetEntityTypes list of target enitity types.
+	 * @return true, if relation between source entity type and at least one target entity type exists.
+	 */
 	private boolean hasRelationTo(EntityType sourceEntityType, EntityType... targetEntityTypes) {
 		for (EntityType e : targetEntityTypes)
 		{
@@ -293,6 +370,21 @@ public class PeakNotificationManager implements NotificationManager {
 		}
 
 		return false;
+	}
+
+	/**
+	 * @param entityType entity type the {@link EntityConfig} is requested for
+	 * @return {@link EntityConfig} or null if not config was found for the specified entity type
+	 */
+	private EntityConfig<?> getEntityConfig(EntityType entityType) {
+		try
+		{
+			 return modelManager.getEntityConfig(entityType);
+		}
+		catch (IllegalArgumentException e)
+		{
+			return null;
+		}
 	}
 	
 }

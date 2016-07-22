@@ -19,6 +19,13 @@ import javax.ws.rs.ext.Provider;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.Message;
 
+/**
+ * MessageBodyProvider for handling protobuf payloads.
+ * 
+ * @since 1.0.0
+ * @author Matthias Koller, Peak Solution GmbH
+ *
+ */
 @Provider
 @Consumes(ProtobufMessageBodyProvider.APPLICATION_PROTOBUF)
 @Produces(ProtobufMessageBodyProvider.APPLICATION_PROTOBUF)
