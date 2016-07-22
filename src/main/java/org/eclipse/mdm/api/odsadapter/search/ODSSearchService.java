@@ -50,11 +50,6 @@ public final class ODSSearchService implements SearchService {
 	private final ODSModelManager modelManager;
 	private final EntityLoader entityLoader;
 
-	/**
-	 * lazy instantiated
-	 */
-	private ODSFreeTextSearch freeTextSearch;
-
 	// ======================================================================
 	// Constructors
 	// ======================================================================
@@ -143,20 +138,6 @@ public final class ODSSearchService implements SearchService {
 	 * 		corresponding results.
 	 * @throws DataAccessException Thrown if unable to load the {@code Entity}s.
 	 */
-	@Override
-	public Map<Class<? extends Entity>, List<Entity>> fetch(String query) throws DataAccessException {
-		if (freeTextSearch == null) {
-			initFreetextSearch();
-		}
-
-		return freeTextSearch.search(query);
-	}
-
-	@Override
-	public boolean isTextSearchAvailable() {
-		return true;
-	}
-
 	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results)
 			throws DataAccessException {
 		EntityType entityType = modelManager.getEntityType(entityClass);

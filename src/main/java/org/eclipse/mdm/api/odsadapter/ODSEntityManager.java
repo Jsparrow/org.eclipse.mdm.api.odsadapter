@@ -77,6 +77,7 @@ public class ODSEntityManager implements EntityManager {
 	private final EntityLoader entityLoader;
 
 	private final Transfer transfer = Transfer.SOCKET;
+	private String esHost;
 
 	// ======================================================================
 	// Constructors
@@ -87,8 +88,9 @@ public class ODSEntityManager implements EntityManager {
 	 *
 	 * @param modelManager The {@link ODSModelManager}.
 	 */
-	public ODSEntityManager(ODSModelManager modelManager) {
+	public ODSEntityManager(ODSModelManager modelManager, String esHost) throws ConnectionException {
 		this.modelManager = modelManager;
+		this.esHost = esHost;
 		entityLoader = new EntityLoader(modelManager);
 	}
 
@@ -121,7 +123,9 @@ public class ODSEntityManager implements EntityManager {
 	 */
 	@Override
 	public Optional<SearchService> getSearchService() {
-		return Optional.of(new ODSSearchService(modelManager, entityLoader));
+		// TODO
+		// java docs: cache this service for ONE request!
+		return Optional.of(new ODSSearchService(modelManager, entityLoader, esHost));
 	}
 
 	/**

@@ -10,6 +10,12 @@ package org.eclipse.mdm.api.odsadapter;
 
 import java.util.Map;
 
+<<<<<<< Upstream, based on eclipse/master
+=======
+import javax.ejb.Stateful;
+import javax.inject.Inject;
+
+>>>>>>> cd84632 Added GlobalProperty
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
@@ -18,6 +24,7 @@ import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.EntityManagerFactory;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
+import org.eclipse.mdm.property.GlobalProperty;
 import org.omg.CORBA.ORB;
 import org.omg.CORBA.Object;
 import org.omg.CosNaming.NameComponent;
@@ -66,6 +73,10 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	// Public methods
 	// ======================================================================
 
+	@Inject
+	@GlobalProperty(value="elasticsearch.url")
+	String host;
+	
 	/**
 	 * {@inheritDoc}
 	 *
@@ -100,7 +111,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			LOGGER.info("Connection to ODS server established.");
 
 			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
-			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer));
+			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer), host);
 		} catch(AoException e) {
 			closeSession(aoSession);
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
