@@ -150,7 +150,7 @@ public class ODSAdapterTest {
 		try {
 			// delete in reverse order!
 			if(!projects.isEmpty()) {
-				delete(transaction, "tests and their children", projects);
+				delete(transaction, "projects and their children", projects);
 			}
 
 			delete(transaction, "quantity", Collections.singletonList(quantity));
@@ -173,11 +173,10 @@ public class ODSAdapterTest {
 	}
 
 	private List<Project> createTestData(TemplateTest templateTest, Quantity quantity) throws DataAccessException {
-		
-		Project project = entityFactory.createProject("Testproject_MDM5API");
-		Pool pool = entityFactory.createPool("Testpool_MDM5API", project);
-		
-		
+
+		Project project = entityFactory.createProject("simple_project");
+		Pool pool = entityFactory.createPool("simple_pool", project);
+
 		List<Test> tests = createTests(2, pool, templateTest);
 
 		// create measurement test data
@@ -209,8 +208,8 @@ public class ODSAdapterTest {
 
 		Transaction transaction = entityManager.startTransaction();
 		try {
-			create(transaction, "project and pool with tests based on teamplates with measurements and mass data", 
-				Collections.singleton(project));
+			create(transaction, "project and pool with tests based on teamplates with measurements and mass data",
+					Collections.singleton(project));
 
 			transaction.writeMeasuredValues(writeRequests);
 			transaction.commit();
