@@ -47,10 +47,13 @@ final class UpdateStatement extends BaseStatement {
 
 	private final List<String> nonUpdatableRelationNames;
 
-	UpdateStatement(ODSTransaction transaction, EntityType entityType) {
+	private final boolean ignoreChildren;
+
+	UpdateStatement(ODSTransaction transaction, EntityType entityType, boolean ignoreChildren) {
 		super(transaction, entityType);
 
 		nonUpdatableRelationNames = entityType.getInfoRelations().stream().map(Relation::getName).collect(Collectors.toList());
+		this.ignoreChildren = ignoreChildren;
 	}
 
 	@Override
@@ -137,6 +140,10 @@ final class UpdateStatement extends BaseStatement {
 	}
 
 	private void collectChildEntities(Core core) {
+		if(ignoreChildren) {
+			return;
+		}
+
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent().entrySet()) {
 			Map<Boolean, List<Entity>> patrition = entry.getValue().stream().collect(Collectors.partitioningBy(e -> e.getID() < 1));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);

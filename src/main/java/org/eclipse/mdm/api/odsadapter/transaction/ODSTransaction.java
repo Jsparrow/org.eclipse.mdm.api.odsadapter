@@ -146,8 +146,7 @@ public final class ODSTransaction implements Transaction {
 				});
 
 				// this will restore the ASAM path of each context root
-				// TODO: avoid processing of children, since they unchanged!
-				update(roots);
+				executeStatements(et -> new UpdateStatement(this, et, true), roots);
 				contextRoots.addAll(roots);
 			}
 		} catch(AoException e) {
@@ -184,7 +183,7 @@ public final class ODSTransaction implements Transaction {
 				}
 			}
 
-			executeStatements(et -> new UpdateStatement(this, et), entities);
+			executeStatements(et -> new UpdateStatement(this, et, false), entities);
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
 		} catch(IOException e) {
