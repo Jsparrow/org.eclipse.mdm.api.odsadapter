@@ -380,8 +380,8 @@ public class ODSModelManager implements ModelManager {
 
 		// Environment | Project | Pool | PhysicalDimension | User | Measurement | ChannelGroup
 		entityConfigRepository.register(create(new Key<>(Environment.class), "Environment", false));
-		entityConfigRepository.register(create(new Key<>(Project.class), "Project", false));		
-		entityConfigRepository.register(create(new Key<>(Pool.class), "StructureLevel", true));	
+		entityConfigRepository.register(create(new Key<>(Project.class), "Project", false));
+		entityConfigRepository.register(create(new Key<>(Pool.class), "StructureLevel", true));
 		entityConfigRepository.register(create(new Key<>(PhysicalDimension.class), "PhysDimension", false));
 		entityConfigRepository.register(create(new Key<>(User.class), "User", false));
 		entityConfigRepository.register(create(new Key<>(Measurement.class), "MeaResult", false));
@@ -439,7 +439,7 @@ public class ODSModelManager implements ModelManager {
 		//		entityConfigRepository.register(create(new Key<>(Status.class, TestStep.class), "StatusTestStep", true)); // TODO <-- correct?!
 
 		// TestStep
-		EntityConfig<TestStep> testStepConfig = create(new Key<>(TestStep.class), "TestStep", false); // TODO true if project and structurelevel defined!
+		EntityConfig<TestStep> testStepConfig = create(new Key<>(TestStep.class), "TestStep", true);
 		//		testStepConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, TestStep.class)));
 		testStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateTestStep.class)));
 		testStepConfig.setComparator(Sortable.COMPARATOR);
@@ -458,13 +458,13 @@ public class ODSModelManager implements ModelManager {
 		//		entityConfigRepository.register(create(new Key<>(Status.class, Test.class), "StatusTest", true)); // TODO <-- correct?!
 
 		// Test
-		EntityConfig<Test> testConfig = create(new Key<>(Test.class), "Test", false);// TODO true if project and structurelevel defined!
+		EntityConfig<Test> testConfig = create(new Key<>(Test.class), "Test", true);
 		testConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(User.class)));
 		//		testConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Status.class, Test.class)));
 		testConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateTest.class)));
 		entityConfigRepository.register(testConfig);
 
-				
+
 		// ContextRoots
 		registerContextRoot(ContextType.UNITUNDERTEST);
 		registerContextRoot(ContextType.TESTSEQUENCE);
