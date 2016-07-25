@@ -30,7 +30,6 @@ import org.asam.ods.ApplicationStructureValue;
 import org.asam.ods.ElemResultSetExt;
 import org.asam.ods.EnumerationAttributeStructure;
 import org.asam.ods.JoinDef;
-import org.asam.ods.NameValue;
 import org.asam.ods.QueryStructureExt;
 import org.asam.ods.ResultSetExt;
 import org.asam.ods.SelAIDNameUnitId;
@@ -100,9 +99,6 @@ public class ODSModelManager implements ModelManager {
 
 	private EntityConfigRepository entityConfigRepository;
 
-	// TODO quick fix => REMOVE THSI AS SOON AS POSSIBLE!
-	@Deprecated private boolean isAthos;
-
 	private ApplElemAccess applElemAccess;
 	private AoSession aoSession;
 
@@ -118,13 +114,6 @@ public class ODSModelManager implements ModelManager {
 		this.orb = orb;
 		applElemAccess = aoSession.getApplElemAccess();
 
-		try {
-			NameValue nv = aoSession.getContextByName("ATHOS_VERSION");
-			isAthos = nv != null;
-		} catch(AoException e) {
-			isAthos = false;
-		}
-
 		initialize();
 	}
 
@@ -134,10 +123,6 @@ public class ODSModelManager implements ModelManager {
 
 	public CORBAFileServerIF getFileServer() {
 		return fileServer;
-	}
-
-	public boolean isAthos() {
-		return isAthos;
 	}
 
 	public ORB getORB() {
