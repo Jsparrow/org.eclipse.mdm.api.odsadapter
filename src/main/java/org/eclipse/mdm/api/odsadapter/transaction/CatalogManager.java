@@ -81,7 +81,7 @@ final class CatalogManager {
 				applicationRelation.setElem2(applicationElement);
 				applicationRelation.setRelationName(catalogComponent.getName());
 				applicationRelation.setInverseRelationName("Tpl" + odsContextTypeName + "Comp");
-				applicationRelation.setRelationRange(new RelationRange((short)0, (short) -1));
+				applicationRelation.setRelationRange(new RelationRange((short) 0, (short) -1));
 				applicationRelation.setInverseRelationRange(new RelationRange((short) 1, (short) 1));
 
 				// release resources
@@ -95,6 +95,66 @@ final class CatalogManager {
 			contextRootBaseElement._release();
 			baseElement._release();
 		}
+	}
+
+	public void createCatalogSensors(Collection<CatalogSensor> catalogSensors) throws AoException {
+		Map<String, List<CatalogSensor>> catalogSensorsByCatalogComponent = catalogSensors.stream()
+				.collect(Collectors.groupingBy(cs -> cs.getCatalogComponent().getName()));
+
+		ApplicationElement channelApplicationElement = getApplicationStructure().getElementByName("MeaQuantity");
+		BaseElement channelBaseElement = channelApplicationElement.getBaseElement();
+
+		for(Entry<String, List<CatalogSensor>> entry : catalogSensorsByCatalogComponent.entrySet()) {
+			ApplicationElement contextComponentApplicationElement = getApplicationStructure().getElementByName(entry.getKey());
+			BaseElement contextComponentBaseElement = contextComponentApplicationElement.getBaseElement();
+			ApplicationElement contextTemplateSensorApplicationElement = getApplicationStructure().getElementByName("TplSensor");
+			BaseElement baseElement = getBaseStructure().getElementByType("AoTestEquipmentPart");
+
+			for(CatalogSensor catalogSensor : entry.getValue()) {
+				ApplicationElement applicationElement = createApplicationElement(catalogSensor.getName(), baseElement);
+
+				// relation context component to context sensor
+				ApplicationRelation applicationRelation = getApplicationStructure().createRelation();
+				applicationRelation.setElem1(contextComponentApplicationElement);
+				applicationRelation.setElem2(applicationElement);
+				applicationRelation.setRelationName(catalogSensor.getName());
+				applicationRelation.setInverseRelationName(entry.getKey());
+				applicationRelation.setBaseRelation(getBaseStructure().getRelation(contextComponentBaseElement, baseElement));
+				applicationRelation._release();
+
+				// relation template sensor to context sensor
+				applicationRelation = getApplicationStructure().createRelation();
+				applicationRelation.setElem1(contextTemplateSensorApplicationElement);
+				applicationRelation.setElem2(applicationElement);
+				applicationRelation.setRelationName(catalogSensor.getName());
+				applicationRelation.setInverseRelationName("TplSensor");
+				applicationRelation.setRelationRange(new RelationRange((short) 0, (short) -1));
+				applicationRelation.setInverseRelationRange(new RelationRange((short) 1, (short) 1));
+				applicationRelation._release();
+
+				// relation channel to context sensor
+				applicationRelation = getApplicationStructure().createRelation();
+				applicationRelation.setElem1(channelApplicationElement);
+				applicationRelation.setElem2(applicationElement);
+				applicationRelation.setRelationName(catalogSensor.getName());
+				applicationRelation.setInverseRelationName("MeaQuantity");
+				applicationRelation.setBaseRelation(getBaseStructure().getRelation(channelBaseElement, baseElement));
+
+				// release resources
+				applicationElement._release();
+				applicationRelation._release();
+			}
+
+			// release resources
+			contextComponentApplicationElement._release();
+			contextTemplateSensorApplicationElement._release();
+			contextComponentBaseElement._release();
+			baseElement._release();
+		}
+
+		// release resources
+		channelApplicationElement._release();
+		channelBaseElement._release();
 	}
 
 	public void createCatalogAttributes(Collection<CatalogAttribute> catalogAttributes) throws AoException {
@@ -136,24 +196,46 @@ final class CatalogManager {
 			throw new DataAccessException("Unable to delete given catalog components since at least one is used in templates.");
 		}
 
-		Map<ContextType, List<CatalogComponent>> catalogComponentsByContextType = catalogComponents.stream()
-				.collect(Collectors.groupingBy(CatalogComponent::getContextType));
-
-		for(Entry<ContextType, List<CatalogComponent>> entry : catalogComponentsByContextType.entrySet()) {
-			for(CatalogComponent catalogComponent : entry.getValue()) {
-				ApplicationElement applicationElement = getApplicationStructure().getElementByName(catalogComponent.getName());
-				for(ApplicationRelation applicationRelation : applicationElement.getAllRelations()) {
-					getApplicationStructure().removeRelation(applicationRelation);
-
-					// release resources
-					applicationRelation._release();
-				}
-				getApplicationStructure().removeElement(applicationElement);
+		for(CatalogComponent catalogComponent : catalogComponents) {
+			ApplicationElement applicationElement = getApplicationStructure().getElementByName(catalogComponent.getName());
+			for(ApplicationRelation applicationRelation : applicationElement.getAllRelations()) {
+				getApplicationStructure().removeRelation(applicationRelation);
 
 				// release resources
-				applicationElement._release();
+				applicationRelation._release();
 			}
+			getApplicationStructure().removeElement(applicationElement);
+
+			// release resources
+			applicationElement._release();
 		}
+	}
+
+	public void deleteCatalogSensors(Collection<CatalogSensor> catalogSensors) throws AoException, DataAccessException {
+		List<CatalogAttribute> attributes = new ArrayList<>();
+		for (CatalogSensor catalogSensor : catalogSensors) {
+			attributes.addAll(catalogSensor.getCatalogAttributes());
+		}
+		transaction.delete(attributes);
+
+		if(areReferencedInTemplates(catalogSensors)) {
+			throw new DataAccessException("Unable to delete given catalog sensors since at least one is used in templates.");
+		}
+
+		for(CatalogSensor catalogSensor : catalogSensors) {
+			ApplicationElement applicationElement = getApplicationStructure().getElementByName(catalogSensor.getName());
+			for(ApplicationRelation applicationRelation : applicationElement.getAllRelations()) {
+				getApplicationStructure().removeRelation(applicationRelation);
+
+				// release resources
+				applicationRelation._release();
+			}
+			getApplicationStructure().removeElement(applicationElement);
+
+			// release resources
+			applicationElement._release();
+		}
+
 	}
 
 	public void deleteCatalogAttributes(Collection<CatalogAttribute> catalogAttributes) throws AoException, DataAccessException {

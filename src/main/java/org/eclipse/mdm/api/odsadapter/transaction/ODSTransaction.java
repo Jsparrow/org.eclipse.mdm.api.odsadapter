@@ -110,6 +110,7 @@ public final class ODSTransaction implements Transaction {
 			if(catalogSensors != null) {
 				// TODO create CatalogSensors....
 				throw new DataAccessException("NOT IMPLEMENTED");
+				//getCatalogManager().createCatalogSensors(catalogSensors);
 			}
 
 			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
@@ -138,15 +139,16 @@ public final class ODSTransaction implements Transaction {
 
 			executeStatements(et -> new InsertStatement(this, et), entities);
 
-			List<ContextRoot> contextRoots = (List<ContextRoot>) entitiesByClassType.get(ContextRoot.class);
-			if(contextRoots != null) {
-				contextRoots.forEach(contextRoot -> {
+			List<ContextRoot> roots = (List<ContextRoot>) entitiesByClassType.get(ContextRoot.class);
+			if(roots != null) {
+				roots.forEach(contextRoot -> {
 					contextRoot.setVersion(contextRoot.getID().toString());
 				});
 
 				// this will restore the ASAM path of each context root
-				update(contextRoots);
-				contextRoots.addAll(contextRoots);
+				// TODO: avoid processing of children, since they unchanged!
+				update(roots);
+				contextRoots.addAll(roots);
 			}
 		} catch(AoException e) {
 			throw new DataAccessException(e.reason, e); // TODO
@@ -211,8 +213,10 @@ public final class ODSTransaction implements Transaction {
 
 			List<CatalogSensor> catalogSensors = (List<CatalogSensor>) entitiesByClassType.get(CatalogSensor.class);
 			if(catalogSensors != null) {
-				// TODO delete CatalogSensors....
-				throw new DataAccessException("NOT IMPLEMENTED");
+				// TODO Avalon 4.3b wirft innerhalb von AoSession.commitTransaction() eine Exception
+				// und hinterlässt das Datenmodell in einem inkonsistenten Zustand!
+				throw new DataAccessException("Deletion of catalog sensors is not implemented!");
+				//getCatalogManager().deleteCatalogSensors(catalogSensors);
 			}
 
 			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
@@ -221,7 +225,7 @@ public final class ODSTransaction implements Transaction {
 			}
 
 			/*
-			 * TODO: for any template that has to be deleted it is required to ensure there are no link to it...
+			 * TODO: for any template that has to be deleted it is required to ensure there are no links to it...
 			 */
 
 			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
