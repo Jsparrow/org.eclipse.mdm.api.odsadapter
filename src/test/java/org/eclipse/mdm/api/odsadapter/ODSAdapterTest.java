@@ -182,7 +182,7 @@ public class ODSAdapterTest {
 		// create measurement test data
 		List<WriteRequest> writeRequests = new ArrayList<>();
 		for(Test test : tests) {
-			for(TestStep testStep : TestStep.of(test)) {
+			for(TestStep testStep : test.getCommissionedTestSteps()) {
 				Optional<TemplateTestStep> templateTestStep = TemplateTestStep.of(testStep);
 				ContextRoot[] contextRoots = new ContextRoot[0];
 				if(templateTestStep.isPresent()) {
