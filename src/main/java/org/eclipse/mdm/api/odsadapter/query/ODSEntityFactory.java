@@ -12,14 +12,21 @@ import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
+import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.Interpolation;
 import org.eclipse.mdm.api.base.model.ScalarType;
+import org.eclipse.mdm.api.base.model.SequenceRepresentation;
+import org.eclipse.mdm.api.base.model.TypeSpecification;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.model.ValueType;
+import org.eclipse.mdm.api.base.model.VersionState;
 import org.eclipse.mdm.api.base.query.DefaultCore;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
@@ -27,6 +34,17 @@ import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 
 public final class ODSEntityFactory extends EntityFactory {
+
+	private static final Set<Class<? extends Enum<?>>> ENUM_CLASSES = new HashSet<>();
+
+	static {
+		ENUM_CLASSES.add(ScalarType.class);
+		ENUM_CLASSES.add(VersionState.class);
+		ENUM_CLASSES.add(Interpolation.class);
+		ENUM_CLASSES.add(AxisType.class);
+		ENUM_CLASSES.add(SequenceRepresentation.class);
+		ENUM_CLASSES.add(TypeSpecification.class);
+	}
 
 	private final ODSModelManager modelManager;
 	private final User loggedInUser;
@@ -62,6 +80,18 @@ public final class ODSEntityFactory extends EntityFactory {
 		core.getValues().get(Entity.ATTR_MIMETYPE).set(entityConfig.getMimeType());
 
 		return core;
+	}
+
+	@Override
+	protected void validateEnum(Class<? extends Enum<?>> enumClass) {
+		if(ENUM_CLASSES.contains(enumClass)) {
+			// given enumeration class is a default one, which is always supported
+			return;
+		}
+
+		// TODO check here for other enumeration classes introduced by modules
+
+		throw new IllegalArgumentException("Given enum class '" + enumClass.getSimpleName() + "' is not supported.");
 	}
 
 	private <T extends Entity> Core createCore(Key<T> key) {

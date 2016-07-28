@@ -14,9 +14,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
@@ -72,7 +72,7 @@ final class EntityResult<T extends Entity> {
 		Value enumerationClass = ValueType.STRING.create(VATTR_ENUMERATION_CLASS);
 		values.put(VATTR_ENUMERATION_CLASS, enumerationClass);
 		if(attribute.getValueType().isEnumerationType()) {
-			enumerationClass.set(attribute.getEnumClass().getSimpleName());
+			enumerationClass.set(attribute.getEnumClass().getName());
 		}
 
 		Value scalarType = ValueType.ENUMERATION.create(ScalarType.class, VATTR_SCALAR_TYPE);
