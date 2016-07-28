@@ -131,7 +131,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			try {
 				return CORBAFileServerIFHelper.narrow(resolve(id, "CORBA-FT"));
 			} catch(ConnectionException e) {
-				LOGGER.warn("CORBA file server not found.", e);
+				LOGGER.warn(e.getMessage());
 				return null;
 			}
 		}
