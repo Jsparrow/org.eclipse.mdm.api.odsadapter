@@ -119,8 +119,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
 
 		// add required joins
-		entityTypes.stream().filter(et -> !implicitTypeNames.contains(et.getName()))
-		.forEach(entityType -> {
+		entityTypes.stream().forEach(entityType -> {
 			addJoins(query, entityType);
 			query.selectAll(entityType);
 		});
@@ -133,8 +132,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
 
 		// add required joins
-		attributes.stream().filter(a -> !implicitTypeNames.contains(a.getEntityType().getName()))
-		.forEach(attribute -> {
+		attributes.stream().forEach(attribute -> {
 			addJoins(query, attribute.getEntityType());
 			query.select(attribute);
 		});
