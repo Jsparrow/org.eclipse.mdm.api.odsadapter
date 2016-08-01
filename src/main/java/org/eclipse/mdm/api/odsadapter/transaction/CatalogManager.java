@@ -28,7 +28,6 @@ import org.asam.ods.DataType;
 import org.asam.ods.RelationRange;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
@@ -162,8 +161,7 @@ final class CatalogManager {
 			ApplicationElement applicationElement = getApplicationStructure().getElementByName(getParentName(catalogAttribute));
 
 			ApplicationAttribute applicationAttribute = applicationElement.createAttribute();
-			ValueType valueType = catalogAttribute.getScalarType().toValueType();
-			DataType dataType = ODSUtils.VALUETYPES.convert(catalogAttribute.isSequence() ? valueType : valueType.toSingleType());
+			DataType dataType = ODSUtils.VALUETYPES.convert(catalogAttribute.getValueType());
 			applicationAttribute.setDataType(dataType);
 			applicationAttribute.setName(catalogAttribute.getName());
 			if (dataType == DataType.DT_ENUM) {
