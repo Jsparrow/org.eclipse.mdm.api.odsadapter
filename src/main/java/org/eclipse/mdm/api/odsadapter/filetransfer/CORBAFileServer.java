@@ -53,9 +53,7 @@ final class CORBAFileServer {
 	// ======================================================================
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CORBAFileServer.class);
-
 	private static final int DEFAULT_BUFFER_SIZE = 100_000;
-
 	private static final int SOCKET_TIMEOUT = 5_000;
 
 	// ======================================================================

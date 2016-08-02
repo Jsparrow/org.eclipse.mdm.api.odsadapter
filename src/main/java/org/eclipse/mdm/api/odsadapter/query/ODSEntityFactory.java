@@ -33,7 +33,17 @@ import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 
+/**
+ * ODS implementation of the {@link EntityFactory}.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 public final class ODSEntityFactory extends EntityFactory {
+
+	// ======================================================================
+	// Class variables
+	// ======================================================================
 
 	private static final Set<Class<? extends Enum<?>>> ENUM_CLASSES = new HashSet<>();
 
@@ -46,29 +56,59 @@ public final class ODSEntityFactory extends EntityFactory {
 		ENUM_CLASSES.add(TypeSpecification.class);
 	}
 
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
+
 	private final ODSModelManager modelManager;
 	private final User loggedInUser;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param modelManager Used to create {@link Core}s.
+	 * @param loggedInUser The logged in {@link User}.
+	 */
 	public ODSEntityFactory(ODSModelManager modelManager, User loggedInUser) {
 		this.modelManager = modelManager;
 		this.loggedInUser = loggedInUser;
 	}
 
+	// ======================================================================
+	// Protected methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected Optional<User> getLoggedInUser() {
-		return Optional.ofNullable(loggedInUser);
+		return Optional.of(loggedInUser);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected <T extends Entity> Core createCore(Class<T> entityClass) {
 		return createCore(new Key<>(entityClass));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected <T extends Entity> Core createCore(Class<T> entityClass, ContextType contextType) {
 		return createCore(new Key<>(entityClass, contextType));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected <T extends Entity> Core createCore(String name, Class<T> entityClass) {
 		EntityConfig<?> entityConfig = modelManager.getEntityConfig(modelManager.getEntityType(name));
@@ -82,6 +122,9 @@ public final class ODSEntityFactory extends EntityFactory {
 		return core;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected void validateEnum(Class<? extends Enum<?>> enumClass) {
 		if(ENUM_CLASSES.contains(enumClass)) {
@@ -94,6 +137,16 @@ public final class ODSEntityFactory extends EntityFactory {
 		throw new IllegalArgumentException("Given enum class '" + enumClass.getSimpleName() + "' is not supported.");
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Creates a configured {@link Core} for given {@link Key}.
+	 *
+	 * @param key Used as identifier to resolve the {@link EntityConfig}.
+	 * @return The created {@code Core} is returned.
+	 */
 	private <T extends Entity> Core createCore(Key<T> key) {
 		EntityConfig<T> entityConfig = modelManager.findEntityConfig(key);
 		Core core = new DefaultCore(entityConfig.getEntityType());

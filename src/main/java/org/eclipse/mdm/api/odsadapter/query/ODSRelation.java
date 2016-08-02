@@ -19,7 +19,17 @@ import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Relationship;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
+/**
+ * ODS implementation of the {@link Relation} interface.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class ODSRelation implements Relation {
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final Relationship relationship;
 	private final EntityType source;
@@ -30,6 +40,17 @@ final class ODSRelation implements Relation {
 
 	private Attribute attribute;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param applRel The ODS meta data for this relation.
+	 * @param source The source {@link EntityType}.
+	 * @param target The target {@code EntityType}.
+	 */
 	ODSRelation(ApplRel applRel, EntityType source, EntityType target) {
 		this.source = source;
 		this.target = target;
@@ -38,40 +59,66 @@ final class ODSRelation implements Relation {
 		rangeMax = applRel.arRelationRange.max;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getName() {
 		return name;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EntityType getSource() {
 		return source;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EntityType getTarget() {
 		return target;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Relationship getRelationship() {
 		return relationship;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Attribute getAttribute() {
 		if(attribute == null) {
-			attribute = new ODSAttribute(getSource(), new ApplAttr(getName(), "", DataType.DT_LONGLONG, 0, true, false, null), null, null);
+			attribute = new ODSAttribute(getSource(), new ApplAttr(getName(), "", DataType.DT_LONGLONG, 0,
+					true, false, null), null, null);
 		}
 
 		return attribute;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int hashCode() {
 		return Objects.hash(getSource(), getTarget(), getName());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean equals(Object object) {
 		if(object instanceof ODSRelation) {
@@ -84,20 +131,41 @@ final class ODSRelation implements Relation {
 		return false;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
 		return getName();
 	}
 
-	@Deprecated
-	//relation from N Site (= Fremdschlüsselspalte ist in gleicher Tabelle)
-	boolean isIncomming(Relationship relationship) {
+	// ======================================================================
+	// Package methods
+	// ======================================================================
+
+	/**
+	 * Checks whether this relation is of the same {@link Relationship} as the
+	 * given one and whether the foreign key is in the table of the source
+	 * entity type.
+	 *
+	 * @param relationship The {@code Relationship}.
+	 * @return Returns {@code true} this relation's {@code Relationship} is
+	 * 		equal with the given one and it is is an outgoing relation.
+	 */
+	boolean isOutgoing(Relationship relationship) {
 		return relationship.equals(getRelationship()) && rangeMax == 1;
 	}
 
-	@Deprecated
-	//relation to N Site (= Fremdschlüsselspalte ist in Ziel Tabelle)
-	boolean isOutgoing(Relationship relationship) {
+	/**
+	 * Checks whether this relation is of the same {@link Relationship} as the
+	 * given one and whether the foreign key is in the table of the target
+	 * entity type.
+	 *
+	 * @param relationship The {@code Relationship}.
+	 * @return Returns {@code true} this relation's {@code Relationship} is
+	 * 		equal with the given one and it is is an incoming relation.
+	 */
+	boolean isIncoming(Relationship relationship) {
 		return relationship.equals(getRelationship()) && rangeMax == -1;
 	}
 

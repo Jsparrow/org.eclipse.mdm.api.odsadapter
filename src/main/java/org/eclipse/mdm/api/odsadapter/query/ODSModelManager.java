@@ -11,6 +11,7 @@ package org.eclipse.mdm.api.odsadapter.query;
 import static java.util.stream.Collectors.groupingBy;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +32,6 @@ import org.asam.ods.ElemResultSetExt;
 import org.asam.ods.EnumerationAttributeStructure;
 import org.asam.ods.JoinDef;
 import org.asam.ods.QueryStructureExt;
-import org.asam.ods.ResultSetExt;
 import org.asam.ods.SelAIDNameUnitId;
 import org.asam.ods.SelItem;
 import org.asam.ods.SelOrder;
@@ -85,9 +85,23 @@ import org.slf4j.LoggerFactory;
 
 import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
 
+/**
+ * ODS implementation of the {@link ModelManager} interface.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 public class ODSModelManager implements ModelManager {
 
+	// ======================================================================
+	// Class variables
+	// ======================================================================
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSModelManager.class);
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final Map<String, EntityType> entityTypesByName = new HashMap<>();
 
@@ -102,37 +116,71 @@ public class ODSModelManager implements ModelManager {
 	private ApplElemAccess applElemAccess;
 	private AoSession aoSession;
 
-	{
-		ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
-		write = reentrantReadWriteLock.writeLock();
-		read = reentrantReadWriteLock.readLock();
-	}
+	// ======================================================================
+	// Constructors
+	// ======================================================================
 
+	/**
+	 * Constructor.
+	 *
+	 * @param orb Used to activate CORBA service objects.
+	 * @param aoSession The underlying ODS session.
+	 * @param fileServer Used for file transfers.
+	 * @throws AoException Thrown on errors.
+	 */
 	public ODSModelManager(ORB orb, AoSession aoSession, CORBAFileServerIF fileServer) throws AoException {
 		this.fileServer = fileServer;
 		this.aoSession = aoSession;
 		this.orb = orb;
 		applElemAccess = aoSession.getApplElemAccess();
 
+		// setup locks
+		ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
+		write = reentrantReadWriteLock.writeLock();
+		read = reentrantReadWriteLock.readLock();
+
+		// initialization
 		initialize();
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * Returns a new {@link ODSModelManager} with a new ODS co-session.
+	 *
+	 * @return The created {@code ODSModelManager} is returned.
+	 * @throws AoException Thrown on errors.
+	 */
 	public ODSModelManager newSession() throws AoException {
 		return new ODSModelManager(orb, getAoSession().createCoSession(), fileServer);
 	}
 
+	/**
+	 * Returns the {@link CORBAFileServerIF}.
+	 *
+	 * @return The {@code CORBAFileServerIF} is returned or null, if missing.
+	 */
 	public CORBAFileServerIF getFileServer() {
 		return fileServer;
 	}
 
+	/**
+	 * Returns the {@link ORB}.
+	 *
+	 * @return The {@code ORB} is returned.
+	 */
 	public ORB getORB() {
 		return orb;
 	}
 
-	/*
-	 * ################################################################################################################
+	/**
+	 * Returns the non root {@link EntityConfig} for given {@link Key}.
+	 *
+	 * @param key Used as identifier.
+	 * @return The non root {@code EntityConfig} is returned.
 	 */
-
 	public <T extends Entity> EntityConfig<T> findEntityConfig(Key<T> key) {
 		read.lock();
 
@@ -143,6 +191,12 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * Returns the root {@link EntityConfig} for given {@link Key}.
+	 *
+	 * @param key Used as identifier.
+	 * @return The root {@code EntityConfig} is returned.
+	 */
 	public <T extends Entity> EntityConfig<T> getEntityConfig(Key<T> key) {
 		read.lock();
 
@@ -153,6 +207,12 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * Returns the {@link EntityConfig} associated with given {@link EntityType}.
+	 *
+	 * @param entityType Used as identifier.
+	 * @return The {@code EntityConfig} is returned.
+	 */
 	public EntityConfig<?> getEntityConfig(EntityType entityType) {
 		read.lock();
 
@@ -163,10 +223,9 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
-	/*
-	 * ################################################################################################################
+	/**
+	 * {@inheritDoc}
 	 */
-
 	@Override
 	public Query createQuery() {
 		read.lock();
@@ -178,17 +237,23 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<EntityType> listEntityTypes() {
 		read.lock();
 
 		try {
-			return new ArrayList<>(entityTypesByName.values());
+			return Collections.unmodifiableList(new ArrayList<>(entityTypesByName.values()));
 		} finally {
 			read.unlock();
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EntityType getEntityType(Class<? extends Entity> entityClass) {
 		read.lock();
@@ -200,6 +265,9 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EntityType getEntityType(Class<? extends Entity> entityClass, ContextType contextType) {
 		read.lock();
@@ -211,6 +279,9 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EntityType getEntityType(String name) {
 		read.lock();
@@ -227,6 +298,11 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * Returns the {@link AoSession} of this model manager.
+	 *
+	 * @return The {@code AoSession} is returned.
+	 */
 	public AoSession getAoSession() {
 		write.lock();
 
@@ -237,6 +313,11 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * Returns the {@link ApplElemAccess} of this model manager.
+	 *
+	 * @return The {@code ApplElemAccess} is returned.
+	 */
 	public ApplElemAccess getApplElemAccess() {
 		read.lock();
 
@@ -247,6 +328,11 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	/**
+	 * Closes the ODS connection.
+	 *
+	 * @throws AoException Thrown on errors.
+	 */
 	public void close() throws AoException {
 		read.lock();
 
@@ -255,10 +341,13 @@ public class ODSModelManager implements ModelManager {
 			aoSession.close();
 		} finally {
 			read.unlock();
+			aoSession._release();
 		}
-		aoSession._release();
 	}
 
+	/**
+	 * Reloads the complete session context.
+	 */
 	public void reloadApplicationModel() {
 		write.lock();
 
@@ -286,11 +375,26 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Initializes this model manager by caching the application model and
+	 * loading the {@link EntityConfig}s.
+	 *
+	 * @throws AoException Thrown on errors.
+	 */
 	private void initialize() throws AoException {
 		loadApplicationModel();
 		loadEntityConfigurations();
 	}
 
+	/**
+	 * Caches the whole application model as provided by the ODS session.
+	 *
+	 * @throws AoException Thrown on errors.
+	 */
 	private void loadApplicationModel() throws AoException {
 		LOGGER.debug("Reading the application model...");
 		long start = System.currentTimeMillis();
@@ -325,12 +429,21 @@ public class ODSModelManager implements ModelManager {
 		}
 
 		// assign relations to their source entity types
-		relations.stream().collect(groupingBy(Relation::getSource)).forEach((e, r) -> ((ODSEntityType) e).setRelations(r));
+		relations.stream().collect(groupingBy(Relation::getSource))
+		.forEach((e, r) -> ((ODSEntityType) e).setRelations(r));
 
 		long stop = System.currentTimeMillis();
-		LOGGER.debug("{} entity types with {} relations found in {} ms.", entityTypesByName.size(), relations.size(), stop - start);
+		LOGGER.debug("{} entity types with {} relations found in {} ms.",
+				entityTypesByName.size(), relations.size(), stop - start);
 	}
 
+	/**
+	 * Loads all available {@link Unit} names mapped by their instance IDs.
+	 *
+	 * @param applElems The application element meta data instances.
+	 * @return The unit names mapped by the corresponding instance IDs.
+	 * @throws AoException Thrown if unable to load the unit mappings.
+	 */
 	private Map<Long, String> getUnitMapping(ApplElem[] applElems) throws AoException {
 		ApplElem unitElem = Stream.of(applElems).filter(ae -> ae.beName.equals("AoUnit")).findAny()
 				.orElseThrow(() -> new IllegalStateException("Application element 'Unit' is not defined."));
@@ -345,18 +458,19 @@ public class ODSModelManager implements ModelManager {
 		qse.orderBy = new SelOrder[0];
 
 		Map<Long, String> units = new HashMap<>();
-		for(ResultSetExt resultSetExt : getApplElemAccess().getInstancesExt(qse, 0)) {
-			ElemResultSetExt unitResultSetExt = resultSetExt.firstElems[0];
-			for(int i = 0; i < unitResultSetExt.values[0].value.flag.length; i++) {
-				Long unitID = ODSConverter.fromODSLong(unitResultSetExt.values[0].value.u.longlongVal()[i]);
-				String unitName = unitResultSetExt.values[1].value.u.stringVal()[i];
-				units.put(unitID, unitName);
-			}
+		ElemResultSetExt unitResultSetExt = getApplElemAccess().getInstancesExt(qse, 0)[0].firstElems[0];
+		for(int i = 0; i < unitResultSetExt.values[0].value.flag.length; i++) {
+			Long unitID = ODSConverter.fromODSLong(unitResultSetExt.values[0].value.u.longlongVal()[i]);
+			String unitName = unitResultSetExt.values[1].value.u.stringVal()[i];
+			units.put(unitID, unitName);
 		}
 
 		return units;
 	}
 
+	/**
+	 * Loads the {@link EntityConfig}s.
+	 */
 	private void loadEntityConfigurations() {
 		LOGGER.debug("Loading entity configurations...");
 		long start = System.currentTimeMillis();
@@ -389,7 +503,8 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(channelConfig);
 
 		// ValueList
-		EntityConfig<ValueListValue> valueListValueConfig = create(new Key<>(ValueListValue.class), "ValueListValue", true);
+		EntityConfig<ValueListValue> valueListValueConfig = create(new Key<>(ValueListValue.class),
+				"ValueListValue", true);
 		valueListValueConfig.setComparator(Sortable.COMPARATOR);
 		EntityConfig<ValueList> valueListConfig = create(new Key<>(ValueList.class), "ValueList", true);
 		valueListConfig.addChild(valueListValueConfig);
@@ -398,7 +513,8 @@ public class ODSModelManager implements ModelManager {
 		// ParameterSet
 		EntityConfig<Parameter> parameterConfig = create(new Key<>(Parameter.class), "ResultParameter", true);
 		parameterConfig.addOptional(entityConfigRepository.findRoot(new Key<>(Unit.class)));
-		EntityConfig<ParameterSet> parameterSetConfig = create(new Key<>(ParameterSet.class), "ResultParameterSet", true);
+		EntityConfig<ParameterSet> parameterSetConfig = create(new Key<>(ParameterSet.class),
+				"ResultParameterSet", true);
 		parameterSetConfig.addChild(parameterConfig);
 		entityConfigRepository.register(parameterSetConfig);
 
@@ -413,15 +529,20 @@ public class ODSModelManager implements ModelManager {
 		registerTemplateRoot(ContextType.TESTEQUIPMENT);
 
 		// TemplateTestStep
-		EntityConfig<TemplateTestStep> templateTestStepConfig = create(new Key<>(TemplateTestStep.class), "TplTestStep", true);
-		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, ContextType.UNITUNDERTEST)));
-		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, ContextType.TESTSEQUENCE)));
-		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, ContextType.TESTEQUIPMENT)));
+		EntityConfig<TemplateTestStep> templateTestStepConfig = create(new Key<>(TemplateTestStep.class),
+				"TplTestStep", true);
+		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class,
+				ContextType.UNITUNDERTEST)));
+		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class,
+				ContextType.TESTSEQUENCE)));
+		templateTestStepConfig.addOptional(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class,
+				ContextType.TESTEQUIPMENT)));
 		templateTestStepConfig.setComparator(Versionable.COMPARATOR);
 		entityConfigRepository.register(templateTestStepConfig);
 
 		// Status TestStep
-		//		entityConfigRepository.register(create(new Key<>(Status.class, TestStep.class), "StatusTestStep", true)); // TODO <-- correct?!
+		// TODO check MIME type genration
+		// entityConfigRepository.register(create(new Key<>(Status.class, TestStep.class), "StatusTestStep", true));
 
 		// TestStep
 		EntityConfig<TestStep> testStepConfig = create(new Key<>(TestStep.class), "TestStep", true);
@@ -431,7 +552,8 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(testStepConfig);
 
 		// TemplateTest
-		EntityConfig<TemplateTestStepUsage> templateTestStepUsageConfig = create(new Key<>(TemplateTestStepUsage.class), "TplTestStepUsage", true);
+		EntityConfig<TemplateTestStepUsage> templateTestStepUsageConfig = create(new Key<>(TemplateTestStepUsage.class),
+				"TplTestStepUsage", true);
 		templateTestStepUsageConfig.addMandatory(templateTestStepConfig);
 		templateTestStepUsageConfig.setComparator(Sortable.COMPARATOR);
 		EntityConfig<TemplateTest> templateTestConfig = create(new Key<>(TemplateTest.class), "TplTest", true);
@@ -440,7 +562,8 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(templateTestConfig);
 
 		// Status Test
-		//		entityConfigRepository.register(create(new Key<>(Status.class, Test.class), "StatusTest", true)); // TODO <-- correct?!
+		// TODO check MIME type genration
+		//		entityConfigRepository.register(create(new Key<>(Status.class, Test.class), "StatusTest", true));
 
 		// Test
 		EntityConfig<Test> testConfig = create(new Key<>(Test.class), "Test", true);
@@ -458,19 +581,30 @@ public class ODSModelManager implements ModelManager {
 		LOGGER.debug("Entity configurations loaded in {} ms.", System.currentTimeMillis() - start);
 	}
 
+	/**
+	 * Loads the {@link EntityConfig}s required for {@link ContextRoot} with
+	 * given {@link ContextType}.
+	 *
+	 * @param contextType The {@code ContextType}.
+	 */
 	private void registerContextRoot(ContextType contextType) {
-		EntityConfig<ContextRoot> contextRootConfig = create(new Key<>(ContextRoot.class, contextType), ODSUtils.CONTEXTTYPES.convert(contextType), true);
+		EntityConfig<ContextRoot> contextRootConfig = create(new Key<>(ContextRoot.class, contextType),
+				ODSUtils.CONTEXTTYPES.convert(contextType), true);
 		contextRootConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, contextType)));
 		for(Relation contextComponentRelation : contextRootConfig.getEntityType().getChildRelations()) {
 			EntityType contextComponentEntityType = contextComponentRelation.getTarget();
-			EntityConfig<ContextComponent> contextComponentConfig = create(new Key<>(ContextComponent.class, contextType), contextComponentEntityType.getName(), true);
-			contextComponentConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateComponent.class, contextType)));
+			EntityConfig<ContextComponent> contextComponentConfig =
+					create(new Key<>(ContextComponent.class, contextType), contextComponentEntityType.getName(), true);
+			contextComponentConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateComponent.class,
+					contextType)));
 			contextRootConfig.addChild(contextComponentConfig);
 			if(contextType.isTestEquipment()) {
 				for(Relation contextSensorRelation : contextComponentEntityType.getChildRelations()) {
 					EntityType contextSensorEntityType = contextSensorRelation.getTarget();
-					EntityConfig<ContextSensor> contextSensorConfig = create(new Key<>(ContextSensor.class), contextSensorEntityType.getName(), true);
-					contextSensorConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateSensor.class)));
+					EntityConfig<ContextSensor> contextSensorConfig = create(new Key<>(ContextSensor.class),
+							contextSensorEntityType.getName(), true);
+					contextSensorConfig.addInherited(entityConfigRepository
+							.findImplicit(new Key<>(TemplateSensor.class)));
 					contextComponentConfig.addChild(contextSensorConfig);
 				}
 			}
@@ -478,42 +612,65 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(contextRootConfig);
 	}
 
+	/**
+	 * Loads the {@link EntityConfig}s required for {@link TemplateRoot} with
+	 * given {@link ContextType}.
+	 *
+	 * @param contextType The {@code ContextType}.
+	 */
 	private void registerTemplateRoot(ContextType contextType) {
 		String odsName = ODSUtils.CONTEXTTYPES.convert(contextType);
-		EntityConfig<TemplateAttribute> templateAttributeConfig = create(new Key<>(TemplateAttribute.class, contextType), "Tpl" + odsName + "Attr", true);
-		templateAttributeConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(CatalogAttribute.class, contextType)));
+		EntityConfig<TemplateAttribute> templateAttributeConfig =
+				create(new Key<>(TemplateAttribute.class, contextType), "Tpl" + odsName + "Attr", true);
+		templateAttributeConfig.addInherited(entityConfigRepository
+				.findImplicit(new Key<>(CatalogAttribute.class, contextType)));
 		templateAttributeConfig.setComparator(TemplateAttribute.COMPARATOR);
-		EntityConfig<TemplateComponent> templateComponentConfig = create(new Key<>(TemplateComponent.class, contextType), "Tpl" + odsName + "Comp", true);
+		EntityConfig<TemplateComponent> templateComponentConfig =
+				create(new Key<>(TemplateComponent.class, contextType), "Tpl" + odsName + "Comp", true);
 		templateComponentConfig.addChild(templateAttributeConfig);
-		templateComponentConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(CatalogComponent.class, contextType)));
+		templateComponentConfig.addMandatory(entityConfigRepository
+				.findRoot(new Key<>(CatalogComponent.class, contextType)));
 		templateComponentConfig.addChild(templateComponentConfig);
 		templateComponentConfig.setComparator(Sortable.COMPARATOR);
 		if(contextType.isTestEquipment()) {
-			EntityConfig<TemplateAttribute> templateSensorAttributeConfig = create(new Key<>(TemplateAttribute.class), "TplSensorAttr", true);
+			EntityConfig<TemplateAttribute> templateSensorAttributeConfig =
+					create(new Key<>(TemplateAttribute.class), "TplSensorAttr", true);
 			templateSensorAttributeConfig.setComparator(TemplateAttribute.COMPARATOR);
-			templateSensorAttributeConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(CatalogAttribute.class)));
-			EntityConfig<TemplateSensor> templateSensorConfig = create(new Key<>(TemplateSensor.class), "TplSensor", true);
+			templateSensorAttributeConfig.addInherited(entityConfigRepository
+					.findImplicit(new Key<>(CatalogAttribute.class)));
+			EntityConfig<TemplateSensor> templateSensorConfig =
+					create(new Key<>(TemplateSensor.class), "TplSensor", true);
 			templateSensorConfig.addChild(templateSensorAttributeConfig);
 			templateSensorConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(Quantity.class)));
 			templateSensorConfig.addInherited(entityConfigRepository.findImplicit(new Key<>(CatalogSensor.class)));
 			templateSensorConfig.setComparator(Sortable.COMPARATOR);
 			templateComponentConfig.addChild(templateSensorConfig);
 		}
-		EntityConfig<TemplateRoot> templateRootConfig = create(new Key<>(TemplateRoot.class, contextType), "Tpl" + odsName + "Root", true);
+		EntityConfig<TemplateRoot> templateRootConfig =
+				create(new Key<>(TemplateRoot.class, contextType), "Tpl" + odsName + "Root", true);
 		templateRootConfig.addChild(templateComponentConfig);
 		templateRootConfig.setComparator(Versionable.COMPARATOR);
 		entityConfigRepository.register(templateRootConfig);
 	}
 
+	/**
+	 * Loads the {@link EntityConfig}s required for {@link CatalogComponent}
+	 * with given {@link ContextType}.
+	 *
+	 * @param contextType The {@code ContextType}.
+	 */
 	private void registerCatalogComponent(ContextType contextType) {
 		String odsName = ODSUtils.CONTEXTTYPES.convert(contextType);
-		EntityConfig<CatalogAttribute> catalogAttributeConfig = create(new Key<>(CatalogAttribute.class, contextType), "Cat" + odsName + "Attr", true);
+		EntityConfig<CatalogAttribute> catalogAttributeConfig =
+				create(new Key<>(CatalogAttribute.class, contextType), "Cat" + odsName + "Attr", true);
 		catalogAttributeConfig.addOptional(entityConfigRepository.findRoot(new Key<>(ValueList.class)));
 		catalogAttributeConfig.setComparator(Sortable.COMPARATOR);
-		EntityConfig<CatalogComponent> catalogComponentConfig = create(new Key<>(CatalogComponent.class, contextType), "Cat" + odsName + "Comp", true);
+		EntityConfig<CatalogComponent> catalogComponentConfig =
+				create(new Key<>(CatalogComponent.class, contextType), "Cat" + odsName + "Comp", true);
 		catalogComponentConfig.addChild(catalogAttributeConfig);
 		if(contextType.isTestEquipment()) {
-			EntityConfig<CatalogAttribute> catalogSensorAttributeConfig = create(new Key<>(CatalogAttribute.class), "CatSensorAttr", true);
+			EntityConfig<CatalogAttribute> catalogSensorAttributeConfig =
+					create(new Key<>(CatalogAttribute.class), "CatSensorAttr", true);
 			catalogSensorAttributeConfig.addOptional(entityConfigRepository.findRoot(new Key<>(ValueList.class)));
 			EntityConfig<CatalogSensor> catalogSensorConfig = create(new Key<>(CatalogSensor.class), "CatSensor", true);
 			catalogSensorConfig.addChild(catalogSensorAttributeConfig);
@@ -522,6 +679,15 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(catalogComponentConfig);
 	}
 
+	/**
+	 * Creates a new {@link EntityConfig}.
+	 *
+	 * @param key Used as identifier.
+	 * @param typeName Name of the associated {@link EntityType}.
+	 * @param appendName Flag indicates whether to append the entity types base
+	 * 		name to the MIME type.
+	 * @return The created {@code EntityConfig} is returned.
+	 */
 	private <T extends Entity> EntityConfig<T> create(Key<T> key, String typeName, boolean appendName) {
 		EntityConfig<T> entityConfig = new EntityConfig<>(key);
 		ODSEntityType entityType = (ODSEntityType) getEntityType(typeName);
@@ -530,6 +696,14 @@ public class ODSModelManager implements ModelManager {
 		return entityConfig;
 	}
 
+	/**
+	 * Creates a default MIME type for given {@link EntityType}.
+	 *
+	 * @param entityType The {@code EntityType}.
+	 * @param appendName Flag indicates whether to append the entity types base
+	 * 		name to the MIME type.
+	 * @return The created MIME type {@code String} is returned.
+	 */
 	private String buildDefaultMimeType(ODSEntityType entityType, boolean appendName) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("application/x-asam.");

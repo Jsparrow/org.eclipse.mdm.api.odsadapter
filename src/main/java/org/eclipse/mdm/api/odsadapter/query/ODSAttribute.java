@@ -16,7 +16,17 @@ import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
+/**
+ * ODS implementation of the {@link Attribute} interface.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class ODSAttribute implements Attribute {
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final Class<? extends Enum<?>> enumClass;
 	private final String name;
@@ -24,6 +34,18 @@ final class ODSAttribute implements Attribute {
 	private final EntityType entityType;
 	private final ValueType valueType;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param entityType The parent {@link EntityType}.
+	 * @param applAttr The ODS meta data for this attribute.
+	 * @param unit The unit name.
+	 * @param enumClass The enumeration class, may be null.
+	 */
 	ODSAttribute(EntityType entityType, ApplAttr applAttr, String unit, Class<? extends Enum<?>> enumClass) {
 		this.entityType = entityType;
 		name = applAttr.aaName;
@@ -38,26 +60,45 @@ final class ODSAttribute implements Attribute {
 		this.enumClass = enumClass;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getName() {
 		return name;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getUnit() {
 		return unit;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EntityType getEntityType() {
 		return entityType;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public ValueType getValueType() {
 		return valueType;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Class<? extends Enum<?>> getEnumClass() {
 		if(getValueType().isEnumerationType()) {
@@ -67,11 +108,17 @@ final class ODSAttribute implements Attribute {
 		throw new IllegalStateException("The value type of this attribute is not an enumeration type.");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int hashCode() {
 		return Objects.hash(getEntityType(), getName());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean equals(Object object) {
 		if(object instanceof ODSAttribute) {
@@ -82,6 +129,9 @@ final class ODSAttribute implements Attribute {
 		return false;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
 		return getName();
