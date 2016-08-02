@@ -20,7 +20,7 @@ import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
-import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
+import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 final class UploadService {

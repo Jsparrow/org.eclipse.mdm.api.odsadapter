@@ -38,7 +38,7 @@ import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
-import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
+import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

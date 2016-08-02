@@ -44,7 +44,7 @@ import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
-import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService.Transfer;
+import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
@@ -184,7 +184,8 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, Long instanceID) throws DataAccessException {
+	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, Long instanceID)
+			throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass, contextType), instanceID);
 	}
 
@@ -226,7 +227,8 @@ public class ODSEntityManager implements EntityManager {
 	//	 * {@inheritDoc}
 	//	 */
 	//	@Override
-	//	public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern) throws DataAccessException {
+	//	public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern)
+	//			throws DataAccessException {
 	//		EntityType entityType = modelManager.getEntityType(entityClass);
 	//		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
 	//
@@ -241,7 +243,8 @@ public class ODSEntityManager implements EntityManager {
 	//	}
 	//
 	//	@Override
-	//	public List<Status> loadAllStatus(Class<? extends StatusAttachable> entityClass, String pattern) throws DataAccessException {
+	//	public List<Status> loadAllStatus(Class<? extends StatusAttachable> entityClass, String pattern)
+	//			throws DataAccessException {
 	//		return entityLoader.loadAll(new Key<>(Status.class, entityClass), pattern);
 	//	}
 
@@ -249,7 +252,8 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> loadAll(Class<T> entityClass, ContextType contextType, String pattern) throws DataAccessException {
+	public <T extends Entity> List<T> loadAll(Class<T> entityClass, ContextType contextType, String pattern)
+			throws DataAccessException {
 		return entityLoader.loadAll(new Key<>(entityClass, contextType), pattern);
 	}
 
@@ -257,7 +261,8 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> loadChildren(Entity parent, Class<T> entityClass, String pattern) throws DataAccessException {
+	public <T extends Entity> List<T> loadChildren(Entity parent, Class<T> entityClass, String pattern)
+			throws DataAccessException {
 		EntityType parentEntityType = modelManager.getEntityType(parent);
 		EntityType childEntityType = modelManager.getEntityType(entityClass);
 		Query query = modelManager.createQuery();
@@ -282,7 +287,8 @@ public class ODSEntityManager implements EntityManager {
 	//	 * {@inheritDoc}
 	//	 */
 	//	@Override
-	//	public <T extends StatusAttachable> List<T> loadChildren(Entity parent, Class<T> entityClass, Status status, String pattern) throws DataAccessException {
+	//	public <T extends StatusAttachable> List<T> loadChildren(Entity parent, Class<T> entityClass, Status status,
+	//			String pattern) throws DataAccessException {
 	//		EntityType parentEntityType = modelManager.getEntityType(parent);
 	//		EntityType childEntityType = modelManager.getEntityType(entityClass);
 	//		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
@@ -314,7 +320,8 @@ public class ODSEntityManager implements EntityManager {
 			query.join(contextDescribableEntityType.getRelation(entityType), Join.OUTER).selectID(entityType);
 		}
 
-		Optional<Result> result = query.fetchSingleton(Filter.idOnly(contextDescribableEntityType, contextDescribable.getID()));
+		Optional<Result> result = query.fetchSingleton(Filter.idOnly(contextDescribableEntityType,
+				contextDescribable.getID()));
 		if(result.isPresent()) {
 			List<ContextType> contextTypes = new ArrayList<>();
 			for(Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
@@ -334,8 +341,8 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<ContextType, ContextRoot> loadContexts(ContextDescribable contextDescribable, ContextType... contextTypes)
-			throws DataAccessException {
+	public Map<ContextType, ContextRoot> loadContexts(ContextDescribable contextDescribable,
+			ContextType... contextTypes) throws DataAccessException {
 		EntityType contextDescribableEntityType = modelManager.getEntityType(contextDescribable);
 		Query query = modelManager.createQuery();
 
@@ -346,13 +353,15 @@ public class ODSEntityManager implements EntityManager {
 			query.join(contextDescribableEntityType.getRelation(entityType), Join.OUTER).selectID(entityType);
 		}
 
-		Optional<Result> result = query.fetchSingleton(Filter.idOnly(contextDescribableEntityType, contextDescribable.getID()));
+		Optional<Result> result = query.fetchSingleton(Filter.idOnly(contextDescribableEntityType,
+				contextDescribable.getID()));
 		if(result.isPresent()) {
 			Map<ContextType, ContextRoot> contextRoots = new EnumMap<>(ContextType.class);
 			for(Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
 				Long instanceID = result.get().getRecord(entry.getValue()).getID();
 				if(instanceID > 0) {
-					contextRoots.put(entry.getKey(), entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
+					contextRoots.put(entry.getKey(),
+							entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
 				}
 			}
 

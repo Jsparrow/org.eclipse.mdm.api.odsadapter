@@ -13,7 +13,18 @@ import java.io.InputStream;
 
 import org.eclipse.mdm.api.base.FileService.ProgressListener;
 
+/**
+ * This is an {@link InputStream} wrapper implementation to trace the progress
+ * of an {@code InputStream}.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class TracedInputStream extends InputStream {
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final ProgressListener progressListener;
 	private final InputStream inputStream;
@@ -21,17 +32,39 @@ final class TracedInputStream extends InputStream {
 
 	private double transferred = 0;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param inputStream The traced {@link InputStream}.
+	 * @param progressListener The listener will be used to fire update
+	 * 		notifications.
+	 * @param length The length of the consumed {@code InputStream}.
+	 */
 	TracedInputStream(InputStream inputStream, ProgressListener progressListener, long length) {
 		this.progressListener = progressListener;
 		this.inputStream = inputStream;
 		size = length;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int read() throws IOException {
 		return inputStream.read();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int read(byte[] buffer, int offset, int length) throws IOException {
 		int read = inputStream.read(buffer, offset, length);
@@ -42,6 +75,9 @@ final class TracedInputStream extends InputStream {
 		return read;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void close() throws IOException {
 		inputStream.close();

@@ -69,7 +69,8 @@ final class ReadRequestHandler {
 		try {
 			valueMatrix = getValueMatrix(readRequest);
 			columns = getODSColumns(readRequest, valueMatrix);
-			NameValueSeqUnit[] nvsus = valueMatrix.getValue(columns, readRequest.getStartIndex(), readRequest.getRequestSize());
+			NameValueSeqUnit[] nvsus = valueMatrix.getValue(columns, readRequest.getStartIndex(),
+					readRequest.getRequestSize());
 			return ODSConverter.fromODSMeasuredValuesSeq(nvsus);
 		} catch(AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);
