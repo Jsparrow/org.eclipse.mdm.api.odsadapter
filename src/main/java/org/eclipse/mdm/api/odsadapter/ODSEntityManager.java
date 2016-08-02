@@ -52,24 +52,53 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
 import org.eclipse.mdm.api.odsadapter.transaction.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * ASAM ODS implementation of the {@link EntityManager} interface.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 public class ODSEntityManager implements EntityManager {
+
+	// ======================================================================
+	// Class variables
+	// ======================================================================
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ODSEntityManager.class);
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final ODSModelManager modelManager;
 	private final EntityLoader entityLoader;
 
 	private final Transfer transfer = Transfer.SOCKET;
 
-	public ODSEntityManager(ODSModelManager modelManager) throws ConnectionException {
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param modelManager The {@link ODSModelManager}.
+	 */
+	public ODSEntityManager(ODSModelManager modelManager) {
 		this.modelManager = modelManager;
 		entityLoader = new EntityLoader(modelManager);
-
-		/**
-		 * TODO provide context properties from AoSession!
-		 */
-
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Optional<EntityFactory> getEntityFactory() {
 		try {
@@ -79,18 +108,25 @@ public class ODSEntityManager implements EntityManager {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Optional<ModelManager> getModelManager() {
 		return Optional.of(modelManager);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Optional<SearchService> getSearchService() {
-		// TODO
-		// java docs: cache this service for ONE request!
 		return Optional.of(new ODSSearchService(modelManager, entityLoader));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Optional<FileService> getFileService() {
 		if(modelManager.getFileServer() == null) {
@@ -99,27 +135,30 @@ public class ODSEntityManager implements EntityManager {
 		return Optional.of(new CORBAFileService(modelManager, transfer));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Environment loadEnvironment() throws DataAccessException {
-		// TODO this should be a default implementation ...
 		List<Environment> environments = loadAll(Environment.class);
 		if(environments.size() != 1) {
-			throw new IllegalStateException(); // TODO
+			throw new DataAccessException("Unable to laod the environment entity.");
 		}
 
 		return environments.get(0);
 	}
 
-	@Override // TODO improve!!
-	// TODO: rename?!
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public Optional<User> loadLoggedOnUser() throws DataAccessException {
 		InstanceElement ieUser = null;
 		try {
 			ieUser = modelManager.getAoSession().getUser();
-
 			return Optional.of(entityLoader.load(new Key<>(User.class), ODSConverter.fromODSLong(ieUser.getId())));
 		} catch(AoException e) {
-			throw new DataAccessException(e.reason, e);
+			throw new DataAccessException("Unable to load the logged in user entity due to: " + e.reason, e);
 		} finally {
 			try {
 				if(ieUser != null) {
@@ -127,22 +166,31 @@ public class ODSEntityManager implements EntityManager {
 					ieUser._release();
 				}
 			} catch(AoException aoe) {
-				// TODO -> log instead of throw!
-				throw new DataAccessException(aoe.reason, aoe);
+				LOGGER.warn("Unable to destroy the CORBA resource due to: " + aoe.reason, aoe);
+				ieUser._release();
 			}
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public <T extends Entity> T load(Class<T> entityClass, Long instanceID) throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass), instanceID);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, Long instanceID) throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass, contextType), instanceID);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public <T extends Entity> Optional<T> loadParent(Entity child, Class<T> entityClass) throws DataAccessException {
 		EntityType parentEntityType = modelManager.getEntityType(entityClass);
@@ -166,11 +214,17 @@ public class ODSEntityManager implements EntityManager {
 		return Optional.empty();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public <T extends Entity> List<T> loadAll(Class<T> entityClass, String pattern) throws DataAccessException {
 		return entityLoader.loadAll(new Key<>(entityClass), pattern);
 	}
 
+	//	/**
+	//	 * {@inheritDoc}
+	//	 */
 	//	@Override
 	//	public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern) throws DataAccessException {
 	//		EntityType entityType = modelManager.getEntityType(entityClass);
@@ -191,11 +245,17 @@ public class ODSEntityManager implements EntityManager {
 	//		return entityLoader.loadAll(new Key<>(Status.class, entityClass), pattern);
 	//	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public <T extends Entity> List<T> loadAll(Class<T> entityClass, ContextType contextType, String pattern) throws DataAccessException {
 		return entityLoader.loadAll(new Key<>(entityClass, contextType), pattern);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public <T extends Entity> List<T> loadChildren(Entity parent, Class<T> entityClass, String pattern) throws DataAccessException {
 		EntityType parentEntityType = modelManager.getEntityType(parent);
@@ -218,6 +278,9 @@ public class ODSEntityManager implements EntityManager {
 		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
 	}
 
+	//	/**
+	//	 * {@inheritDoc}
+	//	 */
 	//	@Override
 	//	public <T extends StatusAttachable> List<T> loadChildren(Entity parent, Class<T> entityClass, Status status, String pattern) throws DataAccessException {
 	//		EntityType parentEntityType = modelManager.getEntityType(parent);
@@ -236,6 +299,9 @@ public class ODSEntityManager implements EntityManager {
 	//		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
 	//	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<ContextType> loadContextTypes(ContextDescribable contextDescribable) throws DataAccessException {
 		EntityType contextDescribableEntityType = modelManager.getEntityType(contextDescribable);
@@ -262,9 +328,11 @@ public class ODSEntityManager implements EntityManager {
 		}
 
 		return Collections.emptyList();
-
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Map<ContextType, ContextRoot> loadContexts(ContextDescribable contextDescribable, ContextType... contextTypes)
 			throws DataAccessException {
@@ -294,11 +362,17 @@ public class ODSEntityManager implements EntityManager {
 		return Collections.emptyMap();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<MeasuredValues> readMeasuredValues(ReadRequest readRequest) throws DataAccessException {
 		return new ReadRequestHandler(modelManager).execute(readRequest);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Transaction startTransaction() throws DataAccessException {
 		try {
@@ -308,6 +382,9 @@ public class ODSEntityManager implements EntityManager {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void close() throws ConnectionException {
 		try {

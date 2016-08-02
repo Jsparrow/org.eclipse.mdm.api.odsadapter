@@ -8,7 +8,6 @@
 
 package org.eclipse.mdm.api.odsadapter;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -32,35 +31,77 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 
 final class ReadRequestHandler {
 
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
+
 	private final ODSModelManager modelManager;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param modelManager Used to gain access to value matrices.
+	 */
 	public ReadRequestHandler(ODSModelManager modelManager) {
 		this.modelManager = modelManager;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * Loads {@link MeasuredValues} as defined in given {@link ReadRequest}.
+	 *
+	 * @param readRequest The {@code MeasuredValues} request configuration.
+	 * @return The loaded {@code MeasuredValues} are returned.
+	 * @throws DataAccessException Thrown if unable to load {@code
+	 * 		MeasuredValues}.
+	 */
 	public List<MeasuredValues> execute(ReadRequest readRequest) throws DataAccessException {
-		ValueMatrix vm = null;
+		ValueMatrix valueMatrix = null;
 		Column[] columns = null;
 
 		try {
-			vm = getODSValueMatrix(readRequest);
-			columns = getODSColumns(readRequest, vm);
-			NameValueSeqUnit[] nvsus = vm.getValue(columns, readRequest.getStartIndex(), readRequest.getRequestSize());
+			valueMatrix = getValueMatrix(readRequest);
+			columns = getODSColumns(readRequest, valueMatrix);
+			NameValueSeqUnit[] nvsus = valueMatrix.getValue(columns, readRequest.getStartIndex(), readRequest.getRequestSize());
 			return ODSConverter.fromODSMeasuredValuesSeq(nvsus);
 		} catch(AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);
 		} finally {
-			unremoteColumns(columns);
-			unremoteValueMatrix(vm);
+			releaseColumns(columns);
+			releaseValueMatrix(valueMatrix);
 		}
 	}
 
-	private Column[] getODSColumns(ReadRequest readRequest, ValueMatrix vm) throws AoException, DataAccessException {
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Loads all for each defined {@link Channel} in given {@link ReadRequest}
+	 * and loads the corresponding {@link Column} using given {@link
+	 * ValueMatrix}.
+	 *
+	 * @param readRequest Defines required {@code Column}s.
+	 * @param valueMatrix Used to load required {@code Column}s.
+	 * @return {@code Column} configured in given {@code ReadRequest} are
+	 * 		returned with defined {@link Unit} setup.
+	 * @throws AoException Throw if unable to load all available {@code Column}s.
+	 * @throws DataAccessException Thrown on wrong {@code ReadRequest} setup.
+	 */
+	private Column[] getODSColumns(ReadRequest readRequest, ValueMatrix valueMatrix)
+			throws AoException, DataAccessException {
 		if(readRequest.isLoadAllChannels()) {
 			// TODO should it be possible to overwrite the unit of some channels?!
 			// -> this results in a performance issue since we need to call getName()
 			// on each column for mapping!
-			return vm.getColumns("*");
+			return valueMatrix.getColumns("*");
 		}
 
 		List<Column> columnList = new ArrayList<>();
@@ -68,7 +109,12 @@ final class ReadRequestHandler {
 			for(Entry<Channel, Unit> entry : readRequest.getChannels().entrySet()) {
 				Channel channel = entry.getKey();
 				Unit unit = entry.getValue();
-				Column column = uniqueColumn(channel.getName(), vm.getColumns(channel.getName()));
+				Column[] columns = valueMatrix.getColumns(channel.getName());
+				if(columns == null || columns.length != 1) {
+					releaseColumns(columns);
+					throw new DataAccessException("Column with name '" + channel.getName() + "' not found.");
+				}
+				Column column = columns[0];
 				if(!unit.nameMatches(channel.getUnit().getName())) {
 					column.setUnit(unit.getName());
 				}
@@ -76,50 +122,51 @@ final class ReadRequestHandler {
 			}
 			return columnList.toArray(new Column[columnList.size()]);
 		} catch(AoException e) {
-			unremoteColumns(columnList.toArray(new Column[columnList.size()]));
-			// TODO logging
+			releaseColumns(columnList.toArray(new Column[columnList.size()]));
 			throw new DataAccessException("Unable to load column due to: " + e.reason, e);
 		}
 	}
 
-	private ValueMatrix getODSValueMatrix(ReadRequest readRequest) throws AoException, DataAccessException {
+	/**
+	 * Returns the {@link ValueMatrix} CORBA service object associated with
+	 * given {@link ReadRequest}.
+	 *
+	 * @param readRequest The {@code ReadRequest}.
+	 * @return The {@code ValueMatrix} is returned.
+	 * @throws AoException Thrown if unable to load the {@code ValueMatrix}.
+	 */
+	private ValueMatrix getValueMatrix(ReadRequest readRequest) throws AoException {
 		Entity entity = readRequest.getChannelGroup();
 		T_LONGLONG iid = ODSConverter.toODSLong(entity.getID());
 		T_LONGLONG aid  = ((ODSEntityType) modelManager.getEntityType(entity)).getODSID();
 		return modelManager.getApplElemAccess().getValueMatrixInMode(new ElemId(aid, iid), ValueMatrixMode.CALCULATED);
 	}
 
-
-	private Column uniqueColumn(String columnName, Column[] columns) throws DataAccessException {
-		if(columns.length <= 0) {
-			throw new DataAccessException("no column with name '" + columnName
-					+ "' found at generated ValueMatrix (expected 1)!");
-		}
-
-		if(columns.length > 1) {
-			unremoteColumns(columns);
-			throw new DataAccessException("mulitple columns with name '" + columnName
-					+ "' found at generated ValueMatrix (expected 1)!");
-		}
-
-		return columns[0];
-	}
-
-	private void unremoteValueMatrix(ValueMatrix vm) throws DataAccessException {
-		if(vm == null) {
+	/**
+	 * Releases given {@link ValueMatrix} CORBA object.
+	 *
+	 * @param valueMatrix Will be released.
+	 */
+	private void releaseValueMatrix(ValueMatrix valueMatrix) {
+		if(valueMatrix == null) {
 			return;
 		}
 
 		try {
-			vm.destroy();
+			valueMatrix.destroy();
 		} catch(AoException aoe) {
-			throw new DataAccessException(aoe.reason, aoe);
+			// ignore
 		} finally {
-			vm._release();
+			valueMatrix._release();
 		}
 	}
 
-	private void unremoteColumns(Column[] columns) throws DataAccessException  {
+	/**
+	 * Releases each CORBA {@link Column} object.
+	 *
+	 * @param columns Will be released.
+	 */
+	private void releaseColumns(Column[] columns)  {
 		if(columns == null) {
 			return;
 		}
@@ -128,7 +175,7 @@ final class ReadRequestHandler {
 			try {
 				column.destroy();
 			} catch(AoException e) {
-				// TODO logging
+				// ignore
 			} finally {
 				column._release();
 			}

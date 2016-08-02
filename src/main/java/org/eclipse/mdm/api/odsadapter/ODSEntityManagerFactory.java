@@ -34,19 +34,40 @@ import org.slf4j.LoggerFactory;
 import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
 import com.highqsoft.corbafileserver.generated.CORBAFileServerIFHelper;
 
+/**
+ * ASAM ODS implementation of the {@link EntityManagerFactory} interface.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 @Stateful
 public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
-	public static final String AUTH_TEMPLATE = "USER=%s,PASSWORD=%s,CREATE_COSESSION_ALLOWED=TRUE";
+	// ======================================================================
+	// Class variables
+	// ======================================================================
 
 	public static final String PARAM_NAMESERVICE = "nameservice";
+
 	public static final String PARAM_SERVICENAME = "servicename";
+
 	public static final String PARAM_USER = "user";
+
 	public static final String PARAM_PASSWORD = "password";
+
+	private static final String AUTH_TEMPLATE = "USER=%s,PASSWORD=%s,CREATE_COSESSION_ALLOWED=TRUE";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSEntityManagerFactory.class);
 
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
+
 	private final ORB orb = ORB.init(new String[]{}, System.getProperties());
+
+	// ======================================================================
+	// Public methods
+	// ======================================================================
 
 	/**
 	 * {@inheritDoc}
@@ -62,15 +83,14 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	 * </ul>
 	 *
 	 * Listed names are available via public fields of this class.
-	 * <p>
 	 */
 	@Override
 	public EntityManager connect(Map<String, String> parameters) throws ConnectionException {
 		AoSession aoSession = null;
-		try(NameService nameService = new NameService(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
+		try(ServiceLocator serviceLocator = new ServiceLocator(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
 			String nameOfService = getParameter(parameters, PARAM_SERVICENAME).replace(".ASAM-ODS", "");
 
-			AoFactory aoFactory = nameService.resolveFactory(nameOfService);
+			AoFactory aoFactory = serviceLocator.resolveFactory(nameOfService);
 			LOGGER.info("Connecting to ODS Server ...");
 
 			LOGGER.info("AoFactory name: {}", aoFactory.getName());
@@ -82,7 +102,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 					getParameter(parameters, PARAM_PASSWORD)));
 			LOGGER.info("Connection to ODS server established.");
 
-			CORBAFileServerIF fileServer = nameService.resolveFileServer(nameOfService);
+			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
 			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer));
 		} catch(AoException e) {
 			closeSession(aoSession);
@@ -90,6 +110,15 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		}
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Closes given {@link AoSession} with catching and logging errors.
+	 *
+	 * @param aoSession The {@code AoSession} that shallbe closed.
+	 */
 	private static void closeSession(AoSession aoSession) {
 		if(aoSession == null) {
 			return;
@@ -102,6 +131,14 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		}
 	}
 
+	/**
+	 * Reads the property identified by given property name.
+	 *
+	 * @param parameters The properties {@code Map}.
+	 * @param name The property name.
+	 * @return The property value is returned.
+	 * @throws ConnectionException Thrown if property does not exist or is empty.
+	 */
 	private String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
 		String value = parameters.get(name);
 		if(value == null || value.isEmpty()) {
@@ -111,22 +148,62 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		return value;
 	}
 
-	private static final class NameService implements AutoCloseable {
+	// ======================================================================
+	// Inner classes
+	// ======================================================================
 
-		private final String path;
+	/**
+	 * Used to resolve CORBA service object by ID and kind.
+	 */
+	private static final class ServiceLocator implements AutoCloseable {
+
+		// ======================================================================
+		// Instance variables
+		// ======================================================================
 
 		private NamingContextExt namingContext;
-		private ORB orb;
 
-		public NameService(ORB orb, String path) {
-			this.path = path;
-			this.orb = orb;
+		// ======================================================================
+		// Constructors
+		// ======================================================================
+
+		/**
+		 * Constructor.
+		 *
+		 * @param orb The {@link ORB} singleton instance.
+		 * @param path The naming context path.
+		 * @throws ConnectionException Thrown if unable to resolve the naming context.
+		 */
+		public ServiceLocator(ORB orb, String path) throws ConnectionException {
+			namingContext = NamingContextExtHelper.narrow(orb.string_to_object(path));
+			if(namingContext == null) {
+				throw new ConnectionException("Unable to resolve NameService '" + path + "'.");
+			}
 		}
 
+		// ======================================================================
+		// Public methods
+		// ======================================================================
+
+		/**
+		 * Resolves and returns the {@link AoFactory} service for given ID.
+		 *
+		 * @param id Used as identifier.
+		 * @return The {@code AoFactory} is returned.
+		 * @throws ConnectionException Thrown if unable to resolve the {@code
+		 * 		AoFactory}.
+		 */
 		public AoFactory resolveFactory(String id) throws ConnectionException {
 			return AoFactoryHelper.narrow(resolve(id, "ASAM-ODS"));
 		}
 
+		/**
+		 * Resolves and returns the {@link CORBAFileServerIF} service for
+		 * given ID.
+		 *
+		 * @param id Used as identifier.
+		 * @return The {@code CORBAFileServerIF} or null, if none found, is returned.
+		 */
 		public CORBAFileServerIF resolveFileServer(String id) {
 			try {
 				return CORBAFileServerIFHelper.narrow(resolve(id, "CORBA-FT"));
@@ -136,28 +213,28 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			}
 		}
 
-		private Object resolve(String id, String kind) throws  ConnectionException {
+		/**
+		 * Resolves a CORBA service object for given id and kind.
+		 *
+		 * @param id Used as identifier.
+		 * @param kind Used as qualifier.
+		 * @return The resolved CORBA service object is returned.
+		 * @throws ConnectionException Thrown in case of errors.
+		 */
+		public Object resolve(String id, String kind) throws  ConnectionException {
 			try {
-				return getNameService().resolve(new NameComponent[] { new NameComponent(id, kind) });
+				return namingContext.resolve(new NameComponent[] { new NameComponent(id, kind) });
 			} catch(NotFound | CannotProceed | InvalidName e) {
 				throw new ConnectionException("Unable to resolve service '" + id + "." + kind + "'.", e);
 			}
 		}
 
-		private NamingContextExt getNameService() throws ConnectionException {
-			if(namingContext == null) {
-				namingContext = NamingContextExtHelper.narrow(orb.string_to_object(path));
-				if(namingContext == null) {
-					throw new ConnectionException("Unable to resolve NameService '" + path + "'.");
-				}
-			}
-
-			return namingContext;
-		}
-
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public void close() throws ConnectionException {
-			getNameService()._release();
+			namingContext._release();
 		}
 
 	}
