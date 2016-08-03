@@ -26,17 +26,33 @@ import org.eclipse.mdm.api.base.model.Core.EntityStore;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
+import org.eclipse.mdm.api.base.model.FilesAttachable;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
+import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Insert statement is used to update entities and their children.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class UpdateStatement extends BaseStatement {
 
+	// ======================================================================
+	// Class variables
+	// ======================================================================
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateStatement.class);
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final Map<Class<? extends Entity>, List<Entity>> childrenToCreate = new HashMap<>();
 	private final Map<Class<? extends Entity>, List<Entity>> childrenToUpdate = new HashMap<>();
@@ -44,29 +60,53 @@ final class UpdateStatement extends BaseStatement {
 	private Map<String, List<Value>> updateMap = new HashMap<>();
 
 	private final List<FileLink> fileLinkToUpload = new ArrayList<>();
-
 	private final List<String> nonUpdatableRelationNames;
-
 	private final boolean ignoreChildren;
+	private final boolean isFilesAttachable;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param transaction The owning {@link ODSTransaction}.
+	 * @param entityType The associated {@link EntityType}.
+	 * @param ignoreChildren If {@code true}, then child entities won't be
+	 * 		processed.
+	 */
 	UpdateStatement(ODSTransaction transaction, EntityType entityType, boolean ignoreChildren) {
 		super(transaction, entityType);
 
-		nonUpdatableRelationNames = entityType.getInfoRelations().stream().map(Relation::getName).collect(Collectors.toList());
+		nonUpdatableRelationNames = entityType.getInfoRelations().stream()
+				.map(Relation::getName).collect(Collectors.toList());
 		this.ignoreChildren = ignoreChildren;
+
+		EntityConfig<?> entityConfig = getModelManager().getEntityConfig(getEntityType());
+		isFilesAttachable = FilesAttachable.class.isAssignableFrom(entityConfig.getEntityClass());
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
 		for(Entity entity : entities) {
 			readEntityCore(extract(entity));
 		}
 
+		// TODO tracing progress in this method...
+
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
 
 		if(!fileLinkToUpload.isEmpty()) {
-			getTransaction().getUploadService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
+			getTransaction().getUploadService().uploadParallel(fileLinkToUpload, null);
 		}
 
 		for(Entry<String, List<Value>> entry : updateMap.entrySet()) {
@@ -100,6 +140,22 @@ final class UpdateStatement extends BaseStatement {
 		}
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Reads given {@link Core} and prepares its data to be written:
+	 *
+	 * <ul>
+	 * 	<li>collect new and removed {@link FileLink}s</li>
+	 *  <li>collect property {@link Value}s</li>
+	 *  <li>collect foreign key {@code Value}s</li>
+	 *  <li>collect child entities for recursive create/update/delete</li>
+	 * </ul>
+	 *
+	 * @param core The {@code Core}.
+	 */
 	private void readEntityCore(Core core) throws DataAccessException {
 		if(!core.getTypeName().equals(getEntityType().getName())) {
 			throw new IllegalArgumentException("Entity core '" + core.getTypeName()
@@ -114,7 +170,7 @@ final class UpdateStatement extends BaseStatement {
 		// collect file links
 		fileLinkToUpload.addAll(core.getAddedFileLinks());
 		List<FileLink> fileLinksToRemove = core.getRemovedFileLinks();
-		if(!fileLinksToRemove.isEmpty()) {
+		if(isFilesAttachable && !fileLinksToRemove.isEmpty()) {
 			getTransaction().getUploadService().addToRemove(fileLinksToRemove);
 		}
 
@@ -139,13 +195,20 @@ final class UpdateStatement extends BaseStatement {
 		getTransaction().addModified(core);
 	}
 
+	/**
+	 * Collects child entities for recursive processing.
+	 *
+	 * @param core The {@link Core}.
+	 */
 	private void collectChildEntities(Core core) {
 		if(ignoreChildren) {
 			return;
 		}
 
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent().entrySet()) {
-			Map<Boolean, List<Entity>> patrition = entry.getValue().stream().collect(Collectors.partitioningBy(e -> e.getID() < 1));
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry :
+			core.getChildrenStore().getCurrent().entrySet()) {
+			Map<Boolean, List<Entity>> patrition = entry.getValue().stream()
+					.collect(Collectors.partitioningBy(e -> e.getID() < 1));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
 			if(virtualEntities != null && !virtualEntities.isEmpty()) {
 				childrenToCreate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(virtualEntities);
@@ -156,12 +219,19 @@ final class UpdateStatement extends BaseStatement {
 			}
 		}
 
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getRemoved().entrySet()) {
-			List<Deletable> toDelete = entry.getValue().stream().filter(e -> e.getID() > 0).collect(Collectors.toList());
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry :
+			core.getChildrenStore().getRemoved().entrySet()) {
+			List<Deletable> toDelete = entry.getValue().stream()
+					.filter(e -> e.getID() > 0).collect(Collectors.toList());
 			childrenToRemove.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(toDelete);
 		}
 	}
 
+	/**
+	 * Overwrites empty foreign key {@link Value} containers.
+	 *
+	 * @param relatedEntities The related {@link Entity}s.
+	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
 			if(relatedEntity.getID() < 1) {

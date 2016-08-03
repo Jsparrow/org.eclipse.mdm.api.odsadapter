@@ -23,7 +23,17 @@ import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
+/**
+ * A base implementation for execution statements (CREATE, UPDATE, DELETE).
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 abstract class BaseStatement {
+
+	// ======================================================================
+	// Class variables
+	// ======================================================================
 
 	private static final Method GET_CORE_METHOD;
 
@@ -32,20 +42,57 @@ abstract class BaseStatement {
 			GET_CORE_METHOD = BaseEntity.class.getDeclaredMethod("getCore");
 			GET_CORE_METHOD.setAccessible(true);
 		} catch (NoSuchMethodException | SecurityException e) {
-			throw new IllegalStateException("Unable to load 'getCore()' in class '" + BaseEntity.class.getSimpleName() + "'.", e);
+			throw new IllegalStateException("Unable to load 'getCore()' in class '" + BaseEntity.class.getSimpleName()
+					+ "'.", e);
 		}
 	}
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final ODSTransaction transaction;
 	private final ODSEntityType entityType;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param transaction The owning {@link ODSTransaction}.
+	 * @param entityType The associated {@link EntityType}.
+	 */
 	protected BaseStatement(ODSTransaction transaction, EntityType entityType) {
 		this.transaction = transaction;
 		this.entityType = (ODSEntityType) entityType;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * Executes this statement for given {@link Entity}s.
+	 *
+	 * @param entities The processed {@code Entity}s.
+	 * @throws AoException Thrown if the execution fails.
+	 * @throws DataAccessException Thrown if the execution fails.
+	 * @throws IOException Thrown if a file transfer operation fails.
+	 */
 	public abstract void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException;
 
+	// ======================================================================
+	// Protected methods
+	// ======================================================================
+
+	/**
+	 * Returns the {@link Core} of given {@link Entity}.
+	 *
+	 * @param entity The {@code Entity}  whose {@code Core} will be returned.
+	 * @return The {@code Core} is returned.
+	 */
 	protected Core extract(Entity entity) {
 		try {
 			return (Core) GET_CORE_METHOD.invoke(entity);
@@ -55,18 +102,38 @@ abstract class BaseStatement {
 		}
 	}
 
+	/**
+	 * Returns the {@link ODSTransaction}.
+	 *
+	 * @return The {@code ODSTransaction} is returned.
+	 */
 	protected ODSTransaction getTransaction() {
 		return transaction;
 	}
 
+	/**
+	 * Returns the {@link ODSModelManager}.
+	 *
+	 * @return The {@code ODSModelManager} is returned.
+	 */
 	protected ODSModelManager getModelManager() {
 		return transaction.getModelManager();
 	}
 
+	/**
+	 * Returns the {@link ApplElemAccess}.
+	 *
+	 * @return The {@code ApplElemAccess} is returned.
+	 */
 	protected ApplElemAccess getApplElemAccess() throws AoException {
 		return transaction.getModelManager().getApplElemAccess();
 	}
 
+	/**
+	 * Returns the associated {@link EntityType}.
+	 *
+	 * @return The associated {@code EntityType} is returned.
+	 */
 	protected ODSEntityType getEntityType() {
 		return entityType;
 	}

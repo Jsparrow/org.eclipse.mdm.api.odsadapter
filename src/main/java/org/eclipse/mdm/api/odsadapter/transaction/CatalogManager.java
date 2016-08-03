@@ -28,6 +28,7 @@ import org.asam.ods.DataType;
 import org.asam.ods.RelationRange;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
@@ -37,33 +38,69 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
+import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSEnumerations;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
+/**
+ * Used to create, update or delete {@link CatalogComponent}, {@link
+ * CatalogSensor} and {@link CatalogAttribute} entities. Modifications
+ * of the listed types results in modifications of the application model.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class CatalogManager {
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final ODSTransaction transaction;
 
 	private ApplicationStructure applicationStructure;
 	private BaseStructure baseStructure;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param transaction The {@link ODSTransaction}.
+	 */
 	CatalogManager(ODSTransaction transaction) {
 		this.transaction = transaction;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * Creates for each given {@link CatalogComponent} a corresponding
+	 * application element including all required application relations.
+	 *
+	 * @param catalogComponents The {@code CatalogComponent}s.
+	 * @throws AoException Thrown in case of errors.
+	 */
 	public void createCatalogComponents(Collection<CatalogComponent> catalogComponents) throws AoException {
 		Map<ContextType, List<CatalogComponent>> catalogComponentsByContextType = catalogComponents.stream()
 				.collect(Collectors.groupingBy(CatalogComponent::getContextType));
 
 		for(Entry<ContextType, List<CatalogComponent>> entry : catalogComponentsByContextType.entrySet()) {
 			String odsContextTypeName = ODSUtils.CONTEXTTYPES.convert(entry.getKey());
-			ApplicationElement contextRootApplicationElement = getApplicationStructure().getElementByName(odsContextTypeName);
+			ApplicationElement contextRootApplicationElement =
+					getApplicationStructure().getElementByName(odsContextTypeName);
 			BaseElement contextRootBaseElement = contextRootApplicationElement.getBaseElement();
-			ApplicationElement contextTemplateComponentApplicationElement = getApplicationStructure().getElementByName("Tpl" + odsContextTypeName + "Comp");
+			ApplicationElement contextTemplateComponentApplicationElement =
+					getApplicationStructure().getElementByName("Tpl" + odsContextTypeName + "Comp");
 			BaseElement baseElement = getBaseStructure().getElementByType("Ao" + odsContextTypeName + "Part");
 
 			for(CatalogComponent catalogComponent : entry.getValue()) {
-				ApplicationElement applicationElement = createApplicationElement(catalogComponent.getName(), baseElement);
+				ApplicationElement applicationElement = createApplicationElement(catalogComponent.getName(),
+						baseElement);
 
 				// relation context root to context component
 				ApplicationRelation applicationRelation = getApplicationStructure().createRelation();
@@ -71,7 +108,8 @@ final class CatalogManager {
 				applicationRelation.setElem2(applicationElement);
 				applicationRelation.setRelationName(catalogComponent.getName());
 				applicationRelation.setInverseRelationName(odsContextTypeName);
-				applicationRelation.setBaseRelation(getBaseStructure().getRelation(contextRootBaseElement, baseElement));
+				applicationRelation.setBaseRelation(getBaseStructure()
+						.getRelation(contextRootBaseElement, baseElement));
 				applicationRelation._release();
 
 				// relation template component to context component
@@ -96,6 +134,13 @@ final class CatalogManager {
 		}
 	}
 
+	/**
+	 * Creates for each given {@link CatalogSensor} a corresponding
+	 * application element including all required application relations.
+	 *
+	 * @param catalogSensors The {@code CatalogSensor}s.
+	 * @throws AoException Thrown in case of errors.
+	 */
 	public void createCatalogSensors(Collection<CatalogSensor> catalogSensors) throws AoException {
 		Map<String, List<CatalogSensor>> catalogSensorsByCatalogComponent = catalogSensors.stream()
 				.collect(Collectors.groupingBy(cs -> cs.getCatalogComponent().getName()));
@@ -104,9 +149,11 @@ final class CatalogManager {
 		BaseElement channelBaseElement = channelApplicationElement.getBaseElement();
 
 		for(Entry<String, List<CatalogSensor>> entry : catalogSensorsByCatalogComponent.entrySet()) {
-			ApplicationElement contextComponentApplicationElement = getApplicationStructure().getElementByName(entry.getKey());
+			ApplicationElement contextComponentApplicationElement =
+					getApplicationStructure().getElementByName(entry.getKey());
 			BaseElement contextComponentBaseElement = contextComponentApplicationElement.getBaseElement();
-			ApplicationElement contextTemplateSensorApplicationElement = getApplicationStructure().getElementByName("TplSensor");
+			ApplicationElement contextTemplateSensorApplicationElement =
+					getApplicationStructure().getElementByName("TplSensor");
 			BaseElement baseElement = getBaseStructure().getElementByType("AoTestEquipmentPart");
 
 			for(CatalogSensor catalogSensor : entry.getValue()) {
@@ -118,7 +165,8 @@ final class CatalogManager {
 				applicationRelation.setElem2(applicationElement);
 				applicationRelation.setRelationName(catalogSensor.getName());
 				applicationRelation.setInverseRelationName(entry.getKey());
-				applicationRelation.setBaseRelation(getBaseStructure().getRelation(contextComponentBaseElement, baseElement));
+				applicationRelation.setBaseRelation(getBaseStructure()
+						.getRelation(contextComponentBaseElement, baseElement));
 				applicationRelation._release();
 
 				// relation template sensor to context sensor
@@ -156,31 +204,92 @@ final class CatalogManager {
 		channelBaseElement._release();
 	}
 
+	/**
+	 * Creates for each given {@link CatalogAttribute} a corresponding
+	 * application attribute.
+	 *
+	 * @param catalogAttributes The {@code CatalogAttribute}s.
+	 * @throws AoException Thrown in case of errors.
+	 */
 	public void createCatalogAttributes(Collection<CatalogAttribute> catalogAttributes) throws AoException {
-		for(CatalogAttribute catalogAttribute : catalogAttributes) {
-			ApplicationElement applicationElement = getApplicationStructure().getElementByName(getParentName(catalogAttribute));
+		Map<String, List<CatalogAttribute>> catalogAttributesByCatalogComponent = catalogAttributes.stream()
+				.collect(Collectors.groupingBy(CatalogManager::getParentName));
 
-			ApplicationAttribute applicationAttribute = applicationElement.createAttribute();
-			DataType dataType = ODSUtils.VALUETYPES.convert(catalogAttribute.getValueType());
-			applicationAttribute.setDataType(dataType);
-			applicationAttribute.setName(catalogAttribute.getName());
-			if (dataType == DataType.DT_ENUM) {
-				applicationAttribute.setEnumerationDefinition(getApplicationStructure().getEnumerationDefinition(ODSEnumerations.getEnumName(catalogAttribute.getEnumerationClass())));
+		for(Entry<String, List<CatalogAttribute>> entry : catalogAttributesByCatalogComponent.entrySet()) {
+			ApplicationElement applicationElement = getApplicationStructure().getElementByName(entry.getKey());
+
+			for(CatalogAttribute catalogAttribute : entry.getValue()) {
+
+				ApplicationAttribute applicationAttribute = applicationElement.createAttribute();
+				DataType dataType = ODSUtils.VALUETYPES.convert(catalogAttribute.getValueType());
+				applicationAttribute.setDataType(dataType);
+				applicationAttribute.setName(catalogAttribute.getName());
+				if (dataType == DataType.DT_ENUM) {
+					applicationAttribute.setEnumerationDefinition(getApplicationStructure()
+							.getEnumerationDefinition(ODSEnumerations
+									.getEnumName(catalogAttribute.getEnumerationClass())));
+				}
+				Optional<Unit> unit = catalogAttribute.getUnit();
+				if(unit.isPresent()) {
+					applicationAttribute.setUnit(ODSConverter.toODSLong(unit.get().getID()));
+				}
+
+				// release resources
+				applicationAttribute._release();
 			}
 
 			// release resources
 			applicationElement._release();
-			applicationAttribute._release();
 		}
 	}
 
-	public void updateCatalogAttributes(List<CatalogAttribute> catalogAttributes) throws DataAccessException {
-		/*
-		 * TODO: in case of CatalogAttribute we should update the Unit (changes the application model!)
-		 */
+	/**
+	 * Updates the application attribute for each given {@link
+	 * CatalogAttribute}.
+	 *
+	 * @param catalogAttributes The {@code CatalogAttribute}s.
+	 * @throws AoException Thrown in case of errors.
+	 */
+	public void updateCatalogAttributes(List<CatalogAttribute> catalogAttributes) throws AoException {
+		Map<String, List<CatalogAttribute>> catalogAttributesByCatalogComponent = catalogAttributes.stream()
+				.collect(Collectors.groupingBy(CatalogManager::getParentName));
+
+		for(Entry<String, List<CatalogAttribute>> entry : catalogAttributesByCatalogComponent.entrySet()) {
+			ApplicationElement applicationElement = getApplicationStructure().getElementByName(entry.getKey());
+
+			for(CatalogAttribute catalogAttribute : entry.getValue()) {
+
+				ApplicationAttribute applicationAttribute =
+						applicationElement.getAttributeByName(catalogAttribute.getName());
+
+				Optional<Unit> unit = catalogAttribute.getUnit();
+				if(unit.isPresent()) {
+					applicationAttribute.setUnit(ODSConverter.toODSLong(unit.get().getID()));
+				}
+
+				// release resources
+				applicationAttribute._release();
+			}
+
+			// release resources
+			applicationElement._release();
+		}
 	}
 
-	public void deleteCatalogComponents(Collection<CatalogComponent> catalogComponents) throws AoException, DataAccessException {
+	/**
+	 * Deletes the the corresponding application element for each given {@link
+	 * CatalogComponent}. Deleting a {@code CatalogComponent} is only allowed
+	 * if it is not used in templates and all of its children could be deleted.
+	 * So at first it is tried to delete its {@link CatalogAttribute}s and
+	 * {@link CatalogSensor}s. On success it is ensured none of the given {@code
+	 * CatalogComponent}s is used in templates. Finally the corresponding
+	 * application elements are deleted.
+	 *
+	 * @param catalogComponents The {@code CatalogComponent}s.
+	 * @throws AoException Thrown in case of errors.
+	 */
+	public void deleteCatalogComponents(Collection<CatalogComponent> catalogComponents)
+			throws AoException, DataAccessException {
 		List<CatalogAttribute> attributes = new ArrayList<>();
 		List<CatalogSensor> sensors = new ArrayList<>();
 		for (CatalogComponent catalogComponent : catalogComponents) {
@@ -191,11 +300,13 @@ final class CatalogManager {
 		transaction.delete(attributes);
 
 		if(areReferencedInTemplates(catalogComponents)) {
-			throw new DataAccessException("Unable to delete given catalog components since at least one is used in templates.");
+			throw new DataAccessException("Unable to delete given catalog components since at least "
+					+ "one is used in templates.");
 		}
 
 		for(CatalogComponent catalogComponent : catalogComponents) {
-			ApplicationElement applicationElement = getApplicationStructure().getElementByName(catalogComponent.getName());
+			ApplicationElement applicationElement = getApplicationStructure()
+					.getElementByName(catalogComponent.getName());
 			for(ApplicationRelation applicationRelation : applicationElement.getAllRelations()) {
 				getApplicationStructure().removeRelation(applicationRelation);
 
@@ -209,6 +320,17 @@ final class CatalogManager {
 		}
 	}
 
+	/**
+	 * Deletes the the corresponding application element for each given {@link
+	 * CatalogSensor}. Deleting a {@code CatalogSensor} is only allowed if it
+	 * is not used in templates and all of its children could be deleted. So at
+	 * first it is tried to delete its {@link CatalogAttribute}s. On success it
+	 * is ensured none of the given {@code CatalogSensor}s is used in templates.
+	 * Finally the corresponding application elements are deleted.
+	 *
+	 * @param catalogSensors The {@code CatalogSensor}s.
+	 * @throws AoException Thrown in case of errors.
+	 */
 	public void deleteCatalogSensors(Collection<CatalogSensor> catalogSensors) throws AoException, DataAccessException {
 		List<CatalogAttribute> attributes = new ArrayList<>();
 		for (CatalogSensor catalogSensor : catalogSensors) {
@@ -217,7 +339,8 @@ final class CatalogManager {
 		transaction.delete(attributes);
 
 		if(areReferencedInTemplates(catalogSensors)) {
-			throw new DataAccessException("Unable to delete given catalog sensors since at least one is used in templates.");
+			throw new DataAccessException("Unable to delete given catalog sensors since at "
+					+ "least one is used in templates.");
 		}
 
 		for(CatalogSensor catalogSensor : catalogSensors) {
@@ -236,9 +359,21 @@ final class CatalogManager {
 
 	}
 
-	public void deleteCatalogAttributes(Collection<CatalogAttribute> catalogAttributes) throws AoException, DataAccessException {
+	/**
+	 * Deletes the the corresponding application attributes for each given
+	 * {@link CatalogAttribute}. Deleting a {@code CatalogAttribute} is only
+	 * allowed if it is not used in templates. So at first it is ensured none
+	 * of the given {@code CatalogAttribute}s is used in templates and finally
+	 * the corresponding application attributes are deleted.
+	 *
+	 * @param catalogAttributes The {@code CatalogAttribute}s.
+	 * @throws AoException Thrown in case of errors.
+	 */
+	public void deleteCatalogAttributes(Collection<CatalogAttribute> catalogAttributes)
+			throws AoException, DataAccessException {
 		if(areReferencedInTemplates(catalogAttributes)) {
-			throw new DataAccessException("Unable to delete given catalog attributes since at least one is used in templates.");
+			throw new DataAccessException("Unable to delete given catalog attributes since at least "
+					+ "one is used in templates.");
 		}
 
 		Map<String, List<CatalogAttribute>> catalogAttributesByParent = catalogAttributes.stream()
@@ -248,7 +383,8 @@ final class CatalogManager {
 			ApplicationElement applicationElement = getApplicationStructure().getElementByName(entry.getKey());
 
 			for(CatalogAttribute catalogAttribute : entry.getValue()) {
-				ApplicationAttribute applicationAttribute = applicationElement.getAttributeByName(catalogAttribute.getName());
+				ApplicationAttribute applicationAttribute = applicationElement
+						.getAttributeByName(catalogAttribute.getName());
 				applicationElement.removeAttribute(applicationAttribute);
 
 				// release resources
@@ -260,6 +396,9 @@ final class CatalogManager {
 		}
 	}
 
+	/**
+	 * Releases cached resources.
+	 */
 	public void clear() {
 		if(applicationStructure != null) {
 			applicationStructure._release();
@@ -270,9 +409,25 @@ final class CatalogManager {
 		}
 	}
 
-	private ApplicationElement createApplicationElement(String applicationElementName, BaseElement baseElement) throws AoException {
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Creates a new {@link ApplicationElement} with given name and {@link
+	 * BaseElement}. The returned {@code ApplicationElement} will be created
+	 * with the three mandatory {@link ApplicationAttribute}s for 'Id', 'Name'
+	 * and 'MimeType'.
+	 *
+	 * @param name The name of the application element.
+	 * @param baseElement The {@code BaseElement} the created {@code
+	 * 		ApplicationElement} will be derived from.
+	 * @return The created {@code ApplicationElement} is returned.
+	 * @throws AoException
+	 */
+	private ApplicationElement createApplicationElement(String name, BaseElement baseElement) throws AoException {
 		ApplicationElement applicationElement = getApplicationStructure().createElement(baseElement);
-		applicationElement.setName(applicationElementName);
+		applicationElement.setName(name);
 
 		// Id
 		ApplicationAttribute idApplicationAttribute = applicationElement.getAttributeByBaseName("id");
@@ -303,7 +458,14 @@ final class CatalogManager {
 		return applicationElement;
 	}
 
-	ApplicationStructure getApplicationStructure() throws AoException {
+	/**
+	 * Returns the cached {@link ApplicationStructure}.
+	 *
+	 * @return The {@code ApplicationStructure} is returned.
+	 * @throws AoException Thrown if unable to access the {@code
+	 * 		ApplicationStructure}.
+	 */
+	private ApplicationStructure getApplicationStructure() throws AoException {
 		if(applicationStructure == null) {
 			applicationStructure = transaction.getModelManager().getAoSession().getApplicationStructure();
 		}
@@ -311,7 +473,14 @@ final class CatalogManager {
 		return applicationStructure;
 	}
 
-	BaseStructure getBaseStructure() throws AoException {
+	/**
+	 * Returns the cached {@link BaseStructure}.
+	 *
+	 * @return The {@code BaseStructure} is returned.
+	 * @throws AoException Thrown if unable to access the {@code
+	 * 		BaseStructure}.
+	 */
+	private BaseStructure getBaseStructure() throws AoException {
 		if(baseStructure == null) {
 			baseStructure = transaction.getModelManager().getAoSession().getBaseStructure();
 		}
@@ -319,7 +488,18 @@ final class CatalogManager {
 		return baseStructure;
 	}
 
-	private boolean areReferencedInTemplates(Collection<? extends Entity> entities) throws AoException, DataAccessException {
+	/**
+	 * Checks whether given {@link Entity}s are referenced in templates.
+	 *
+	 * @param entities The checked entities ({@link CatalogComponent}, {@link
+	 * 		CatalogSensor} or {@link CatalogAttribute}).
+	 * @return Returns {@code true} if at least one entity is referenced in a
+	 * 		template.
+	 * @throws AoException Thrown on errors.
+	 * @throws DataAccessException Thrown on errors.
+	 */
+	private boolean areReferencedInTemplates(Collection<? extends Entity> entities)
+			throws AoException, DataAccessException {
 		Map<EntityType, List<Entity>> entitiesByEntityType = entities.stream()
 				.collect(Collectors.groupingBy(transaction.getModelManager()::getEntityType));
 
@@ -329,10 +509,9 @@ final class CatalogManager {
 
 			Query query = transaction.getModelManager().createQuery().selectID(target).join(source, target);
 
-			long[] instanceIDs = collectInstanceIDs(entry.getValue());
-			List<Result> results = query.fetch(Filter.and().add(Operation.IN_SET.create(source.getIDAttribute(), instanceIDs)));
+			List<Result> results = query.fetch(Filter.and().add(Operation.IN_SET.create(source.getIDAttribute(),
+					collectInstanceIDs(entry.getValue()))));
 			if(results.size() > 0) {
-				// TODO add debug logging with detailed informations about conflicts that were found
 				return true;
 			}
 		}
@@ -340,6 +519,12 @@ final class CatalogManager {
 		return false;
 	}
 
+	/**
+	 * Collect the instance IDs of all given {@link Entity}s.
+	 *
+	 * @param entities The {@link Entity}s.
+	 * @return The instance IDs a {@code long[]} are turned.
+	 */
 	private static long[] collectInstanceIDs(List<Entity> entities) {
 		long[] ids = new long[entities.size()];
 
@@ -350,13 +535,20 @@ final class CatalogManager {
 		return ids;
 	}
 
+	/**
+	 * Returns the parent name for given {@link CatalogAttribute}.
+	 *
+	 * @param catalogAttribute The {@code CatalogAttribute}.
+	 * @return The parent name is returned.
+	 */
 	private static String getParentName(CatalogAttribute catalogAttribute) {
 		Optional<CatalogComponent> catalogComponent = catalogAttribute.getCatalogComponent();
 		if(catalogComponent.isPresent()) {
 			return catalogComponent.get().getName();
 		}
 
-		return catalogAttribute.getCatalogSensor().orElseThrow(() -> new IllegalStateException("Parent entity is unknown.")).getName();
+		return catalogAttribute.getCatalogSensor()
+				.orElseThrow(() -> new IllegalStateException("Parent entity is unknown.")).getName();
 	}
 
 }

@@ -45,18 +45,48 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Delete statement is used to delete entities with their children.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class DeleteStatement extends BaseStatement {
 
-	private static final List<String> AUTO_DELETABLE = Arrays.asList("MeaQuantity", "SubMatrix", "LocalColumn", "ExternalComponent");
+	// ======================================================================
+	// Class variables
+	// ======================================================================
+
+	private static final List<String> AUTO_DELETABLE =
+			Arrays.asList("MeaQuantity", "SubMatrix", "LocalColumn", "ExternalComponent");
 	private static final Logger LOGGER = LoggerFactory.getLogger(DeleteStatement.class);
 
 	private final boolean useAutoDelete;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param transaction The owning {@link ODSTransaction}.
+	 * @param entityType The associated {@link EntityType}.
+	 * @param useAutoDeleteIf {@code true} child relations of {@link
+	 * 		Measurement} entities are not followed.
+	 */
 	DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDelete) {
 		super(transaction, entityType);
 		this.useAutoDelete = useAutoDelete;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException {
 		if(entities.stream().filter(e -> !e.getTypeName().equals(getEntityType().getName())).findAny().isPresent()) {
@@ -68,6 +98,22 @@ final class DeleteStatement extends BaseStatement {
 		LOGGER.debug("{} instances deleted in {} ms.", amount, System.currentTimeMillis() - start);
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Recursively follows child relations of given entities and deletes
+	 * all child entities before deleting parent entities.
+	 *
+	 * @param entityType {@link EntityType} of the deleted entities.
+	 * @param instanceIDs Instance IDs of entities which have to be deleted.
+	 * @param ignoreSiblings Is it required to check whether {@link Measurement}
+	 * 		siblings share a common {@link ContextRoot}s.
+	 * @return Returns the total number of deleted instances.
+	 * @throws AoException Thrown if unable to delete entities.
+	 * @throws DataAccessException Thrown if unable to query child entities.
+	 */
 	private int delete(EntityType entityType, Collection<Long> instanceIDs, boolean ignoreSiblings)
 			throws AoException, DataAccessException {
 		if(instanceIDs.isEmpty()) {
@@ -194,6 +240,13 @@ final class DeleteStatement extends BaseStatement {
 		return amount + instanceIDs.size();
 	}
 
+	/**
+	 * Converts given {@code Collection} of instance IDs to ODS a {@link
+	 * T_LONGLONG} array.
+	 *
+	 * @param instanceIDs The instance IDs.
+	 * @return The corresponding ODS {@code T_LONGLONG[]} is returned.
+	 */
 	private T_LONGLONG[] toODSIDs(Collection<Long> instanceIDs) {
 		List<T_LONGLONG> odsIDs = instanceIDs.stream().map(ODSConverter::toODSLong).collect(Collectors.toList());
 		return odsIDs.toArray(new T_LONGLONG[odsIDs.size()]);

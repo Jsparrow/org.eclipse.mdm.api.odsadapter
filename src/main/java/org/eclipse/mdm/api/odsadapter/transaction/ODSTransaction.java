@@ -28,10 +28,12 @@ import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
@@ -43,14 +45,28 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * ODS implementation of the {@link Transaction} interface.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 public final class ODSTransaction implements Transaction {
 
-	// TODO: it should be possible to a attach a listener
+	// ======================================================================
+	// Class variables
+	// ======================================================================
+
+	// TODO: it should be possible to a attach a progress listener
 	// -> progress notification updates while uploading files
 	// -> any other useful informations?!
 	// -> splitting of tasks into subtasks may be required...
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSTransaction.class);
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	// this one is stored in case of application model modifications
 	private final ODSModelManager parentModelManager;
@@ -59,6 +75,7 @@ public final class ODSTransaction implements Transaction {
 	// instance is decoupled from its parent
 	private final ODSModelManager modelManager;
 
+	// only for logging
 	private final String id = UUID.randomUUID().toString();
 
 	// need to write version == instanceID -> update after create
@@ -77,18 +94,34 @@ public final class ODSTransaction implements Transaction {
 
 	private CatalogManager catalogManager;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param parentModelManager Used to access the persistence.
+	 * @param entity Used for security checks
+	 * @param transfer The file transfer type.
+	 * @throws AoException Thrown if unable to start a co-session.
+	 */
 	public ODSTransaction(ODSModelManager parentModelManager, Entity entity, Transfer transfer) throws AoException {
 		this.parentModelManager = parentModelManager;
 		this.entity = entity;
 		this.transfer = transfer;
 		modelManager = parentModelManager.newSession();
-
-		// TODO track duration
-
 		modelManager.getAoSession().startTransaction();
 		LOGGER.debug("Transaction '{}' started.", id);
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends Entity> void create(Collection<T> entities) throws DataAccessException {
@@ -99,30 +132,36 @@ public final class ODSTransaction implements Transaction {
 		}
 
 		try {
-			Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
+			Map<Class<?>, List<T>> entitiesByClassType = entities.stream()
+					.collect(Collectors.groupingBy(e -> e.getClass()));
 
-			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType.get(CatalogComponent.class);
+			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType
+					.get(CatalogComponent.class);
 			if(catalogComponents != null) {
 				getCatalogManager().createCatalogComponents(catalogComponents);
 			}
 
 			List<CatalogSensor> catalogSensors = (List<CatalogSensor>) entitiesByClassType.get(CatalogSensor.class);
 			if(catalogSensors != null) {
-				// TODO create CatalogSensors....
-				throw new DataAccessException("NOT IMPLEMENTED");
-				//getCatalogManager().createCatalogSensors(catalogSensors);
+				// TODO avalon 4.3b throws an exception in AoSession.commintTransaction() if multiple
+				// catalog sensors have been deleted and leaves the application model in a broken state
+
+				// getCatalogManager().createCatalogSensors(catalogSensors);
+				throw new DataAccessException("CURRENTLY NOT IMPLEMENTED");
 			}
 
-			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
+			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType
+					.get(CatalogAttribute.class);
 			if(catalogAttributes != null) {
 				getCatalogManager().createCatalogAttributes(catalogAttributes);
 			}
 
-			List<TemplateAttribute> templateAttributes = (List<TemplateAttribute>) entitiesByClassType.get(TemplateAttribute.class);
+			List<TemplateAttribute> templateAttributes = (List<TemplateAttribute>) entitiesByClassType
+					.get(TemplateAttribute.class);
 			if(templateAttributes != null) {
 				List<TemplateAttribute> filtered = getFileLinkTemplateAttributes(templateAttributes);
 				if(!filtered.isEmpty()) {
-					getUploadService().upload(filtered, null /* TODO progress listener */);
+					getUploadService().upload(filtered, null);
 				}
 			}
 
@@ -150,12 +189,15 @@ public final class ODSTransaction implements Transaction {
 				contextRoots.addAll(roots);
 			}
 		} catch(AoException e) {
-			throw new DataAccessException(e.reason, e); // TODO
+			throw new DataAccessException("Unable to write new entities due to: " + e.reason, e);
 		} catch(IOException e) {
-			throw new DataAccessException(e.getMessage(), e); // TODO
+			throw new DataAccessException("Unable to write new entities due to: " + e.getMessage(), e);
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
@@ -165,32 +207,35 @@ public final class ODSTransaction implements Transaction {
 			throw new IllegalArgumentException("At least one given entity is not yet persisted.");
 		}
 
-		// TODO if entity instanceof Versionable -> VersionState.EDITING || VersionState.VALID (OLD STATE NOT CURRENT!)!
-		// -> if old state is EDITING -> anything may be modified
-		// -> if old state is VALID -> only the VersionState is allowed to be changed to ARCHIVED!
 		try {
-			Map<Class<?>, List<T>> entitiesByClassType = entities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
-			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
+			Map<Class<?>, List<T>> entitiesByClassType = entities.stream()
+					.collect(Collectors.groupingBy(e -> e.getClass()));
+			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType
+					.get(CatalogAttribute.class);
 			if(catalogAttributes != null) {
 				getCatalogManager().updateCatalogAttributes(catalogAttributes);
 			}
 
-			List<TemplateAttribute> templateAttributes = (List<TemplateAttribute>) entitiesByClassType.get(TemplateAttribute.class);
+			List<TemplateAttribute> templateAttributes = (List<TemplateAttribute>) entitiesByClassType
+					.get(TemplateAttribute.class);
 			if(templateAttributes != null) {
 				List<TemplateAttribute> filtered = getFileLinkTemplateAttributes(templateAttributes);
 				if(!filtered.isEmpty()) {
-					getUploadService().upload(filtered, null /* TODO progress listener */);
+					getUploadService().upload(filtered, null);
 				}
 			}
 
 			executeStatements(et -> new UpdateStatement(this, et, false), entities);
 		} catch(AoException e) {
-			throw new DataAccessException(e.reason, e); // TODO
+			throw new DataAccessException("Unable to update entities due to: " + e.reason, e);
 		} catch(IOException e) {
-			throw new DataAccessException(e.getMessage(), e); // TODO
+			throw new DataAccessException("Unable to update entities due to: " + e.getMessage(), e);
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends Deletable> void delete(Collection<T> entities) throws DataAccessException {
@@ -198,27 +243,29 @@ public final class ODSTransaction implements Transaction {
 			return;
 		}
 
-		// TODO if entity instanceof Versionable -> VersionState.EDITING (OLD STATE NOT CURRENT!)!
-
 		List<T> filteredEntities = entities.stream().filter(e -> e.getID() > 0).collect(Collectors.toList());
 
 		try {
-			Map<Class<?>, List<T>> entitiesByClassType = filteredEntities.stream().collect(Collectors.groupingBy(e -> e.getClass()));
+			Map<Class<?>, List<T>> entitiesByClassType = filteredEntities.stream()
+					.collect(Collectors.groupingBy(e -> e.getClass()));
 
-			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType.get(CatalogComponent.class);
+			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType
+					.get(CatalogComponent.class);
 			if(catalogComponents != null) {
 				getCatalogManager().deleteCatalogComponents(catalogComponents);
 			}
 
 			List<CatalogSensor> catalogSensors = (List<CatalogSensor>) entitiesByClassType.get(CatalogSensor.class);
 			if(catalogSensors != null) {
-				// TODO Avalon 4.3b wirft innerhalb von AoSession.commitTransaction() eine Exception
-				// und hinterlässt das Datenmodell in einem inkonsistenten Zustand!
-				throw new DataAccessException("Deletion of catalog sensors is not implemented!");
-				//getCatalogManager().deleteCatalogSensors(catalogSensors);
+				// TODO avalon 4.3b throws an exception in AoSession.commintTransaction() if multiple
+				// catalog sensors have been deleted and leaves the application model in a broken state
+
+				// getCatalogManager().deleteCatalogSensors(catalogSensors);
+				throw new DataAccessException("CURRENTLY NOT IMPLEMENTED");
 			}
 
-			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType.get(CatalogAttribute.class);
+			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType
+					.get(CatalogAttribute.class);
 			if(catalogAttributes != null) {
 				getCatalogManager().deleteCatalogAttributes(catalogAttributes);
 			}
@@ -229,12 +276,15 @@ public final class ODSTransaction implements Transaction {
 
 			executeStatements(et -> new DeleteStatement(this, et, true), filteredEntities);
 		} catch (AoException e) {
-			throw new DataAccessException(e.reason, e); // TODO
+			throw new DataAccessException("Unable to delete entities due to: " + e.reason, e);
 		} catch(IOException e) {
-			throw new DataAccessException(e.getMessage(), e); // TODO
+			throw new DataAccessException("Unable to delete entities due to: " + e.getMessage(), e);
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void writeMeasuredValues(Collection<WriteRequest> writeRequests) throws DataAccessException {
 		if(writeRequests.isEmpty()) {
@@ -261,12 +311,15 @@ public final class ODSTransaction implements Transaction {
 				writeRequestHandler.execute();
 			}
 		} catch(AoException e) {
-			throw new DataAccessException(e.reason, e); // TODO
+			throw new DataAccessException("Unable to write measured values due to: " + e.reason, e);
 		} catch(IOException e) {
-			throw new DataAccessException(e.getMessage(), e); // TODO
+			throw new DataAccessException("Unable to write measured values due to: " + e.getMessage(), e);
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void commit() throws DataAccessException {
 		try {
@@ -285,7 +338,6 @@ public final class ODSTransaction implements Transaction {
 				parentModelManager.reloadApplicationModel();
 			}
 
-			// TODO add statistics to logging (how many created / updated / deleted)
 			LOGGER.debug("Transaction '{}' committed.", id);
 			closeSession();
 		} catch(AoException e) {
@@ -293,6 +345,9 @@ public final class ODSTransaction implements Transaction {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void abort() {
 		try {
@@ -309,7 +364,6 @@ public final class ODSTransaction implements Transaction {
 
 			modelManager.getAoSession().abortTransaction();
 
-			// TODO add statistics to logging (how many created / updated / deleted)
 			LOGGER.debug("Transaction '{}' aborted.", id);
 		} catch(AoException e) {
 			LOGGER.error("Unable to abort transaction '" + id + "' due to: " + e.reason, e);
@@ -318,18 +372,46 @@ public final class ODSTransaction implements Transaction {
 		}
 	}
 
+	// ======================================================================
+	// Package methods
+	// ======================================================================
+
+	/**
+	 * Once {@link #abort()} is called instance ID of given {@link Core} will
+	 * be reset to {@code 0} which indicates a virtual {@link Entity}, not yet
+	 * persisted, entity.
+	 *
+	 * @param core The {@code Core} of a newly written {@code Entity}.
+	 */
 	void addCreated(Core core) {
 		created.add(core);
 	}
 
+	/**
+	 * Once {@link #commit()} is {@link Core#apply()} will be called to apply
+	 * modified {@link Value} contents and removed related entities.
+	 *
+	 * @param core The {@code Core} of an updated {@code Entity}.
+	 */
 	void addModified(Core core) {
 		modified.add(core);
 	}
 
+	/**
+	 * Returns the {@link ODSModelManager}.
+	 *
+	 * @return The {@code ODSModelManager} is returned.
+	 */
 	ODSModelManager getModelManager() {
 		return modelManager;
 	}
 
+	/**
+	 * Returns the {@link UploadService}.
+	 *
+	 * @return The {@code UploadService} is returned.
+	 * @throws DataAccessException Thrown if file transfer is not possible.
+	 */
 	UploadService getUploadService() throws DataAccessException {
 		if(uploadService == null) {
 			if(modelManager.getFileServer() == null) {
@@ -343,6 +425,15 @@ public final class ODSTransaction implements Transaction {
 		return uploadService;
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Returns the {@link CatalogManager}.
+	 *
+	 * @return The {@code CatalogManager} is returned.
+	 */
 	private CatalogManager getCatalogManager() {
 		if(catalogManager == null) {
 			catalogManager = new CatalogManager(this);
@@ -351,6 +442,14 @@ public final class ODSTransaction implements Transaction {
 		return catalogManager;
 	}
 
+	/**
+	 * Collects {@link TemplateAttribute}s with a valid default {@link Value} of
+	 * type {@link ValueType#FILE_LINK} or {@link ValueType#FILE_LINK_SEQUENCE}.
+	 *
+	 * @param templateAttributes The processed {@code TemplateAttribute}s.
+	 * @return Returns {@link TemplateAttribute} which have {@link FileLink}s
+	 * 		stored as default {@code Value}.
+	 */
 	private List<TemplateAttribute> getFileLinkTemplateAttributes(List<TemplateAttribute> templateAttributes) {
 		return templateAttributes.stream().filter(ta -> {
 			Value value = ta.getDefaultValue();
@@ -358,14 +457,29 @@ public final class ODSTransaction implements Transaction {
 		}).collect(Collectors.toList());
 	}
 
-	private <T extends Entity> void executeStatements(Function<EntityType, BaseStatement> statementFactory, Collection<T> entities)
-			throws AoException, DataAccessException, IOException {
-		Map<EntityType, List<Entity>> entitiesByType = entities.stream().collect(Collectors.groupingBy(modelManager::getEntityType));
+	/**
+	 * Executes statements for given entities by using given statement factory.
+	 *
+	 * @param statementFactory Used to create a new statement for a given
+	 * 		{@link EntityType}.
+	 * @param entities The processed {@code Entity}s.
+	 * @throws AoException Thrown if the execution fails.
+	 * @throws DataAccessException Thrown if the execution fails.
+	 * @throws IOException Thrown if a file transfer operation fails.
+	 */
+	private <T extends Entity> void executeStatements(Function<EntityType, BaseStatement> statementFactory,
+			Collection<T> entities)
+					throws AoException, DataAccessException, IOException {
+		Map<EntityType, List<Entity>> entitiesByType = entities.stream()
+				.collect(Collectors.groupingBy(modelManager::getEntityType));
 		for(Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
 			statementFactory.apply(entry.getKey()).execute(entry.getValue());
 		}
 	}
 
+	/**
+	 * Closes the co-session of this transaction.
+	 */
 	private void closeSession() {
 		try {
 			if(catalogManager != null) {

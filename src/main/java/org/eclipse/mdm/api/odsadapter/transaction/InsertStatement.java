@@ -41,7 +41,17 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Insert statement is used to write new entities and their children.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class InsertStatement extends BaseStatement {
+
+	// ======================================================================
+	// Class variables
+	// ======================================================================
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InsertStatement.class);
 
@@ -54,34 +64,74 @@ final class InsertStatement extends BaseStatement {
 	private final Map<Long, SortIndexTestSteps> sortIndexTestSteps = new HashMap<>();
 	private boolean loadSortIndex;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param transaction The owning {@link ODSTransaction}.
+	 * @param entityType The associated {@link EntityType}.
+	 */
 	InsertStatement(ODSTransaction transaction, EntityType entityType) {
 		super(transaction, entityType);
 
 		loadSortIndex = getModelManager().getEntityType(TestStep.class).equals(getEntityType());
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
-		entities.forEach(e -> readEntityCore(extract(e)));
+		entities.stream().map(this::extract).forEach(this::readEntityCore);
 		execute();
 	}
 
+	/**
+	 * Executes this statement for given {@link Core}s.
+	 *
+	 * @param cores The processed {@code Core}s.
+	 * @throws AoException Thrown if the execution fails.
+	 * @throws DataAccessException Thrown if the execution fails.
+	 * @throws IOException Thrown if a file transfer operation fails.
+	 */
 	public void executeWithCores(Collection<Core> cores) throws AoException, DataAccessException, IOException {
 		cores.forEach(this::readEntityCore);
 		execute();
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Uploads new {@link FileLink}s, adjusts sort indices for new {@link
+	 * TestStep} entities and writes collected insertion data at once. Once
+	 * new entities are written their children are created by delegation to
+	 * the {@link ODSTransaction}.
+	 *
+	 * @throws AoException Thrown if the execution fails.
+	 * @throws DataAccessException Thrown if the execution fails.
+	 * @throws IOException Thrown if a file transfer operation fails.
+	 */
 	private void execute() throws AoException, DataAccessException, IOException {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
+
+		// TODO tracing progress in this method...
 
 		if(loadSortIndex && !sortIndexTestSteps.isEmpty()) {
 			adjustMissingSortIndices();
 		}
 
-		// TODO Task 1
 		if(!fileLinkToUpload.isEmpty()) {
-			getTransaction().getUploadService().uploadParallel(fileLinkToUpload, null /*TODO ?!*/);
+			getTransaction().getUploadService().uploadParallel(fileLinkToUpload, null);
 		}
 
 		for(Entry<String, List<Value>> entry : insertMap.entrySet()) {
@@ -93,25 +143,33 @@ final class InsertStatement extends BaseStatement {
 		}
 
 		long start = System.currentTimeMillis();
-		ElemId[] elemIds = getApplElemAccess().insertInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
-		writeInstanceIDs(elemIds);
+		ElemId[] elemIds = getApplElemAccess()
+				.insertInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
+		for(int i = 0; i < elemIds.length; i++) {
+			cores.get(i).setID(ODSConverter.fromODSLong(elemIds[i].iid));
+		}
 		long stop = System.currentTimeMillis();
 
 		LOGGER.debug("{} " + getEntityType() + " instances created in {} ms.", elemIds.length, stop - start);
 
-		// TODO Task 2
 		for(List<Entity> children : childrenMap.values()) {
 			getTransaction().create(children);
 		}
 	}
 
-	private void writeInstanceIDs(ElemId[] elemIds) {
-		for(int i = 0; i < elemIds.length; i++) {
-			long instanceID = ODSConverter.fromODSLong(elemIds[i].iid);
-			cores.get(i).setID(instanceID);
-		}
-	}
-
+	/**
+	 * Reads given {@link Core} and prepares its data to be written:
+	 *
+	 * <ul>
+	 * 	<li>collect new {@link FileLink}s</li>
+	 * 	<li>trace missing sort indices of TestSteps</li>
+	 *  <li>collect property {@link Value}s</li>
+	 *  <li>collect foreign key {@code Value}s</li>
+	 *  <li>collect child entities for recursive creation</li>
+	 * </ul>
+	 *
+	 * @param core The {@code Core}.
+	 */
 	private void readEntityCore(Core core) {
 		if(!core.getTypeName().equals(getEntityType().getName())) {
 			throw new IllegalArgumentException("Entity core '" + core.getTypeName()
@@ -122,7 +180,8 @@ final class InsertStatement extends BaseStatement {
 
 		if(loadSortIndex) {
 			if((Integer) core.getValues().get(Sortable.ATTR_SORT_INDEX).extract() < 0) {
-				sortIndexTestSteps.computeIfAbsent(core.getPermanentStore().get(Test.class).getID(), k -> new SortIndexTestSteps()).testStepCores.add(core);
+				sortIndexTestSteps.computeIfAbsent(core.getPermanentStore().get(Test.class).getID(),
+						k -> new SortIndexTestSteps()).testStepCores.add(core);
 			}
 		}
 
@@ -148,7 +207,8 @@ final class InsertStatement extends BaseStatement {
 		setRelationIDs(core.getMutableStore().getCurrent());
 		setRelationIDs(core.getPermanentStore().getCurrent());
 
-		for(Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent().entrySet()) {
+		for(Entry<Class<? extends Deletable>, List<? extends Deletable>> entry :
+			core.getChildrenStore().getCurrent().entrySet()) {
 			childrenMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(entry.getValue());
 		}
 
@@ -156,6 +216,11 @@ final class InsertStatement extends BaseStatement {
 		getTransaction().addCreated(core);
 	}
 
+	/**
+	 * Overwrites empty foreign key {@link Value} containers.
+	 *
+	 * @param relatedEntities The related {@link Entity}s.
+	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for(Entity relatedEntity : relatedEntities) {
 			if(relatedEntity.getID() < 1) {
@@ -172,6 +237,12 @@ final class InsertStatement extends BaseStatement {
 		}
 	}
 
+	/**
+	 * Adjusts missing sort indices for {@link TestStep}s by querying last used
+	 * max sort index.
+	 *
+	 * @throws DataAccessException Thrown if unable to query used sort indices.
+	 */
 	private void adjustMissingSortIndices() throws DataAccessException {
 		EntityType testStep = getEntityType();
 		EntityType test = getModelManager().getEntityType(Test.class);
@@ -192,10 +263,30 @@ final class InsertStatement extends BaseStatement {
 		sortIndexTestSteps.values().forEach(tss -> tss.setIndices(0));
 	}
 
+	// ======================================================================
+	// Inner classes
+	// ======================================================================
+
+	/**
+	 * Utility class to write missing sort index of new {@link TestStep}s.
+	 */
 	private static final class SortIndexTestSteps {
+
+		// ======================================================================
+		// Instance variables
+		// ======================================================================
 
 		private List<Core> testStepCores = new ArrayList<>();
 
+		// ======================================================================
+		// Private methods
+		// ======================================================================
+
+		/**
+		 * Assigns sort indices to {@link Core}s starting at given index.
+		 *
+		 * @param startIndex The start index.
+		 */
 		private void setIndices(int startIndex) {
 			int index = startIndex;
 			for(Core core : testStepCores) {

@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.FileService.ProgressListener;
@@ -23,22 +22,40 @@ import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
 import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
+/**
+ * Manages new or removed externally linked files.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class UploadService {
 
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
+
+	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
 	private final Map<TemplateAttribute, Value> templateAttributeFileLinks = new HashMap<>();
-
 	private final List<FileLink> uploaded = new ArrayList<>();
-
 	private final Map<Path, String> remotePaths = new HashMap<>();
-
 	private final List<FileLink> toRemove = new ArrayList<>();
 
 	private final CORBAFileService fileService;
 	private final Entity entity;
 
-	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+	// ======================================================================
+	// Constructors
+	// ======================================================================
 
-	public UploadService(ODSModelManager modelManager,Entity entity,  Transfer transfer) {
+	/**
+	 * Constructor.
+	 *
+	 * @param modelManager Used for setup.
+	 * @param entity Used for security checks.
+	 * @param transfer The transfer type.
+	 */
+	UploadService(ODSModelManager modelManager,Entity entity,  Transfer transfer) {
 		fileService = new CORBAFileService(modelManager, transfer);
 		this.entity = entity;
 
@@ -57,7 +74,21 @@ final class UploadService {
 		}, 5, 5, TimeUnit.MINUTES);
 	}
 
-	public void upload(Collection<TemplateAttribute> templateAttributes, ProgressListener progressListener) throws IOException {
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * Uploads new externally linked files stored in given {@link
+	 * TemplateAttribute}s. The upload progress may be traced with a progress
+	 * listener.
+	 *
+	 * @param templateAttributes The {@link TemplateAttribute}s.
+	 * @param progressListener The progress listener.
+	 * @throws IOException Thrown if unable to upload files.
+	 */
+	public void upload(Collection<TemplateAttribute> templateAttributes, ProgressListener progressListener)
+			throws IOException {
 		List<FileLink> fileLinks = new ArrayList<>();
 		for(TemplateAttribute templateAttribute : templateAttributes) {
 			Value defaultValue = templateAttribute.getDefaultValue();
@@ -83,6 +114,15 @@ final class UploadService {
 		}
 	}
 
+	/**
+	 * Parallel upload of given {@link FileLink}s. Local {@link Path}s linked
+	 * multiple times are uploaded only once. The upload progress may be traced
+	 * with a progress listener.
+	 *
+	 * @param fileLinks Collection of {@code FileLink}s to upload.
+	 * @param progressListener The progress listener.
+	 * @throws IOException Thrown if unable to upload files.
+	 */
 	public void uploadParallel(Collection<FileLink> fileLinks, ProgressListener progressListener) throws IOException {
 		List<FileLink> filtered = retainForUpload(fileLinks);
 		try {
@@ -95,24 +135,44 @@ final class UploadService {
 		}
 	}
 
+	/**
+	 * Once {@link #commit()} is called given {@link FileLink}s will be deleted
+	 * from the remote storage.
+	 *
+	 * @param fileLinks Collection of {@code FileLink}s to delete.
+	 */
 	public void addToRemove(Collection<FileLink> fileLinks) {
 		toRemove.addAll(fileLinks);
 	}
 
+	/**
+	 * Commits modifications of externally linked files.
+	 */
 	public void commit() {
-		fileService.delete(entity, toRemove.stream().collect(Collectors.groupingBy(FileLink::getRemotePath))
-				.values().stream().map(l -> l.get(0)).collect(Collectors.toList()));
+		fileService.delete(entity, toRemove);
 		scheduler.shutdown();
 	}
 
+	/**
+	 * Aborts modifications of externally linked files.
+	 */
 	public void abort() {
-		fileService.delete(entity, uploaded.stream().collect(Collectors.groupingBy(FileLink::getRemotePath))
-				.values().stream().map(l -> l.get(0)).collect(Collectors.toList()));
+		fileService.delete(entity, uploaded);
 		uploaded.forEach(fl -> fl.setRemotePath(null));
 		templateAttributeFileLinks.forEach((ta, v) -> ta.setDefaultValue(v.extract()));
 		scheduler.shutdown();
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Filters given {@link FileLink}s by removing already uploaded ones.
+	 *
+	 * @param fileLinks Will be filtered.
+	 * @return Returns {@code FileLink}s which have to be uploaded.
+	 */
 	private List<FileLink> retainForUpload(Collection<FileLink> fileLinks) {
 		List<FileLink> filtered = new ArrayList<>(fileLinks);
 		for(FileLink fileLink : fileLinks) {
