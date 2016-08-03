@@ -178,6 +178,7 @@ public class ODSModelManager implements ModelManager {
 	/**
 	 * Returns the non root {@link EntityConfig} for given {@link Key}.
 	 *
+	 * @param <T> The concrete entity type.
 	 * @param key Used as identifier.
 	 * @return The non root {@code EntityConfig} is returned.
 	 */
@@ -194,6 +195,7 @@ public class ODSModelManager implements ModelManager {
 	/**
 	 * Returns the root {@link EntityConfig} for given {@link Key}.
 	 *
+	 * @param <T> The concrete entity type.
 	 * @param key Used as identifier.
 	 * @return The root {@code EntityConfig} is returned.
 	 */
