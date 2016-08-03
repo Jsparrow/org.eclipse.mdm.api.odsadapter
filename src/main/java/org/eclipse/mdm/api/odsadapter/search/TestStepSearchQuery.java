@@ -11,15 +11,38 @@ package org.eclipse.mdm.api.odsadapter.search;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
+import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.SearchQuery;
+import org.eclipse.mdm.api.dflt.model.Pool;
+import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 
+/**
+ * {@link SearchQuery} implementation for {@link TestStep} as source entity
+ * type.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class TestStepSearchQuery extends BaseEntitySearchQuery {
 
-	public TestStepSearchQuery(ODSModelManager modelManager, ContextState contextState) {
-		super(modelManager, TestStep.class);
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param modelManager Used to load {@link EntityType}s.
+	 * @param contextState The {@link ContextState}.
+	 */
+	TestStepSearchQuery(ODSModelManager modelManager, ContextState contextState) {
+		super(modelManager, TestStep.class, Project.class);
 
 		// layers
+		addJoinConfig(JoinConfig.up(Pool.class, Project.class));
+		addJoinConfig(JoinConfig.up(Test.class, Pool.class));
 		addJoinConfig(JoinConfig.up(TestStep.class, Test.class));
 		addJoinConfig(JoinConfig.down(TestStep.class, Measurement.class));
 

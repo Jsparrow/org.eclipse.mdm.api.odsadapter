@@ -32,13 +32,33 @@ import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
+/**
+ * ODS implementation of the {@link SearchService} interface.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 public final class ODSSearchService implements SearchService {
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final Map<Class<? extends Entity>, SearchQuery> searchQueries = new HashMap<>();
 
 	private final ODSModelManager modelManager;
 	private final EntityLoader entityLoader;
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param modelManager Used to retrieve {@link EntityType}s.
+	 * @param entityLoader Used to load complete {@link Entity}s.
+	 */
 	public ODSSearchService(ODSModelManager modelManager, EntityLoader entityLoader) {
 		this.modelManager = modelManager;
 		this.entityLoader = entityLoader;
@@ -49,37 +69,76 @@ public final class ODSSearchService implements SearchService {
 		registerMergedSearchQuery(Channel.class, c -> new ChannelSearchQuery(modelManager, c));
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Class<? extends Entity>> listSearchableTypes() {
 		return new ArrayList<>(searchQueries.keySet());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<EntityType> listEntityTypes(Class<? extends Entity> entityClass) {
 		return findSearchQuery(entityClass).listEntityTypes();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Searchable getSearchableRoot(Class<? extends Entity> entityClass) {
 		return findSearchQuery(entityClass).getSearchableRoot();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public List<Value> getFilterValues(Class<? extends Entity> entityClass, Attribute attribute, Filter filter) throws DataAccessException {
+	public List<Value> getFilterValues(Class<? extends Entity> entityClass, Attribute attribute, Filter filter)
+			throws DataAccessException {
 		return findSearchQuery(entityClass).getFilterValues(attribute, filter);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public <T extends Entity> Map<T, Result> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes, Filter filter) throws DataAccessException {
+	public <T extends Entity> Map<T, Result> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes,
+			Filter filter) throws DataAccessException {
 		return createResult(entityClass, findSearchQuery(entityClass).fetchComplete(entityTypes, filter));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public <T extends Entity> Map<T, Result> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter) throws DataAccessException {
+	public <T extends Entity> Map<T, Result> fetch(Class<T> entityClass, List<Attribute> attributes,
+			Filter filter) throws DataAccessException {
 		return createResult(entityClass, findSearchQuery(entityClass).fetch(attributes, filter));
 	}
 
-	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results) throws DataAccessException {
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Loads {@link Entity}s of given entity class for given {@link Result}s.
+	 *
+	 * @param entityClass Entity class of the loaded {@code Entity}s.
+	 * @param results The queried {@code Result}s.
+	 * @return All Results are returned in a Map, which maps entities to the
+	 * 		corresponding results.
+	 * @throws DataAccessException Thrown if unable to load the {@code Entity}s.
+	 */
+	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results)
+			throws DataAccessException {
 		EntityType entityType = modelManager.getEntityType(entityClass);
 		Map<Long, Result> recordsByEntityID = new HashMap<>();
 		for(Result result : results) {
@@ -94,17 +153,31 @@ public final class ODSSearchService implements SearchService {
 		return resultsByEntity;
 	}
 
+	/**
+	 * Returns the {@link SearchQuery} for given entity class.
+	 *
+	 * @param entityClass Used as identifier.
+	 * @return The {@link SearchQuery}
+	 */
 	private SearchQuery findSearchQuery(Class<? extends Entity> entityClass) {
 		SearchQuery searchQuery = searchQueries.get(entityClass);
 		if(searchQuery == null) {
-			throw new IllegalArgumentException("Search query for type '" + entityClass.getSimpleName() + "' not found.");
+			throw new IllegalArgumentException("Search query for type '" + entityClass.getSimpleName()
+			+ "' not found.");
 		}
 
 		return searchQuery;
 	}
 
-	private void registerMergedSearchQuery(Class<? extends Entity> entityClass, Function<ContextState, BaseEntitySearchQuery> factory) {
-		searchQueries.put(entityClass, new MergedSearchQuery<>(entityClass, modelManager, factory));
+	/**
+	 * Registers a {@link SearchQuery} for given entity class.
+	 *
+	 * @param entityClass The entity class produced by using this query.
+	 * @param factory The {@code SearchQuery} factory.
+	 */
+	private void registerMergedSearchQuery(Class<? extends Entity> entityClass,
+			Function<ContextState, BaseEntitySearchQuery> factory) {
+		searchQueries.put(entityClass, new MergedSearchQuery(modelManager.getEntityType(entityClass), factory));
 	}
 
 }

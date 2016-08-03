@@ -16,36 +16,61 @@ import java.util.stream.Collectors;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Searchable;
 
+/**
+ * Implementation of the {@link Searchable} interface for use in search queries
+ * derived from {@link BaseEntitySearchQuery}.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class SearchableNode implements Searchable {
+
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
 	private final List<Searchable> relatedSearchables = new ArrayList<>();
 	private final EntityType entityType;
-	private final boolean implicit;
 
-	SearchableNode(EntityType entityType, boolean implicit) {
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param entityType The associated {@link EntityType}.
+	 */
+	SearchableNode(EntityType entityType) {
 		this.entityType = entityType;
-		this.implicit = implicit;
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Searchable> getRelatedSearchables() {
 		return Collections.unmodifiableList(relatedSearchables);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EntityType getEntityType() {
 		return entityType;
 	}
 
-	@Override
-	public boolean isImplicit() {
-		return implicit;
-	}
-
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("Searchable(").append("EntityType = ").append(entityType);
-		sb.append(", Implicit = ").append(isImplicit());
 
 		if(!isLeaf()) {
 			sb.append(", relatedSearchables = ").append(
@@ -57,6 +82,15 @@ final class SearchableNode implements Searchable {
 		return sb.append(')').toString();
 	}
 
+	// ======================================================================
+	// Package methods
+	// ======================================================================
+
+	/**
+	 * Adds given {@link Searchable} as a child to this searchable.
+	 *
+	 * @param searchable Will be added a child.
+	 */
 	void addRelated(Searchable searchable) {
 		relatedSearchables.add(searchable);
 	}

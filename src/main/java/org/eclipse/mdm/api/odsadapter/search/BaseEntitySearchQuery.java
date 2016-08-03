@@ -12,12 +12,10 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.reducing;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -25,7 +23,6 @@ import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
-import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Aggregation;
@@ -46,47 +43,74 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinNode;
 
+/**
+ * Base implementation for entity {@link SearchQuery}.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 abstract class BaseEntitySearchQuery implements SearchQuery {
 
-	private final Set<String> implicitTypeNames = new HashSet<>();
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
+	private final Class<? extends Entity> rootEntityClass;
 	private final JoinTree joinTree = new JoinTree();
 	private final Class<? extends Entity> entityClass;
 
 	private final ODSModelManager modelManager;
 
-	protected BaseEntitySearchQuery(ODSModelManager modelManager, Class<? extends Entity> entityClass) {
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 *
+	 * @param modelManager Used to load {@link EntityType}s.
+	 * @param entityClass The source entity class of this search query.
+	 * @param rootEntityClass The root entity class of this search query.
+	 */
+	protected BaseEntitySearchQuery(ODSModelManager modelManager, Class<? extends Entity> entityClass,
+			Class<? extends Entity> rootEntityClass) {
 		this.modelManager = modelManager;
 		this.entityClass = entityClass;
+		this.rootEntityClass = rootEntityClass;
 
 		EntityConfig<?> entityConfig = modelManager.getEntityConfig(new Key<>(entityClass));
 		EntityType source = entityConfig.getEntityType();
 
-		implicitTypeNames.add(source.getName());
-
 		entityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType)
 		.forEach(entityType -> {
-			implicitTypeNames.add(entityType.getName());
 			joinTree.addNode(source, entityType, true, Join.OUTER);
 		});
 
 		entityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType)
 		.forEach(entityType -> {
-			implicitTypeNames.add(entityType.getName());
 			joinTree.addNode(source, entityType, true, Join.INNER);
 		});
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public final List<EntityType> listEntityTypes() {
 		return joinTree.getNodeNames().stream().map(modelManager::getEntityType).collect(Collectors.toList());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public final Searchable getSearchableRoot() {
 		Function<String, SearchableNode> factory = k -> {
-			EntityType entityType = modelManager.getEntityType(k);
-			return new SearchableNode(entityType, implicitTypeNames.contains(entityType.getName()));
+			return new SearchableNode(modelManager.getEntityType(k));
 		};
 
 		Map<String, SearchableNode> nodes = new HashMap<>();
@@ -98,9 +122,12 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 			}
 		}
 
-		return nodes.get(modelManager.getEntityType(Test.class).getName());
+		return nodes.get(modelManager.getEntityType(rootEntityClass).getName());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public final List<Value> getFilterValues(Attribute attribute, Filter filter) throws DataAccessException {
 		Query query = modelManager.createQuery().select(attribute, Aggregation.DISTINCT).group(attribute);
@@ -114,6 +141,9 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		return query.fetch(filter).stream().map(r -> r.getValue(attribute)).collect(Collectors.toList());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public final List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) throws DataAccessException {
 		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
@@ -127,6 +157,9 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		return fetch(query, filter);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public final List<Result> fetch(List<Attribute> attributes, Filter filter) throws DataAccessException {
 		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
@@ -140,6 +173,16 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		return fetch(query, filter);
 	}
 
+	// ======================================================================
+	// Protected methods
+	// ======================================================================
+
+	/**
+	 * Adds given {@link JoinConfig} to the internally managed {@link
+	 * JoinTree}.
+	 *
+	 * @param joinConfig Will be added.
+	 */
 	protected final void addJoinConfig(JoinConfig joinConfig) {
 		EntityConfig<?> targetEntityConfig = modelManager.getEntityConfig(new Key<>(joinConfig.target));
 		EntityType target = targetEntityConfig.getEntityType();
@@ -160,6 +203,11 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		});
 	}
 
+	/**
+	 * Adds joins to context data according to the given {@link ContextState}.
+	 *
+	 * @param contextState The {@code ContextState}.
+	 */
 	protected final void addJoinConfig(ContextState contextState) {
 		if(contextState == null) {
 			// nothing to do
@@ -181,6 +229,19 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		}
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Executes given {@link Query} using given {@link Filter}. Joins required
+	 * for the given {@code Filter} will be implicitly added as needed.
+	 *
+	 * @param query Will be executed.
+	 * @param filter The query filtering sequence.
+	 * @return Returns the {@link Result}s in a {@code List}.
+	 * @throws DataAccessException Thrown if failed to execute given {@code Query}.
+	 */
 	private List<Result> fetch(Query query, Filter filter) throws DataAccessException {
 		filter.stream().filter(FilterItem::isCondition).map(FilterItem::getCondition)
 		.forEach(c -> addJoins(query, c.getAttribute().getEntityType()));
@@ -193,6 +254,13 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 				.values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
 
+	/**
+	 * Adds join statements to given target {@link EntityType} as needed to
+	 * be able to execute given {@code Query}.
+	 *
+	 * @param query The {@link Query}.
+	 * @param entityType The target {@link EntityType}.
+	 */
 	private void addJoins(Query query, EntityType entityType) {
 		if(query.isQueried(entityType)) {
 			return;

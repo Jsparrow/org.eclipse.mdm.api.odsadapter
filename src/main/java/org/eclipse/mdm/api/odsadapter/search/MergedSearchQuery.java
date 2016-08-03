@@ -17,43 +17,67 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.ModelManager;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 import org.eclipse.mdm.api.base.query.Searchable;
 
-final class MergedSearchQuery<T extends BaseEntitySearchQuery> implements SearchQuery {
+/**
+ * Merges 2 distinct search queries, where one queries context data as ordered
+ * and the other context as measured.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
+final class MergedSearchQuery implements SearchQuery {
 
-	private final Class<? extends Entity> entityClass;
-	private final ModelManager modelManager;
+	// ======================================================================
+	// Instance variables
+	// ======================================================================
 
-	private final T byResult;
-	private final T byOrder;
+	private final EntityType entityType;
 
-	public MergedSearchQuery(Class<? extends Entity> entityClass, ModelManager modelManager, Function<ContextState, T> factory) {
-		this.entityClass = entityClass;
-		this.modelManager = modelManager;
+	private final BaseEntitySearchQuery byResult;
+	private final BaseEntitySearchQuery byOrder;
+
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	MergedSearchQuery(EntityType entityType, Function<ContextState, BaseEntitySearchQuery> factory) {
+		this.entityType = entityType;
 
 		byResult = factory.apply(ContextState.MEASURED);
 		byOrder = factory.apply(ContextState.ORDERED);
 	}
 
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<EntityType> listEntityTypes() {
 		return byOrder.listEntityTypes();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Searchable getSearchableRoot() {
 		return byOrder.getSearchableRoot();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Value> getFilterValues(Attribute attribute, Filter filter) throws DataAccessException {
 		List<Value> orderValues = byOrder.getFilterValues(attribute, filter);
@@ -66,21 +90,38 @@ final class MergedSearchQuery<T extends BaseEntitySearchQuery> implements Search
 				.values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) throws DataAccessException {
 		return mergeResults(byOrder.fetchComplete(entityTypes, filter), byResult.fetchComplete(entityTypes, filter));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Result> fetch(List<Attribute> attributes, Filter filter) throws DataAccessException {
 		return mergeResults(byOrder.fetch(attributes, filter), byResult.fetch(attributes, filter));
 	}
 
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Merges given {@link Result}s to one using the root entity type of this
+	 * search query.
+	 *
+	 * @param results1 The first {@code Result}.
+	 * @param results2 The second {@code Result}.
+	 * @return The merged {@link Result} is returned.
+	 */
 	private List<Result> mergeResults(List<Result> results1, List<Result> results2) {
-		EntityType typeEntity = modelManager.getEntityType(entityClass);
 		return Stream.concat(results1.stream(), results2.stream())
 				// group by instance ID and merge grouped results
-				.collect(groupingBy(r -> r.getRecord(typeEntity).getID(), reducing(Result::merge)))
+				.collect(groupingBy(r -> r.getRecord(entityType).getID(), reducing(Result::merge)))
 				// collect merged results
 				.values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
