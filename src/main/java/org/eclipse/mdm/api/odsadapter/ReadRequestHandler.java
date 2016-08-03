@@ -29,6 +29,12 @@ import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 
+/**
+ * Reads mass data specified in {@link ReadRequest}s.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 final class ReadRequestHandler {
 
 	// ======================================================================
