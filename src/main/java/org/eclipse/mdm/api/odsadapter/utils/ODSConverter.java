@@ -38,7 +38,17 @@ import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 
+/**
+ * Utility class for value conversions from/to ODS types.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 public final class ODSConverter {
+
+	// ======================================================================
+	// Class variables
+	// ======================================================================
 
 	private static final Map<Integer, DateTimeFormatter> ODS_DATE_FORMATTERS = new HashMap<>();
 
@@ -52,8 +62,28 @@ public final class ODSConverter {
 		ODS_DATE_FORMATTERS.put(17, DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
 	}
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 */
 	private ODSConverter() {}
 
+	// ======================================================================
+	// Conversion methods
+	// ======================================================================
+
+	/**
+	 * Converts given {@link TS_ValueSeq} to {@link Value}s.
+	 *
+	 * @param attribute The {@link Attribute}.
+	 * @param unit The unit name.
+	 * @param odsValueSeq The {@code TS_ValueSeq}.
+	 * @return The converted {@code Value}s are returned.
+	 * @throws DataAccessException Thrown on conversion errors.
+	 */
 	public static List<Value> fromODSValueSeq(Attribute attribute, String unit, TS_ValueSeq odsValueSeq)
 			throws DataAccessException {
 		DataType dataType = odsValueSeq.u.discriminator();
@@ -214,6 +244,13 @@ public final class ODSConverter {
 		return values;
 	}
 
+	/**
+	 * Converts given {@link Value}s to {@link TS_ValueSeq}.
+	 *
+	 * @param values The {@code Value}s.
+	 * @return The converted {@code TS_ValueSeq} is returned.
+	 * @throws DataAccessException Thrown on conversion errors.
+	 */
 	public static TS_ValueSeq toODSValueSeq(List<Value> values) throws DataAccessException {
 		int size = values == null ? 0 : values.size();
 		short[] flags = new short[size];
@@ -464,6 +501,13 @@ public final class ODSConverter {
 		return odsValueSeq;
 	}
 
+	/**
+	 * Converts given {@link NameValueSeqUnit[]} to {@link MeasuredValues}s.
+	 *
+	 * @param odsMeasuredValuesSeq The {@code NameValueSeqUnit}s.
+	 * @return The converted {@code MeasuredValues}s are returned.
+	 * @throws DataAccessException Thrown on conversion errors.
+	 */
 	public static List<MeasuredValues> fromODSMeasuredValuesSeq(NameValueSeqUnit[] odsMeasuredValuesSeq) throws DataAccessException {
 		List<MeasuredValues> measuredValues = new ArrayList<>(odsMeasuredValuesSeq.length);
 
@@ -474,6 +518,13 @@ public final class ODSConverter {
 		return measuredValues;
 	}
 
+	/**
+	 * Converts given {@link NameValueSeqUnit} to {@link MeasuredValues}.
+	 *
+	 * @param odsMeasuredValues The {@code NameValueSeqUnit}.
+	 * @return The converted {@code MeasuredValues} is returned.
+	 * @throws DataAccessException Thrown on conversion errors.
+	 */
 	private static MeasuredValues fromODSMeasuredValues(NameValueSeqUnit odsMeasuredValues) throws DataAccessException {
 		TS_ValueSeq odsValueSeq = odsMeasuredValues.value;
 		DataType dataType = odsValueSeq.u.discriminator();
@@ -528,6 +579,13 @@ public final class ODSConverter {
 				values, fromODSValidFlagSeq(odsValueSeq.flag));
 	}
 
+	/**
+	 * Converts given {@link Value} to {@link TS_Value}.
+	 *
+	 * @param value The {@code Value}.
+	 * @return The converted {@code TS_Value} is returned.
+	 * @throws DataAccessException Thrown on conversion errors.
+	 */
 	public static TS_Value toODSValue(Value value) throws DataAccessException {
 		TS_Value odsValue = new TS_Value(new TS_Union(), toODSValidFlag(value.isValid()));
 		ValueType type = value.getValueType();
@@ -597,6 +655,12 @@ public final class ODSConverter {
 		return odsValue;
 	}
 
+	/**
+	 * Converts given {@link short[]} to {@link boolean[]}.
+	 *
+	 * @param input The {@code short}s.
+	 * @return The converted {@code boolean}s are returned.
+	 */
 	private static boolean[] fromODSValidFlagSeq(short[] input) {
 		boolean[] result = new boolean[input.length];
 		for(int i = 0; i < result.length; i++) {
@@ -606,10 +670,22 @@ public final class ODSConverter {
 		return result;
 	}
 
+	/**
+	 * Converts given {@link short} to {@link boolean}.
+	 *
+	 * @param input The {@code short}.
+	 * @return The converted {@code boolean} is returned.
+	 */
 	private static boolean fromODSValidFlag(short input) {
 		return input == 15;
 	}
 
+	/**
+	 * Converts given {@link boolean[]} to {@link short[]}.
+	 *
+	 * @param input The {@code boolean}s.
+	 * @return The converted {@code short}s are returned.
+	 */
 	public static short[] toODSValidFlagSeq(boolean[] input) {
 		short[] result = new short[input.length];
 		for(int i = 0; i < result.length; i++) {
@@ -619,10 +695,22 @@ public final class ODSConverter {
 		return result;
 	}
 
+	/**
+	 * Converts given {@link boolean} to {@link short}.
+	 *
+	 * @param input The {@code boolean}.
+	 * @return The converted {@code short} is returned.
+	 */
 	public static short toODSValidFlag(boolean input) {
 		return (short) (input ? 15 : 0);
 	}
 
+	/**
+	 * Converts given {@link T_LONGLONG[]} to {@link long[]}.
+	 *
+	 * @param input The {@code T_LONGLONG}s.
+	 * @return The converted {@code long}s are returned.
+	 */
 	private static long[] fromODSLongSeq(T_LONGLONG[] input) {
 		long[] result = new long[input.length];
 		for(int i = 0; i < result.length; i++) {
@@ -632,11 +720,23 @@ public final class ODSConverter {
 		return result;
 	}
 
+	/**
+	 * Converts given {@link T_LONGLONG} to {@link long}.
+	 *
+	 * @param input The {@code T_LONGLONG}.
+	 * @return The converted {@code long} is returned.
+	 */
 	public static long fromODSLong(T_LONGLONG input) {
 		T_LONGLONG value = input == null ? new T_LONGLONG() : input;
 		return (value.high + (value.low >= 0 ? 0 : 1)) * 0x100000000L + value.low;
 	}
 
+	/**
+	 * Converts given {@link long[]} to {@link T_LONGLONG[]}.
+	 *
+	 * @param input The {@code long}s.
+	 * @return The converted {@code T_LONGLONG}s are returned.
+	 */
 	private static T_LONGLONG[] toODSLongSeq(long[] input) {
 		List<T_LONGLONG> result = new ArrayList<>(input.length);
 		for (long value : input) {
@@ -646,10 +746,22 @@ public final class ODSConverter {
 		return result.toArray(new T_LONGLONG[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link long} to {@link T_LONGLONG}.
+	 *
+	 * @param input The {@code long}.
+	 * @return The converted {@code T_LONGLONG} is returned.
+	 */
 	public static T_LONGLONG toODSLong(long input) {
 		return new T_LONGLONG((int) (input >> 32 & 0xffffffffL), (int) (input & 0xffffffffL));
 	}
 
+	/**
+	 * Converts given {@link String[]} to {@link LocalDateTime[]}.
+	 *
+	 * @param input The {@code String}s.
+	 * @return The converted {@code LocalDateTime}s are returned.
+	 */
 	private static LocalDateTime[] fromODSDateSeq(String[] input) {
 		List<LocalDateTime> result = new ArrayList<>();
 		if(input != null) {
@@ -661,6 +773,12 @@ public final class ODSConverter {
 		return result.toArray(new LocalDateTime[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link String} to {@link LocalDateTime}.
+	 *
+	 * @param input The {@code T_COMPLEX}.
+	 * @return The converted {@code String} is returned.
+	 */
 	private static LocalDateTime fromODSDate(String input) {
 		if (input == null || input.isEmpty()) {
 			return null;
@@ -678,6 +796,12 @@ public final class ODSConverter {
 		}
 	}
 
+	/**
+	 * Converts given {@link LocalDateTime[]} to {@link String[]}.
+	 *
+	 * @param input The {@code LocalDateTime}s.
+	 * @return The converted {@code String}s are returned.
+	 */
 	private static String[] toODSDateSeq(LocalDateTime[] input) {
 		List<String> result = new ArrayList<>(input.length);
 		for (LocalDateTime value : input) {
@@ -687,10 +811,22 @@ public final class ODSConverter {
 		return result.toArray(new String[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link LocalDateTime} to {@link String}.
+	 *
+	 * @param input The {@code LocalDateTime}.
+	 * @return The converted {@code String} is returned.
+	 */
 	private static String toODSDate(LocalDateTime input) {
 		return input == null ? "" : input.format(ODS_DATE_FORMATTERS.get(14));
 	}
 
+	/**
+	 * Converts given {@link T_COMPLEX[]} to {@link FloatComplex[]}.
+	 *
+	 * @param input The {@code T_COMPLEX}s.
+	 * @return The converted {@code FloatComplex}s are returned.
+	 */
 	private static FloatComplex[] fromODSFloatComplexSeq(T_COMPLEX[] input) {
 		List<FloatComplex> result = new ArrayList<>();
 		if(input != null) {
@@ -702,10 +838,22 @@ public final class ODSConverter {
 		return result.toArray(new FloatComplex[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link T_COMPLEX} to {@link FloatComplex}.
+	 *
+	 * @param input The {@code T_COMPLEX}.
+	 * @return The converted {@code FloatComplex} is returned.
+	 */
 	private static FloatComplex fromODSFloatComplex(T_COMPLEX input) {
 		return input == null ? null : new FloatComplex(input.r, input.i);
 	}
 
+	/**
+	 * Converts given {@link FloatComplex[]} to {@link T_COMPLEX[]}.
+	 *
+	 * @param input The {@code FloatComplex}s.
+	 * @return The converted {@code T_COMPLEX}s are returned.
+	 */
 	private static T_COMPLEX[] toODSFloatComplexSeq(FloatComplex[] input) {
 		List<T_COMPLEX> result = new ArrayList<>(input.length);
 		for (FloatComplex value : input) {
@@ -715,10 +863,22 @@ public final class ODSConverter {
 		return result.toArray(new T_COMPLEX[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link FloatComplex} to {@link T_COMPLEX}.
+	 *
+	 * @param input The {@code FloatComplex}.
+	 * @return The converted {@code T_COMPLEX} is returned.
+	 */
 	private static T_COMPLEX toODSFloatComplex(FloatComplex input) {
 		return input == null ? null : new T_COMPLEX(input.real(), input.imaginary());
 	}
 
+	/**
+	 * Converts given {@link T_DCOMPLEX[]} to {@link DoubleComplex[]}.
+	 *
+	 * @param input The {@code T_DCOMPLEX}s.
+	 * @return The converted {@code DoubleComplex}s are returned.
+	 */
 	private static DoubleComplex[] fromODSDoubleComplexSeq(T_DCOMPLEX[] input) {
 		List<DoubleComplex> result = new ArrayList<>();
 		if(input != null) {
@@ -730,10 +890,22 @@ public final class ODSConverter {
 		return result.toArray(new DoubleComplex[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link T_DCOMPLEX} to {@link DoubleComplex}.
+	 *
+	 * @param input The {@code T_DCOMPLEX}.
+	 * @return The converted {@code DoubleComplex} is returned.
+	 */
 	private static DoubleComplex fromODSDoubleComplex(T_DCOMPLEX input) {
 		return input == null ? null : new DoubleComplex(input.r, input.i);
 	}
 
+	/**
+	 * Converts given {@link DoubleComplex[]} to {@link T_DCOMPLEX[]}.
+	 *
+	 * @param input The {@code DoubleComplex}s.
+	 * @return The converted {@code T_DCOMPLEX}s are returned.
+	 */
 	private static T_DCOMPLEX[] toODSDoubleComplexSeq(DoubleComplex[] input) {
 		List<T_DCOMPLEX> result = new ArrayList<>(input.length);
 		for (DoubleComplex value : input) {
@@ -743,10 +915,22 @@ public final class ODSConverter {
 		return result.toArray(new T_DCOMPLEX[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link DoubleComplex} to {@link T_DCOMPLEX}.
+	 *
+	 * @param input The {@code DoubleComplex}.
+	 * @return The converted {@code T_DCOMPLEX} is returned.
+	 */
 	private static T_DCOMPLEX toODSDoubleComplex(DoubleComplex input) {
 		return input == null ? null : new T_DCOMPLEX(input.real(), input.imaginary());
 	}
 
+	/**
+	 * Converts given {@link T_ExternalReference[]} to {@link FileLink[]}.
+	 *
+	 * @param input The {@code T_ExternalReference}s.
+	 * @return The converted {@code FileLink}s are returned.
+	 */
 	private static FileLink[] fromODSExternalReferenceSeq(T_ExternalReference[] input) {
 		List<FileLink> result = new ArrayList<>();
 		if(input != null) {
@@ -758,6 +942,12 @@ public final class ODSConverter {
 		return result.toArray(new FileLink[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link T_ExternalReference} to {@link FileLink}.
+	 *
+	 * @param input The {@code T_ExternalReference}.
+	 * @return The converted {@code FileLink} is returned.
+	 */
 	private static FileLink fromODSExternalReference(T_ExternalReference input) {
 		if(input == null) {
 			return null;
@@ -765,6 +955,12 @@ public final class ODSConverter {
 		return FileLink.newRemote(input.location, new MimeType(input.mimeType), input.description);
 	}
 
+	/**
+	 * Converts given {@link FileLink[]} to {@link T_ExternalReference[]}.
+	 *
+	 * @param input The {@code FileLink}s.
+	 * @return The converted {@code T_ExternalReference}s are returned.
+	 */
 	private static T_ExternalReference[] toODSExternalReferenceSeq(FileLink[] input) {
 		List<T_ExternalReference> result = new ArrayList<>(input.length);
 		for (FileLink value : input) {
@@ -774,6 +970,12 @@ public final class ODSConverter {
 		return result.toArray(new T_ExternalReference[result.size()]);
 	}
 
+	/**
+	 * Converts given {@link FileLink} to {@link T_ExternalReference}.
+	 *
+	 * @param input The {@code FileLink}.
+	 * @return The converted {@code T_ExternalReference} is returned.
+	 */
 	private static T_ExternalReference toODSExternalReference(FileLink input) {
 		if(input == null) {
 			return new T_ExternalReference("", "", "");
@@ -781,16 +983,24 @@ public final class ODSConverter {
 		return new T_ExternalReference(input.getDescription(), input.getMimeType().toString(), input.getRemotePath());
 	}
 
-	// TODO BLOB #########################################################################################
-
-	@Deprecated
+	/**
+	 * Converts given {@link Blob} to {@link Object}.
+	 *
+	 * @param input The {@code Blob}
+	 * @return The converted {@code Object} is returned.
+	 */
 	private static Object fromODSBlob(Blob input) {
-		return null; // TODO
+		throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
 	}
 
-	@Deprecated
+	/**
+	 * Converts given object to {@link Blob}.
+	 *
+	 * @param input The object.
+	 * @return The converted {@code Blob} is returned.
+	 */
 	private static Blob toODSBlob(Object input) {
-		return null; // TODO
+		throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
 	}
 
 }

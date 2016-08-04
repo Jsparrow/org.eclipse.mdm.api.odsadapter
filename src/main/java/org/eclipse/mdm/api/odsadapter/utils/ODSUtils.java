@@ -22,138 +22,135 @@ import org.eclipse.mdm.api.base.query.Operation;
 import org.eclipse.mdm.api.base.query.Operator;
 import org.eclipse.mdm.api.base.query.Relationship;
 
-public final class ODSUtils {
+/**
+ * Utility class provides bidirectional mappings for ODS types
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
+public abstract class ODSUtils {
 
 	// ======================================================================
 	// Class variables
 	// ======================================================================
 
-	public static final BiDiMapper<Relationship, RelationType> RELATIONSHIPS = relationships();
+	/**
+	 * Maps {@link Relationship} to the corresponding ODS {@link RelationType}.
+	 */
+	public static final BiDiMapper<Relationship, RelationType> RELATIONSHIPS = new BiDiMapper<>();
 
-	public static final BiDiMapper<Aggregation, AggrFunc> AGGREGATIONS = aggregations();
+	/**
+	 * Maps {@link Aggregation} to the corresponding ODS {@link AggrFunc}.
+	 */
+	public static final BiDiMapper<Aggregation, AggrFunc> AGGREGATIONS = new BiDiMapper<>();
 
-	public static final BiDiMapper<ContextType, String> CONTEXTTYPES = contextTypes();
+	/**
+	 * Maps {@link ContextType} to the corresponding ODS {@link String}.
+	 */
+	public static final BiDiMapper<ContextType, String> CONTEXTTYPES = new BiDiMapper<>();
 
-	public static final BiDiMapper<Operation, SelOpcode> OPERATIONS = operations();
+	/**
+	 * Maps {@link Operation} to the corresponding ODS {@link SelOpcode}.
+	 */
+	public static final BiDiMapper<Operation, SelOpcode> OPERATIONS = new BiDiMapper<>();
 
-	public static final BiDiMapper<Operator, SelOperator> OPERATORS = operators();
+	/**
+	 * Maps {@link Operator} to the corresponding ODS {@link SelOperator}.
+	 */
+	public static final BiDiMapper<Operator, SelOperator> OPERATORS = new BiDiMapper<>();
 
-	public static final BiDiMapper<ValueType, DataType> VALUETYPES = valueTypes();
+	/**
+	 * Maps {@link ValueType} to the corresponding ODS {@link DataType}.
+	 */
+	public static final BiDiMapper<ValueType, DataType> VALUETYPES = new BiDiMapper<>();
 
-	public static final BiDiMapper<Join, JoinType> JOINS = joins();
+	/**
+	 * Maps {@link Join} to the corresponding ODS {@link JoinType}.
+	 */
+	public static final BiDiMapper<Join, JoinType> JOINS = new BiDiMapper<>();
 
-	private ODSUtils() {
-		// hide constructor
-	}
+	static {
+		RELATIONSHIPS.addMappings(Relationship.FATHER_CHILD, RelationType.FATHER_CHILD);
+		RELATIONSHIPS.addMappings(Relationship.INFO, RelationType.INFO);
+		RELATIONSHIPS.addMappings(Relationship.INHERITANCE, RelationType.INHERITANCE);
 
-	private static BiDiMapper<Relationship, RelationType> relationships() {
-		BiDiMapper<Relationship, RelationType> relationships = new BiDiMapper<>();
-		relationships.addMappings(Relationship.FATHER_CHILD, RelationType.FATHER_CHILD);
-		relationships.addMappings(Relationship.INFO, RelationType.INFO);
-		relationships.addMappings(Relationship.INHERITANCE, RelationType.INHERITANCE);
-		return relationships;
-	}
+		AGGREGATIONS.addMappings(Aggregation.NONE, AggrFunc.NONE);
+		AGGREGATIONS.addMappings(Aggregation.COUNT, AggrFunc.COUNT);
+		AGGREGATIONS.addMappings(Aggregation.DISTINCT_COUNT, AggrFunc.DCOUNT);
+		AGGREGATIONS.addMappings(Aggregation.MINIMUM, AggrFunc.MIN);
+		AGGREGATIONS.addMappings(Aggregation.MAXIMUM, AggrFunc.MAX);
+		AGGREGATIONS.addMappings(Aggregation.AVERAGE, AggrFunc.AVG);
+		AGGREGATIONS.addMappings(Aggregation.DEVIATION, AggrFunc.STDDEV);
+		AGGREGATIONS.addMappings(Aggregation.SUM, AggrFunc.SUM);
+		AGGREGATIONS.addMappings(Aggregation.DISTINCT, AggrFunc.DISTINCT);
 
-	private static BiDiMapper<Aggregation, AggrFunc> aggregations() {
-		BiDiMapper<Aggregation, AggrFunc> aggregations = new BiDiMapper<>();
-		aggregations.addMappings(Aggregation.NONE, AggrFunc.NONE);
-		aggregations.addMappings(Aggregation.COUNT, AggrFunc.COUNT);
-		aggregations.addMappings(Aggregation.DISTINCT_COUNT, AggrFunc.DCOUNT);
-		aggregations.addMappings(Aggregation.MINIMUM, AggrFunc.MIN);
-		aggregations.addMappings(Aggregation.MAXIMUM, AggrFunc.MAX);
-		aggregations.addMappings(Aggregation.AVERAGE, AggrFunc.AVG);
-		aggregations.addMappings(Aggregation.DEVIATION, AggrFunc.STDDEV);
-		aggregations.addMappings(Aggregation.SUM, AggrFunc.SUM);
-		aggregations.addMappings(Aggregation.DISTINCT, AggrFunc.DISTINCT);
-		return aggregations;
-	}
+		CONTEXTTYPES.addMappings(ContextType.UNITUNDERTEST, "UnitUnderTest");
+		CONTEXTTYPES.addMappings(ContextType.TESTSEQUENCE, "TestSequence");
+		CONTEXTTYPES.addMappings(ContextType.TESTEQUIPMENT, "TestEquipment");
 
-	private static BiDiMapper<ContextType, String> contextTypes() {
-		BiDiMapper<ContextType, String> contextTypes = new BiDiMapper<>();
-		contextTypes.addMappings(ContextType.UNITUNDERTEST, "UnitUnderTest");
-		contextTypes.addMappings(ContextType.TESTSEQUENCE, "TestSequence");
-		contextTypes.addMappings(ContextType.TESTEQUIPMENT, "TestEquipment");
-		return contextTypes;
-	}
+		OPERATIONS.addMappings(Operation.LIKE, SelOpcode.LIKE);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_LIKE, SelOpcode.CI_LIKE);
+		OPERATIONS.addMappings(Operation.NOT_LIKE, SelOpcode.NOTLIKE);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_NOT_LIKE, SelOpcode.CI_NOTLIKE);
+		OPERATIONS.addMappings(Operation.EQUAL, SelOpcode.EQ);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_EQUAL, SelOpcode.CI_EQ);
+		OPERATIONS.addMappings(Operation.NOT_EQUAL, SelOpcode.NEQ);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_NOT_EQUAL, SelOpcode.CI_NEQ);
+		OPERATIONS.addMappings(Operation.GREATER_THAN, SelOpcode.GT);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_GREATER_THAN, SelOpcode.CI_GT);
+		OPERATIONS.addMappings(Operation.GREATER_THAN_OR_EQUAL, SelOpcode.GTE);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_GREATER_THAN_OR_EQUAL, SelOpcode.CI_GTE);
+		OPERATIONS.addMappings(Operation.LESS_THAN, SelOpcode.LT);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_LESS_THAN, SelOpcode.CI_LT);
+		OPERATIONS.addMappings(Operation.LESS_THAN_OR_EQUAL, SelOpcode.LTE);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_LESS_THAN_OR_EQUAL, SelOpcode.CI_LTE);
+		OPERATIONS.addMappings(Operation.IS_NULL, SelOpcode.IS_NULL);
+		OPERATIONS.addMappings(Operation.IS_NOT_NULL, SelOpcode.IS_NOT_NULL);
+		OPERATIONS.addMappings(Operation.IN_SET, SelOpcode.INSET);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_IN_SET, SelOpcode.CI_INSET);
+		OPERATIONS.addMappings(Operation.NOT_IN_SET, SelOpcode.NOTINSET);
+		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_NOT_IN_SET, SelOpcode.CI_NOTINSET);
+		OPERATIONS.addMappings(Operation.BETWEEN, SelOpcode.BETWEEN);
 
-	private static BiDiMapper<Operation, SelOpcode> operations() {
-		BiDiMapper<Operation, SelOpcode> operations = new BiDiMapper<>();
-		operations.addMappings(Operation.LIKE, SelOpcode.LIKE);
-		operations.addMappings(Operation.CASE_INSENSITIVE_LIKE, SelOpcode.CI_LIKE);
-		operations.addMappings(Operation.NOT_LIKE, SelOpcode.NOTLIKE);
-		operations.addMappings(Operation.CASE_INSENSITIVE_NOT_LIKE, SelOpcode.CI_NOTLIKE);
-		operations.addMappings(Operation.EQUAL, SelOpcode.EQ);
-		operations.addMappings(Operation.CASE_INSENSITIVE_EQUAL, SelOpcode.CI_EQ);
-		operations.addMappings(Operation.NOT_EQUAL, SelOpcode.NEQ);
-		operations.addMappings(Operation.CASE_INSENSITIVE_NOT_EQUAL, SelOpcode.CI_NEQ);
-		operations.addMappings(Operation.GREATER_THAN, SelOpcode.GT);
-		operations.addMappings(Operation.CASE_INSENSITIVE_GREATER_THAN, SelOpcode.CI_GT);
-		operations.addMappings(Operation.GREATER_THAN_OR_EQUAL, SelOpcode.GTE);
-		operations.addMappings(Operation.CASE_INSENSITIVE_GREATER_THAN_OR_EQUAL, SelOpcode.CI_GTE);
-		operations.addMappings(Operation.LESS_THAN, SelOpcode.LT);
-		operations.addMappings(Operation.CASE_INSENSITIVE_LESS_THAN, SelOpcode.CI_LT);
-		operations.addMappings(Operation.LESS_THAN_OR_EQUAL, SelOpcode.LTE);
-		operations.addMappings(Operation.CASE_INSENSITIVE_LESS_THAN_OR_EQUAL, SelOpcode.CI_LTE);
-		operations.addMappings(Operation.IS_NULL, SelOpcode.IS_NULL);
-		operations.addMappings(Operation.IS_NOT_NULL, SelOpcode.IS_NOT_NULL);
-		operations.addMappings(Operation.IN_SET, SelOpcode.INSET);
-		operations.addMappings(Operation.CASE_INSENSITIVE_IN_SET, SelOpcode.CI_INSET);
-		operations.addMappings(Operation.NOT_IN_SET, SelOpcode.NOTINSET);
-		operations.addMappings(Operation.CASE_INSENSITIVE_NOT_IN_SET, SelOpcode.CI_NOTINSET);
-		operations.addMappings(Operation.BETWEEN, SelOpcode.BETWEEN);
-		return operations;
-	}
+		OPERATORS.addMappings(Operator.AND, SelOperator.AND);
+		OPERATORS.addMappings(Operator.OR, SelOperator.OR);
+		OPERATORS.addMappings(Operator.NOT, SelOperator.NOT);
+		OPERATORS.addMappings(Operator.OPEN, SelOperator.OPEN);
+		OPERATORS.addMappings(Operator.CLOSE, SelOperator.CLOSE);
 
-	private static BiDiMapper<Operator, SelOperator> operators() {
-		BiDiMapper<Operator, SelOperator> operators = new BiDiMapper<>();
-		operators.addMappings(Operator.AND, SelOperator.AND);
-		operators.addMappings(Operator.OR, SelOperator.OR);
-		operators.addMappings(Operator.NOT, SelOperator.NOT);
-		operators.addMappings(Operator.OPEN, SelOperator.OPEN);
-		operators.addMappings(Operator.CLOSE, SelOperator.CLOSE);
-		return operators;
-	}
+		VALUETYPES.addMappings(ValueType.UNKNOWN, DataType.DT_UNKNOWN);
+		VALUETYPES.addMappings(ValueType.STRING, DataType.DT_STRING);
+		VALUETYPES.addMappings(ValueType.STRING_SEQUENCE, DataType.DS_STRING);
+		VALUETYPES.addMappings(ValueType.DATE, DataType.DT_DATE);
+		VALUETYPES.addMappings(ValueType.DATE_SEQUENCE, DataType.DS_DATE);
+		VALUETYPES.addMappings(ValueType.BOOLEAN, DataType.DT_BOOLEAN);
+		VALUETYPES.addMappings(ValueType.BOOLEAN_SEQUENCE, DataType.DS_BOOLEAN);
+		VALUETYPES.addMappings(ValueType.BYTE, DataType.DT_BYTE);
+		VALUETYPES.addMappings(ValueType.BYTE_SEQUENCE, DataType.DS_BYTE);
+		VALUETYPES.addMappings(ValueType.SHORT, DataType.DT_SHORT);
+		VALUETYPES.addMappings(ValueType.SHORT_SEQUENCE, DataType.DS_SHORT);
+		VALUETYPES.addMappings(ValueType.INTEGER, DataType.DT_LONG);
+		VALUETYPES.addMappings(ValueType.INTEGER_SEQUENCE, DataType.DS_LONG);
+		VALUETYPES.addMappings(ValueType.LONG, DataType.DT_LONGLONG);
+		VALUETYPES.addMappings(ValueType.LONG_SEQUENCE, DataType.DS_LONGLONG);
+		VALUETYPES.addMappings(ValueType.FLOAT, DataType.DT_FLOAT);
+		VALUETYPES.addMappings(ValueType.FLOAT_SEQUENCE, DataType.DS_FLOAT);
+		VALUETYPES.addMappings(ValueType.DOUBLE, DataType.DT_DOUBLE);
+		VALUETYPES.addMappings(ValueType.DOUBLE_SEQUENCE, DataType.DS_DOUBLE);
+		VALUETYPES.addMappings(ValueType.BYTE_STREAM, DataType.DT_BYTESTR);
+		VALUETYPES.addMappings(ValueType.BYTE_STREAM_SEQUENCE, DataType.DS_BYTESTR);
+		VALUETYPES.addMappings(ValueType.FLOAT_COMPLEX, DataType.DT_COMPLEX);
+		VALUETYPES.addMappings(ValueType.FLOAT_COMPLEX_SEQUENCE, DataType.DS_COMPLEX);
+		VALUETYPES.addMappings(ValueType.DOUBLE_COMPLEX, DataType.DT_DCOMPLEX);
+		VALUETYPES.addMappings(ValueType.DOUBLE_COMPLEX_SEQUENCE, DataType.DS_DCOMPLEX);
+		VALUETYPES.addMappings(ValueType.ENUMERATION, DataType.DT_ENUM);
+		VALUETYPES.addMappings(ValueType.ENUMERATION_SEQUENCE, DataType.DS_ENUM);
+		VALUETYPES.addMappings(ValueType.FILE_LINK, DataType.DT_EXTERNALREFERENCE);
+		VALUETYPES.addMappings(ValueType.FILE_LINK_SEQUENCE, DataType.DS_EXTERNALREFERENCE);
+		VALUETYPES.addMappings(ValueType.BLOB, DataType.DT_BLOB);
 
-	private static BiDiMapper<ValueType, DataType> valueTypes() {
-		BiDiMapper<ValueType, DataType> valueTypes = new BiDiMapper<>();
-		valueTypes.addMappings(ValueType.UNKNOWN, DataType.DT_UNKNOWN);
-		valueTypes.addMappings(ValueType.STRING, DataType.DT_STRING);
-		valueTypes.addMappings(ValueType.STRING_SEQUENCE, DataType.DS_STRING);
-		valueTypes.addMappings(ValueType.DATE, DataType.DT_DATE);
-		valueTypes.addMappings(ValueType.DATE_SEQUENCE, DataType.DS_DATE);
-		valueTypes.addMappings(ValueType.BOOLEAN, DataType.DT_BOOLEAN);
-		valueTypes.addMappings(ValueType.BOOLEAN_SEQUENCE, DataType.DS_BOOLEAN);
-		valueTypes.addMappings(ValueType.BYTE, DataType.DT_BYTE);
-		valueTypes.addMappings(ValueType.BYTE_SEQUENCE, DataType.DS_BYTE);
-		valueTypes.addMappings(ValueType.SHORT, DataType.DT_SHORT);
-		valueTypes.addMappings(ValueType.SHORT_SEQUENCE, DataType.DS_SHORT);
-		valueTypes.addMappings(ValueType.INTEGER, DataType.DT_LONG);
-		valueTypes.addMappings(ValueType.INTEGER_SEQUENCE, DataType.DS_LONG);
-		valueTypes.addMappings(ValueType.LONG, DataType.DT_LONGLONG);
-		valueTypes.addMappings(ValueType.LONG_SEQUENCE, DataType.DS_LONGLONG);
-		valueTypes.addMappings(ValueType.FLOAT, DataType.DT_FLOAT);
-		valueTypes.addMappings(ValueType.FLOAT_SEQUENCE, DataType.DS_FLOAT);
-		valueTypes.addMappings(ValueType.DOUBLE, DataType.DT_DOUBLE);
-		valueTypes.addMappings(ValueType.DOUBLE_SEQUENCE, DataType.DS_DOUBLE);
-		valueTypes.addMappings(ValueType.BYTE_STREAM, DataType.DT_BYTESTR);
-		valueTypes.addMappings(ValueType.BYTE_STREAM_SEQUENCE, DataType.DS_BYTESTR);
-		valueTypes.addMappings(ValueType.FLOAT_COMPLEX, DataType.DT_COMPLEX);
-		valueTypes.addMappings(ValueType.FLOAT_COMPLEX_SEQUENCE, DataType.DS_COMPLEX);
-		valueTypes.addMappings(ValueType.DOUBLE_COMPLEX, DataType.DT_DCOMPLEX);
-		valueTypes.addMappings(ValueType.DOUBLE_COMPLEX_SEQUENCE, DataType.DS_DCOMPLEX);
-		valueTypes.addMappings(ValueType.ENUMERATION, DataType.DT_ENUM);
-		valueTypes.addMappings(ValueType.ENUMERATION_SEQUENCE, DataType.DS_ENUM);
-		valueTypes.addMappings(ValueType.FILE_LINK, DataType.DT_EXTERNALREFERENCE);
-		valueTypes.addMappings(ValueType.FILE_LINK_SEQUENCE, DataType.DS_EXTERNALREFERENCE);
-		valueTypes.addMappings(ValueType.BLOB, DataType.DT_BLOB);
-		return valueTypes;
-	}
-
-	private static BiDiMapper<Join, JoinType> joins() {
-		BiDiMapper<Join, JoinType> joins = new BiDiMapper<>();
-		joins.addMappings(Join.INNER, org.asam.ods.JoinType.JTDEFAULT);
-		joins.addMappings(Join.OUTER, org.asam.ods.JoinType.JTOUTER);
-		return joins;
+		JOINS.addMappings(Join.INNER, org.asam.ods.JoinType.JTDEFAULT);
+		JOINS.addMappings(Join.OUTER, org.asam.ods.JoinType.JTOUTER);
 	}
 
 }

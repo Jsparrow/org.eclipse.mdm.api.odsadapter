@@ -18,9 +18,18 @@ import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.SequenceRepresentation;
 import org.eclipse.mdm.api.base.model.TypeSpecification;
 import org.eclipse.mdm.api.base.model.VersionState;
-import org.eclipse.mdm.api.base.query.DataAccessException;
 
+/**
+ * Utility class for enumeration constant conversions from/to ODS types.
+ *
+ * @since 1.0.0
+ * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ */
 public final class ODSEnumerations {
+
+	// ======================================================================
+	// Class variables
+	// ======================================================================
 
 	private static final String SCALAR_TYPE_NAME = "datatype_enum";
 	private static final String STATE_NAME = "valid_enum";
@@ -29,19 +38,27 @@ public final class ODSEnumerations {
 	private static final String TYPE_SPECIFICATION_NAME = "typespec_enum";
 	private static final String SEQUENCE_REPRESENTATION_NAME = "seq_rep_enum";
 
+	// ======================================================================
+	// Constructors
+	// ======================================================================
+
+	/**
+	 * Constructor.
+	 */
 	private ODSEnumerations() {}
 
-	/*
-	 * TODO: for some enumeration types we have a direct mapping from ODS value
-	 * to the enumeration constant and vice versa. For all of them the
-	 * conversion is done by the ordinal number of the enumeration constant.
-	 *
-	 * So if enumeration constant ordering is changed this will break the
-	 * validity -> we either need to ensure validity by providing tests or
-	 * provide dedicated methods for individual mapping without the enumeration
-	 * constant's ordinal number!
-	 */
+	// ======================================================================
+	// Public methods
+	// ======================================================================
 
+	/**
+	 * Returns the enumeration class identified by given name.
+	 *
+	 * @param <E> The enumeration type.
+	 * @param name The ODS name of the requested enumeration class.
+	 * @return The corresponding enumeration class is returned.
+	 * @throws IllegalArgumentException Thrown if ODS enumeration name is unknown.
+	 */
 	@SuppressWarnings("unchecked")
 	public static <E extends Enum<?>> Class<E> getEnumClass(String name) {
 		if(SCALAR_TYPE_NAME.equals(name)) {
@@ -58,9 +75,16 @@ public final class ODSEnumerations {
 			return (Class<E>) SequenceRepresentation.class;
 		}
 
-		throw new IllegalStateException("Enumeration mapping for name '" + name + "' does not exist.");
+		throw new IllegalArgumentException("Enumeration mapping for name '" + name + "' does not exist.");
 	}
 
+	/**
+	 * Returns the ODS enumeration name for given enumeration class.
+	 *
+	 * @param enumClass The enumeration class name.
+	 * @return The corresponding ODS enumeration name is returned.
+	 * @throws IllegalArgumentException Thrown if enumeration class is unknown.
+	 */
 	public static String getEnumName(Class<? extends Enum<?>> enumClass) {
 		if(enumClass == null) {
 			throw new IllegalArgumentException("Enumeration class is not allowed to be null.");
@@ -78,13 +102,25 @@ public final class ODSEnumerations {
 			return SEQUENCE_REPRESENTATION_NAME;
 		}
 
-		throw new IllegalStateException("Enumeration mapping for enumeration class '" +
+		throw new IllegalArgumentException("Enumeration mapping for enumeration class '" +
 				enumClass.getSimpleName() + "' does not exist.");
 	}
 
+	// ======================================================================
+	// Package methods
+	// ======================================================================
+
+	/**
+	 * Converts given ODS enumeration value using given enumeration class to
+	 * the corresponding enumeration constant.
+	 *
+	 * @param enumClass The enumeration class.
+	 * @param value The ODS enumeration value.
+	 * @return The corresponding enumeration constant is returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
 	@SuppressWarnings("unchecked")
-	static <E extends Enum<?>> E fromODSEnum(Class<E> enumClass, int value)
-			throws DataAccessException {
+	static <E extends Enum<?>> E fromODSEnum(Class<E> enumClass, int value) {
 		if(enumClass == null) {
 			throw new IllegalArgumentException("Enumeration class is not allowed to be null.");
 		} else if(ScalarType.class == enumClass) {
@@ -101,12 +137,20 @@ public final class ODSEnumerations {
 			return (E) fromODSSequenceRepresentation(value);
 		}
 
-		throw new IllegalStateException("Enumeration mapping for type '" + enumClass.getSimpleName() + "' does not exist.");
+		throw new IllegalArgumentException("Enumeration mapping for type '" + enumClass.getSimpleName() + "' does not exist.");
 	}
 
+	/**
+	 * Converts given ODS enumeration values using given enumeration class to
+	 * the corresponding enumeration constants.
+	 *
+	 * @param enumClass The enumeration class.
+	 * @param value The ODS enumeration values.
+	 * @return The corresponding enumeration constants are returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
 	@SuppressWarnings("unchecked")
-	static <E extends Enum<?>> E[] fromODSEnumSeq(Class<E> enumClass,
-			int[] values) throws DataAccessException {
+	static <E extends Enum<?>> E[] fromODSEnumSeq(Class<E> enumClass, int[] values) {
 		if(enumClass == null) {
 			throw new IllegalArgumentException("Enumeration class is not allowed to be null.");
 		} else if(ScalarType.class == enumClass) {
@@ -131,10 +175,18 @@ public final class ODSEnumerations {
 			return (E[]) sequenceRepresentations.toArray(new SequenceRepresentation[values.length]);
 		}
 
-		throw new IllegalStateException("Enumeration mapping for type '" + enumClass.getSimpleName() + "' does not exist.");
+		throw new IllegalArgumentException("Enumeration mapping for type '" + enumClass.getSimpleName() + "' does not exist.");
 	}
 
-	static <E extends Enum<?>> int toODSEnum(E constant) throws DataAccessException {
+	/**
+	 * Converts given enumeration constant to the corresponding ODS enumeration
+	 * value.
+	 *
+	 * @param constant The enumeration constant.
+	 * @return The corresponding ODS enumeration value is returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
+	static <E extends Enum<?>> int toODSEnum(E constant) {
 		if(constant == null) {
 			return 0;
 		} else if(constant instanceof ScalarType) {
@@ -147,12 +199,19 @@ public final class ODSEnumerations {
 			return toODSSequenceRepresentation((SequenceRepresentation) constant);
 		}
 
-		throw new IllegalStateException("Enumeration mapping for type '"
+		throw new IllegalArgumentException("Enumeration mapping for type '"
 				+ constant.getClass().getSimpleName() + "' does not exist.");
 	}
 
-	static <E extends Enum<?>> int[] toODSEnumSeq(E[] constants)
-			throws DataAccessException {
+	/**
+	 * Converts given enumeration constants to the corresponding ODS
+	 * enumeration values.
+	 *
+	 * @param constant The enumeration constants.
+	 * @return The corresponding ODS enumeration values are returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
+	static <E extends Enum<?>> int[] toODSEnumSeq(E[] constants) {
 		if(constants == null) {
 			return new int[0];
 		}
@@ -173,14 +232,26 @@ public final class ODSEnumerations {
 				values[i] = toODSSequenceRepresentation((SequenceRepresentation) constants[i]);
 			}
 		} else {
-			throw new IllegalStateException("Enumeration mapping for type '"
+			throw new IllegalArgumentException("Enumeration mapping for type '"
 					+ constants.getClass().getComponentType().getSimpleName() + "' does not exist.");
 		}
 
 		return values;
 	}
 
-	private static ScalarType fromODSScalarType(int value) throws DataAccessException {
+	// ======================================================================
+	// Private methods
+	// ======================================================================
+
+	/**
+	 * Converts given ODS enumeration value to the corresponding {@link
+	 * ScalarType} constant.
+	 *
+	 * @param value The ODS enumeration value.
+	 * @return The corresponding {@code ScalarType} constant is returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
+	private static ScalarType fromODSScalarType(int value) {
 		if(value == 0) {
 			return ScalarType.UNKNOWN;
 		} else if(value == 1) {
@@ -215,11 +286,19 @@ public final class ODSEnumerations {
 			return ScalarType.ENUMERATION;
 		}
 
-		throw new DataAccessException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
+		throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
 				+ ScalarType.class.getSimpleName() + "'.");
 	}
 
-	private static int toODSScalarType(ScalarType scalarType) throws DataAccessException {
+	/**
+	 * Converts given {@link ScalarType} to the corresponding ODS enumeration
+	 * value.
+	 *
+	 * @param scalarType The {@code ScalarType}.
+	 * @return The corresponding ODS enumeration value is returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
+	private static int toODSScalarType(ScalarType scalarType) {
 		if(ScalarType.UNKNOWN == scalarType) {
 			return 0;
 		} else if(ScalarType.STRING == scalarType) {
@@ -254,11 +333,20 @@ public final class ODSEnumerations {
 			return 30;
 		}
 
-		throw new DataAccessException("Unable to map enumeration constant '" + scalarType
+		throw new IllegalArgumentException("Unable to map enumeration constant '" + scalarType
 				+ "' of type '" + ScalarType.class.getSimpleName() + "' to ODS enumeration value.");
 	}
 
-	private static SequenceRepresentation fromODSSequenceRepresentation(int value) throws DataAccessException {
+	/**
+	 * Converts given ODS enumeration value to the corresponding {@link
+	 * SequenceRepresentation} constant.
+	 *
+	 * @param value The ODS enumeration value.
+	 * @return The corresponding {@code SequenceRepresentation} constant is
+	 * 		returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
+	private static SequenceRepresentation fromODSSequenceRepresentation(int value) {
 		if(value == 0) {
 			return SequenceRepresentation.EXPLICIT;
 		} else if(value == 1) {
@@ -283,12 +371,19 @@ public final class ODSEnumerations {
 			return SequenceRepresentation.RAW_LINEAR_CALIBRATED_EXTERNAL;
 		}
 
-		throw new DataAccessException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
+		throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
 				+ SequenceRepresentation.class.getSimpleName() + "'.");
 	}
 
-	private static int toODSSequenceRepresentation(SequenceRepresentation sequenceRepresentation)
-			throws DataAccessException {
+	/**
+	 * Converts given {@link SequenceRepresentation} to the corresponding ODS
+	 * enumeration value.
+	 *
+	 * @param sequenceRepresentation The {@code SequenceRepresentation}.
+	 * @return The corresponding ODS enumeration value is returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
+	private static int toODSSequenceRepresentation(SequenceRepresentation sequenceRepresentation) {
 		if(SequenceRepresentation.EXPLICIT == sequenceRepresentation) {
 			return 0;
 		} else if(SequenceRepresentation.IMPLICIT_CONSTANT == sequenceRepresentation) {
@@ -313,31 +408,49 @@ public final class ODSEnumerations {
 			return 11;
 		}
 
-		throw new DataAccessException("Unable to map enumeration constant '" + sequenceRepresentation
+		throw new IllegalArgumentException("Unable to map enumeration constant '" + sequenceRepresentation
 				+ "' of type '" + SequenceRepresentation.class.getSimpleName() + "' to ODS enumeration value.");
 	}
 
-	private static <E extends Enum<?>> E fromODSEnumByOrdinal(Class<E> enumClass,
-			int value) throws DataAccessException {
+	/**
+	 * Converts given ODS enumeration value to the corresponding enumeration
+	 * constant. The ODS enumeration value is used as the ordinal number of the
+	 * requested enumeration constant.
+	 *
+	 * @param enumClass The enumeration class.
+	 * @param value The ODS enumeration value.
+	 * @return The corresponding enumeration constant is returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
+	private static <E extends Enum<?>> E fromODSEnumByOrdinal(Class<E> enumClass, int value) {
 		E[] constants = enumClass.getEnumConstants();
 		if(value < 0 || value > constants.length) {
-			throw new DataAccessException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
-					+ enumClass.getSimpleName() + "'.");
+			throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value
+					+ "' to constant of type '" + enumClass.getSimpleName() + "'.");
 		}
 
 		//NOTE: Ordinal numbers directly map to the corresponding ODS enumeration constant value.
 		return constants[value];
 	}
 
+	/**
+	 * Converts given ODS enumeration values to the corresponding enumeration
+	 * constants. The ODS enumeration values are used as the ordinal numbers of
+	 * the requested enumeration constants.
+	 *
+	 * @param enumClass The enumeration class.
+	 * @param values The ODS enumeration values.
+	 * @return The corresponding enumeration constants are returned.
+	 * @throws IllegalArgumentException Thrown if conversion not possible.
+	 */
 	@SuppressWarnings("unchecked")
-	private static <E extends Enum<?>> E[] fromODSEnumSeqByOrdinal(Class<E> enumClass,
-			int[] values) throws DataAccessException {
+	private static <E extends Enum<?>> E[] fromODSEnumSeqByOrdinal(Class<E> enumClass, int[] values) {
 		List<E> enumValues = new ArrayList<>(values.length);
 		E[] constants = enumClass.getEnumConstants();
 
 		for(int value : values) {
 			if(value < 0 || value > constants.length) {
-				throw new DataAccessException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
+				throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
 						+ enumClass.getSimpleName() + "'.");
 			}
 

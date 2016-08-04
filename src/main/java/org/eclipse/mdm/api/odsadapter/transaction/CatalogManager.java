@@ -277,7 +277,7 @@ final class CatalogManager {
 	}
 
 	/**
-	 * Deletes the the corresponding application element for each given {@link
+	 * Deletes the corresponding application element for each given {@link
 	 * CatalogComponent}. Deleting a {@code CatalogComponent} is only allowed
 	 * if it is not used in templates and all of its children could be deleted.
 	 * So at first it is tried to delete its {@link CatalogAttribute}s and
@@ -321,7 +321,7 @@ final class CatalogManager {
 	}
 
 	/**
-	 * Deletes the the corresponding application element for each given {@link
+	 * Deletes the corresponding application element for each given {@link
 	 * CatalogSensor}. Deleting a {@code CatalogSensor} is only allowed if it
 	 * is not used in templates and all of its children could be deleted. So at
 	 * first it is tried to delete its {@link CatalogAttribute}s. On success it
@@ -360,11 +360,11 @@ final class CatalogManager {
 	}
 
 	/**
-	 * Deletes the the corresponding application attributes for each given
-	 * {@link CatalogAttribute}. Deleting a {@code CatalogAttribute} is only
-	 * allowed if it is not used in templates. So at first it is ensured none
-	 * of the given {@code CatalogAttribute}s is used in templates and finally
-	 * the corresponding application attributes are deleted.
+	 * Deletes the corresponding application attributes for each given {@link
+	 * CatalogAttribute}. Deleting a {@code CatalogAttribute} is only allowed
+	 * if it is not used in templates. So at first it is ensured none of the
+	 * given {@code CatalogAttribute}s is used in templates and finally the
+	 * corresponding application attributes are deleted.
 	 *
 	 * @param catalogAttributes The {@code CatalogAttribute}s.
 	 * @throws AoException Thrown in case of errors.
