@@ -8,6 +8,9 @@
 
 package org.eclipse.mdm.api.odsadapter.filetransfer;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.reducing;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -19,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -344,7 +348,10 @@ public class CORBAFileService implements FileService {
 	 * @param fileLinks Collection of {@code FileLink}s to delete.
 	 */
 	public void delete(Entity entity, Collection<FileLink> fileLinks) {
-		fileLinks.forEach(fl -> delete(entity, fl));
+		fileLinks.stream().filter(FileLink::isRemote)
+		.collect(groupingBy(FileLink::getRemotePath, reducing((fl1, fl2) -> fl1)))
+		.values().stream().filter(Optional::isPresent).map(Optional::get)
+		.forEach(fl -> delete(entity, fl));
 	}
 
 	/**
