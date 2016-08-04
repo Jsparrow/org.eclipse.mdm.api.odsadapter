@@ -10,8 +10,6 @@ package org.eclipse.mdm.api.odsadapter;
 
 import java.util.Map;
 
-import javax.ejb.Stateful;
-
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
@@ -40,7 +38,6 @@ import com.highqsoft.corbafileserver.generated.CORBAFileServerIFHelper;
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
-@Stateful
 public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManager> {
 
 	// ======================================================================
