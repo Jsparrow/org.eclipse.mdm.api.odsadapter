@@ -77,9 +77,9 @@ public class ODSAdapterTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
-		String nameServiceHost = "in-dbserv1"; //System.getProperty("host");
-		String nameServicePort = "2809"; //System.getProperty("port");
-		String serviceName = "MDM5API.ASAM-ODS"; //System.getProperty("service");
+		String nameServiceHost = System.getProperty("host");
+		String nameServicePort = System.getProperty("port");
+		String serviceName = System.getProperty("service");
 
 		if(nameServiceHost == null || nameServiceHost.isEmpty()) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
@@ -266,7 +266,7 @@ public class ODSAdapterTest {
 				.dateValues(new LocalDateTime[] { now,now.plusDays(1),now.plusDays(2),
 						now.plusDays(3),now.plusDays(4),now.plusDays(5), now.plusDays(6),now.plusDays(7),
 						now.plusDays(8),now.plusDays(9) })
-				.independent().build());
+				.build());
 
 		wrb = WriteRequest.create(channelGroup, channels.get(6), AxisType.Y_AXIS);
 		writeRequests.add(wrb
