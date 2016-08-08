@@ -1,3 +1,4 @@
+<<<<<<< Upstream, based on eclipse/master
 /*
  * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
  * All rights reserved. This program and the accompanying materials
@@ -56,6 +57,7 @@ dependencies {
 	// MDM5 API
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.base:1.0.0'
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.default:1.0.0'
+	compile 'org.eclipse.mdm:org.eclipse.mdm.property:1.0.0'
 	
 	// compile CORBA idl using JDK tools
     generatedCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
@@ -66,6 +68,9 @@ dependencies {
 	compile 'com.google.guava:guava:18.0'
  	compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
  	compile 'org.glassfish.jersey.media:jersey-media-sse:2.23.1'
+    
+     	// Avalon notification service
+ 	compile 'org.jacorb:jacorb-services:3.8'
     
     // querying es
 	compile 'commons-httpclient:commons-httpclient:3.1'

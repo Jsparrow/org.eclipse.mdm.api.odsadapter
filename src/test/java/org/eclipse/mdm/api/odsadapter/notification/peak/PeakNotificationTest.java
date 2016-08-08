@@ -1,4 +1,4 @@
-package org.eclipse.mdm.api.odsadapter;
+package org.eclipse.mdm.api.odsadapter.notification.peak;
 
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMESERVICE;
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
@@ -38,6 +38,9 @@ import org.eclipse.mdm.api.base.notification.NotificationManager;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
+import org.eclipse.mdm.api.odsadapter.ODSEntityManager;
+import org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory;
+import org.eclipse.mdm.api.odsadapter.ODSNotificationManagerFactory;
 import org.eclipse.mdm.api.odsadapter.notification.peak.EventProcessor;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.junit.AfterClass;
@@ -51,14 +54,23 @@ import org.slf4j.LoggerFactory;
  * Test notification service. 
  * 
  * Needs a running ODS and Notification Server.
- * Assumes an existing Test with name defined in {@link ODSNotificationTest#PARENT_TEST},
+ * Assumes an existing Test with name defined in {@link PeakNotificationTest#PARENT_TEST},
  * an UnitUnderTest with ID 11 and an UnitUnderTestPart with ID 34.
  * 
  * @author Matthias Koller, Peak Solution GmbH
  *
  */
-public class ODSNotificationTest {
+public class PeakNotificationTest {
 
+	/*
+	 * ATTENTION:
+	 * ==========
+	 *
+	 * To run this test make sure the target service is running a
+	 * MDM default model and any database constraint which enforces
+	 * a relation of Test to a parent entity is deactivated!
+	 */
+	
 	private static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
 	
 	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService

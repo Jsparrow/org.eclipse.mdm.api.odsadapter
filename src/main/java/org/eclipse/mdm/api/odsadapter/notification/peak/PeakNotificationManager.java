@@ -1,13 +1,9 @@
 package org.eclipse.mdm.api.odsadapter.notification.peak;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -16,26 +12,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.eclipse.mdm.api.base.model.ContextComponent;
-import org.eclipse.mdm.api.base.model.ContextDescribable;
-import org.eclipse.mdm.api.base.model.ContextRoot;
-import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.Measurement;
-import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.notification.NotificationException;
 import org.eclipse.mdm.api.base.notification.NotificationFilter;
 import org.eclipse.mdm.api.base.notification.NotificationListener;
 import org.eclipse.mdm.api.base.notification.NotificationManager;
-import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.Join;
-import org.eclipse.mdm.api.base.query.Operation;
-import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
-import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
+import org.eclipse.mdm.api.odsadapter.notification.NotificationEntityLoader;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.glassfish.jersey.media.sse.EventInput;
 import org.glassfish.jersey.media.sse.SseFeature;
@@ -43,11 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
-import com.google.common.primitives.Longs;
 import com.peaksolution.ods.notification.protobuf.NotificationProtos.Notification;
 
 /**
- * Notification manager for handling notifications form the Peak ODS Server Notification Plugin
+ * Notification manager for handling notifications from the Peak ODS Server Notification Plugin
  * 
  * @since 1.0.0
  * @author Matthias Koller, Peak Solution GmbH
@@ -64,12 +47,10 @@ public class PeakNotificationManager implements NotificationManager {
 	
 	private final ExecutorService executor = Executors.newCachedThreadPool();
 	
-	private final EntityLoader loader;
-	
 	private final MediaType eventMediaType;
 	private final ODSModelManager modelManager;
 
-	private boolean loadContextDescribable;
+	private final NotificationEntityLoader loader;
 	
 	/**
 	 * @param modelManager
@@ -80,12 +61,10 @@ public class PeakNotificationManager implements NotificationManager {
 	 */
 	public PeakNotificationManager(ODSModelManager modelManager, String url, String eventMediaType, boolean loadContextDescribable) throws NotificationException {
 		this.modelManager = modelManager;
-		this.loadContextDescribable = loadContextDescribable;
+		loader = new NotificationEntityLoader(modelManager, loadContextDescribable);
 		
 		try
 		{
-			loader = new EntityLoader(modelManager);
-			
 			if (Strings.isNullOrEmpty(eventMediaType) || MediaType.APPLICATION_JSON.equalsIgnoreCase(eventMediaType))
 			{
 				this.eventMediaType = MediaType.APPLICATION_JSON_TYPE;
@@ -203,29 +182,28 @@ public class PeakNotificationManager implements NotificationManager {
 			User user = loader.load(new Key<>(User.class), n.getUserId());
 
 			EntityType entityType = modelManager.getEntityType(n.getAid());
-			List<? extends Entity> entities = loadEntities(entityType, n.getIidList());; 
 
 			if (LOGGER.isTraceEnabled())
 			{
-				LOGGER.trace("Notification event with: entityType=" + entityType + ", entities="  + entities + ", user=" + user);
+				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);
 			}
 			
 			switch (n.getType())
 			{
 			case NEW:
-				notificationListener.instanceCreated(entities, user);
+				notificationListener.instanceCreated(loader.loadEntities(entityType, n.getIidList()), user);
 				break;
 			case MODIFY:
-				notificationListener.instanceModified(entities, user);
+				notificationListener.instanceModified(loader.loadEntities(entityType, n.getIidList()), user);
 				break;
 			case DELETE:
-				notificationListener.instanceDeleted(entities, user);
+				notificationListener.instanceDeleted(entityType, n.getIidList(), user);
 				break;
 			case MODEL:
 				notificationListener.modelModified(entityType, user);
 				break;
 			case SECURITY:
-				notificationListener.securityModified(entities, user);
+				notificationListener.securityModified(entityType, n.getIidList(), user);
 				break;
 			default:
 				processException(new NotificationException("Invalid notification type!"));
@@ -239,156 +217,6 @@ public class PeakNotificationManager implements NotificationManager {
 		}
 	}
 
-	/**
-	 * @param entityType entity type of the entities to load.
-	 * @param ids IDs of the entities to load.
-	 * @return loaded entities.
-	 * @throws DataAccessException Throw if the entities cannot be loaded.
-	 */
-	private List<? extends Entity> loadEntities(EntityType entityType, List<Long> ids) throws DataAccessException {
-		
-		if (ids.isEmpty())
-		{
-			return Collections.emptyList();
-		}
-		
-		EntityConfig<?> config = getEntityConfig(entityType);
-		
-		if (config == null || isLoadContextDescribable(config))
-		{
-			// entityType not modelled in MDM, try to load its ContextDescribable if it is a ContextRoot/ContextComponent
-			final EntityType testStep = modelManager.getEntityType(TestStep.class);
-			final EntityType measurement = modelManager.getEntityType(Measurement.class);
-			
-			if (hasRelationTo(entityType, testStep, measurement))
-			{
-				return loadEntityForContextRoot(entityType, ids);
-			}
-			else if (hasRelationTo(entityType, 
-					modelManager.getEntityType("UnitUnderTest"), 
-					modelManager.getEntityType("TestSequence"), 
-					modelManager.getEntityType("TestEquipment")))
-			{
-				return loadEntityForContextComponent(entityType, ids);
-			}
-			else
-			{
-				LOGGER.debug("Cannot load entitis for entityType " + entityType + " and ids " + ids);
-				return Collections.emptyList();
-			}
-		}
-		else
-		{
-			return loader.loadAll(config.getKey(), ids);
-		}
-	}
 
-	/**
-	 * Loads the ContextDescribables to the given context root instances
-	 * @param contextRoot entityType of the context root
-	 * @param ids IDs of the context roots.
-	 * @return the loaded ContextDescribables
-	 * @throws DataAccessException Throw if the ContextDescribables cannot be loaded.
-	 */
-	private List<ContextDescribable> loadEntityForContextRoot(EntityType contextRoot, List<Long> ids) throws DataAccessException {
-	
-		final EntityType testStep = modelManager.getEntityType(TestStep.class);
-		final EntityType measurement = modelManager.getEntityType(Measurement.class);
-	
-		List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
-				.join(testStep.getRelation(contextRoot), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), Longs.toArray(ids))))
-				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
-	
-		List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
-				.join(measurement.getRelation(contextRoot), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), Longs.toArray(ids))))
-				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
-		
-		List<ContextDescribable> list = new ArrayList<>();
-		list.addAll(loader.loadAll(new Key<>(TestStep.class), testStepIDs));
-		list.addAll(loader.loadAll(new Key<>(Measurement.class), measurementIDs));
-		
-		return list;
-	}
-
-	/**
-	 * Loads the ContextDescribables to the given context component instances
-	 * @param contextComponent entityType of the context component
-	 * @param ids IDs of the contextComponents to load.
-	 * @return the loaded ContextDescribables
-	 * @throws DataAccessException Throw if the ContextDescribables cannot be loaded.
-	 */
-	private List<ContextDescribable> loadEntityForContextComponent(EntityType contextComponent, List<Long> ids) throws DataAccessException {
-		
-		// ContextComponent can only have one parent
-		final EntityType contextRoot = contextComponent.getParentRelations().get(0).getTarget();
-
-		final EntityType testStep = modelManager.getEntityType(TestStep.class);
-		final EntityType measurement = modelManager.getEntityType(Measurement.class);
-		
-		List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
-				.join(testStep.getRelation(contextRoot), Join.OUTER)
-				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), Longs.toArray(ids))))
-				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
-		
-		List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
-				.join(measurement.getRelation(contextRoot), Join.OUTER)
-				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), Longs.toArray(ids))))
-				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
-		
-		List<ContextDescribable> list = new ArrayList<>();
-		list.addAll(loader.loadAll(new Key<>(TestStep.class), testStepIDs));
-		list.addAll(loader.loadAll(new Key<>(Measurement.class), measurementIDs));
-		return list;
-	}
-
-	/**
-	 * @param entityConfig
-	 * @return true, if the entityConfig belongs to a context root or context component and the option loadContextDescribable
-	 */
-	private boolean isLoadContextDescribable(EntityConfig<?> entityConfig) {
-		return loadContextDescribable && (entityConfig.getEntityClass().isAssignableFrom(ContextRoot.class) || entityConfig.getEntityClass().isAssignableFrom(ContextComponent.class));
-	}
-
-	/**
-	 * Checks if a relation between sourceEntityType and at least one entity type in targetEntityType exists.
-	 * @param sourceEntityType source entity type.
-	 * @param targetEntityTypes list of target enitity types.
-	 * @return true, if relation between source entity type and at least one target entity type exists.
-	 */
-	private boolean hasRelationTo(EntityType sourceEntityType, EntityType... targetEntityTypes) {
-		for (EntityType e : targetEntityTypes)
-		{
-			try
-			{
-				sourceEntityType.getRelation(e);
-				return true;
-			}
-			catch (IllegalArgumentException ex)
-			{
-				return false;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * @param entityType entity type the {@link EntityConfig} is requested for
-	 * @return {@link EntityConfig} or null if not config was found for the specified entity type
-	 */
-	private EntityConfig<?> getEntityConfig(EntityType entityType) {
-		try
-		{
-			 return modelManager.getEntityConfig(entityType);
-		}
-		catch (IllegalArgumentException e)
-		{
-			return null;
-		}
-	}
 	
 }

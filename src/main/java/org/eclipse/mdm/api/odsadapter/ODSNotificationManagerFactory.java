@@ -13,6 +13,7 @@ import org.eclipse.mdm.api.base.model.BaseEntityFactory;
 import org.eclipse.mdm.api.base.notification.NotificationException;
 import org.eclipse.mdm.api.base.notification.NotificationManager;
 import org.eclipse.mdm.api.base.query.ModelManager;
+import org.eclipse.mdm.api.odsadapter.notification.avalon.AvalonNotificationManager;
 import org.eclipse.mdm.api.odsadapter.notification.peak.PeakNotificationManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
@@ -38,39 +39,50 @@ public class ODSNotificationManagerFactory implements NotificationManagerFactory
 	public static final String PARAM_EVENT_MEDIATYPE = "eventMimetype";
 	
 	public static final String SERVER_TYPE_PEAK = "peak";
+	public static final String SERVER_TYPE_AVALON = "avalon";
 
-	public static final String PARAM_NOTIFICATIONSERVICE_URL = "notificationserviceURL";
+	public static final String PARAM_NAMESERVICE_URL = "nameserviceURL";
 
 	public NotificationManager create(BaseEntityManager<? extends BaseEntityFactory> entityManager, Map<String, String> parameters) throws ConnectionException {
 		String type = getParameter(parameters, PARAM_SERVER_TYPE);
-		String notificationUser = getParameter(parameters, ODSEntityManagerFactory.PARAM_USER);
-		String notficationPassword = getParameter(parameters, ODSEntityManagerFactory.PARAM_PASSWORD);
 		
-		String eventMediaType = getParameter(parameters, PARAM_EVENT_MEDIATYPE);
+		Optional<ModelManager> mm = entityManager.getModelManager();
+		if (!mm.isPresent())
+		{
+			throw new ConnectionException("EntityManager has no ModelManager!");
+		}
+		if (!ODSModelManager.class.isInstance(mm.get()))
+		{
+			throw new ConnectionException("ModelManager is not a ODSModelManager!");
+		}
 		
 		if (SERVER_TYPE_PEAK.equalsIgnoreCase(type))
 		{
 			String url = getParameter(parameters, PARAM_URL);
+			String eventMediaType = getParameter(parameters, PARAM_EVENT_MEDIATYPE);
 			
-			LOGGER.info("Connecting to Notification Server ...");
+			LOGGER.info("Connecting to Peak Notification Server ...");
 			LOGGER.info("URL: {}", url);
 			LOGGER.info("Event MediaType: {}", eventMediaType);
 				
 			try {
-				Optional<ModelManager> mm = entityManager.getModelManager();
-				if (!mm.isPresent())
-				{
-					throw new NotificationException("EntityManager has no ModelManager!");
-				}
-				if (!ODSModelManager.class.isInstance(mm.get()))
-				{
-					throw new NotificationException("ModelManager is not a ODSModelManager!");
-				}
-					
 				return new PeakNotificationManager((ODSModelManager) mm.get(), url, eventMediaType, true);
 			} catch (NotificationException e) {
 				throw new ConnectionException("Could not connect to notification service!", e);
 			}
+		}
+		else if (SERVER_TYPE_AVALON.equalsIgnoreCase(type))
+		{
+			
+			String serviceName = getParameter(parameters, ODSEntityManagerFactory.PARAM_SERVICENAME);
+			serviceName = serviceName.replace(".ASAM-ODS", "");
+			String nameServiceURL = getParameter(parameters, ODSEntityManagerFactory.PARAM_NAMESERVICE);
+			
+			LOGGER.info("Connecting to Avalon Notification Server ...");
+			LOGGER.info("Name service URL: {}", nameServiceURL);
+			LOGGER.info("Service name: {}", serviceName);
+				
+			return new AvalonNotificationManager((ODSModelManager) mm.get(), serviceName, nameServiceURL, true);
 		}
 		else
 		{
