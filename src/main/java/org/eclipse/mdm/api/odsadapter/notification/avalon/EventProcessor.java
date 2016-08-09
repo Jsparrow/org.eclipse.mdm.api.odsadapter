@@ -180,9 +180,9 @@ public class EventProcessor extends StructuredPullConsumerPOA implements Runnabl
 
             try 
             {
-				LOGGER.debug("Looking for structured events....");
+				LOGGER.trace("Looking for structured events....");
                 // try to pull an event
-                StructuredEvent event =  proxyPullSupplier.try_pull_structured_event(bh);
+                StructuredEvent event = proxyPullSupplier.try_pull_structured_event(bh);
                 if(bh.value)
                 {
                     AvalonNotificationCorbaEvent ev = AvalonNotificationCorbaEventHelper.extract(event.remainder_of_body);

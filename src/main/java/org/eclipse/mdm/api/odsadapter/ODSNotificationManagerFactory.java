@@ -37,6 +37,7 @@ public class ODSNotificationManagerFactory implements NotificationManagerFactory
 	public static final String PARAM_SERVER_TYPE = "serverType";
 	public static final String PARAM_URL = "url";
 	public static final String PARAM_EVENT_MEDIATYPE = "eventMimetype";
+	public static final String PARAM_POLLING_INTERVAL = "pollingInterval";
 	
 	public static final String SERVER_TYPE_PEAK = "peak";
 	public static final String SERVER_TYPE_AVALON = "avalon";
@@ -81,8 +82,18 @@ public class ODSNotificationManagerFactory implements NotificationManagerFactory
 			LOGGER.info("Connecting to Avalon Notification Server ...");
 			LOGGER.info("Name service URL: {}", nameServiceURL);
 			LOGGER.info("Service name: {}", serviceName);
+			
+			long pollingInterval = 500L;
+			try
+			{
+				pollingInterval = Long.parseLong(getParameter(parameters, PARAM_POLLING_INTERVAL));
+			}
+			catch (NumberFormatException | ConnectionException e)
+			{
+				LOGGER.warn("Could not parse parse parameter pollingInterval. Using default value: " + pollingInterval, e);
+			}
 				
-			return new AvalonNotificationManager((ODSModelManager) mm.get(), serviceName, nameServiceURL, true);
+			return new AvalonNotificationManager((ODSModelManager) mm.get(), serviceName, nameServiceURL, true, pollingInterval);
 		}
 		else
 		{

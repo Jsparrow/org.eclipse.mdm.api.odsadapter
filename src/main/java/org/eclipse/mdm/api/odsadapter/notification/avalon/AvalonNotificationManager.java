@@ -49,7 +49,6 @@ public class AvalonNotificationManager implements NotificationManager {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AvalonNotificationManager.class);
 
-	private static final long POLLING_INTERVAL = 500L;
 
 	private final Map<String, EventProcessor> eventProcessors = new HashMap<>();
 	
@@ -58,6 +57,7 @@ public class AvalonNotificationManager implements NotificationManager {
 	private final ODSModelManager modelManager;
 	private final String serviceName;
 	private final String nameServiceURL;
+	private long pollingInterval = 500L;
 	private final NotificationEntityLoader loader;
 	
 	private final ORB orb = ORB.init(new String[]{}, System.getProperties());
@@ -69,13 +69,15 @@ public class AvalonNotificationManager implements NotificationManager {
 	 * @param nameServiceURL URL of the name service.
 	 * @param loadContextDescribable if true, notifications for {@link ContextRoot} 
 	 * and {@link ContextComponent} will load their parent {@link ContextDescribable}.
+	 * @param pollingInterval polling interval in milleseconds
 	 */
 	public AvalonNotificationManager(ODSModelManager modelManager, String serviceName, 
-			String nameServiceURL, boolean loadContextDescribable)
+			String nameServiceURL, boolean loadContextDescribable, long pollingInterval)
 	{
 		this.modelManager = modelManager;
 		this.serviceName = serviceName;
 		this.nameServiceURL = nameServiceURL;
+		this.pollingInterval = pollingInterval;
 		loader = new NotificationEntityLoader(modelManager, loadContextDescribable);
 	}
 	
@@ -97,7 +99,7 @@ public class AvalonNotificationManager implements NotificationManager {
 			consumer.connect();
 			consumer.setFilter(aids, modes);
 			
-		    ScheduledFuture<?> future = executor.scheduleAtFixedRate(consumer, 0, POLLING_INTERVAL, TimeUnit.MILLISECONDS);
+		    ScheduledFuture<?> future = executor.scheduleAtFixedRate(consumer, 0, pollingInterval, TimeUnit.MILLISECONDS);
 		    consumer.setFuture(future);
 		    
 		    eventProcessors.put(registration, consumer);
