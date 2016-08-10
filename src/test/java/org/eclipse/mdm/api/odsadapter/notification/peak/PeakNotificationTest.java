@@ -114,7 +114,7 @@ public class PeakNotificationTest {
 	}
 
 	@AfterClass
-	public static void tearDownAfterClass() throws ConnectionException {
+	public static void tearDownAfterClass() throws ConnectionException, NotificationException {
 		if (entityManager != null)
 		{
 			entityManager.close();
@@ -123,6 +123,7 @@ public class PeakNotificationTest {
 		if (notificationManager != null)
 		{
 			notificationManager.deregister(NOTIFICATION_REGISTRATION_NAME);
+			notificationManager.close(true);
 		}
 	}
 	

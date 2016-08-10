@@ -121,6 +121,28 @@ public class AvalonNotificationManager implements NotificationManager {
 		}
 	}
 	
+	@Override
+	public void close(boolean isDeregisterAll) throws NotificationException {
+		LOGGER.info("Closing NotificationManager...");
+		
+		for (String registration : eventProcessors.keySet())
+		{
+			LOGGER.debug("Disconnecting registration '" + registration + "'.");
+			deregister(registration);
+		}
+		
+		try {
+			executor.shutdown();
+			boolean terminated = executor.awaitTermination(10, TimeUnit.SECONDS);
+			if (!terminated)
+			{
+				throw new NotificationException("Could not close all registrations!");
+			}
+		} catch (InterruptedException e) {
+			throw new NotificationException("Could not close all registrations!", e);
+		}		
+	}
+	
 	void processException(Exception e)
 	{
 		LOGGER.error("Exception during notification processing!", e);

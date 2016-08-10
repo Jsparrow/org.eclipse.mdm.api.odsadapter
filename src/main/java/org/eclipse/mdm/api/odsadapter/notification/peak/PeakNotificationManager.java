@@ -148,14 +148,41 @@ public class PeakNotificationManager implements NotificationManager {
 	{
 		if (processors.containsKey(registration))
 		{
+			close(registration);
+			
+			endpoint.path(registration)
+				.request()
+				.delete();
+		}
+	}
+	
+	@Override
+	public void close(boolean isDeregisterAll) throws NotificationException {
+		LOGGER.info("Closing NotificationManager...");
+		
+		for (String registration : processors.keySet())
+		{
+			if (isDeregisterAll)
+			{
+				LOGGER.debug("Deregistering '" + registration + "'.");
+				deregister(registration);
+			}
+			else
+			{
+				LOGGER.debug("Disconnecting '" + registration + "'.");
+				close(registration);
+			}
+		}
+	}
+	
+	private void close(String registration)
+	{
+		if (processors.containsKey(registration))
+		{
 			EventProcessor processor = processors.get(registration);
 			processor.stop();
-			processors.remove(registration);	
+			processors.remove(registration);
 		}
-		
-		endpoint.path(registration)
-			.request()
-			.delete();
 	}
 	
 	/**
