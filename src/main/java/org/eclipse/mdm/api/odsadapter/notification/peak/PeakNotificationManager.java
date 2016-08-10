@@ -149,11 +149,11 @@ public class PeakNotificationManager implements NotificationManager {
 		if (processors.containsKey(registration))
 		{
 			close(registration);
-			
-			endpoint.path(registration)
-				.request()
-				.delete();
-		}
+		}	
+		
+		endpoint.path(registration)
+			.request()
+			.delete();
 	}
 	
 	@Override
