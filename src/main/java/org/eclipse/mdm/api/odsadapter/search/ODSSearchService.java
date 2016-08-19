@@ -49,6 +49,8 @@ public final class ODSSearchService implements SearchService {
 
 	private final ODSModelManager modelManager;
 	private final EntityLoader entityLoader;
+	private final String esHost;
+	private ODSFreeTextSearch freeTextSearch;
 
 	// ======================================================================
 	// Constructors
@@ -60,10 +62,11 @@ public final class ODSSearchService implements SearchService {
 	 * @param modelManager Used to retrieve {@link EntityType}s.
 	 * @param entityLoader Used to load complete {@link Entity}s.
 	 */
-	public ODSSearchService(ODSModelManager modelManager, EntityLoader entityLoader) {
+	public ODSSearchService(ODSModelManager modelManager, EntityLoader entityLoader, String host) {
 		this.modelManager = modelManager;
 		this.entityLoader = entityLoader;
-
+		this.esHost = host;
+		
 		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, c));
 		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(modelManager, c));
 		registerMergedSearchQuery(Measurement.class, c -> new MeasurementSearchQuery(modelManager, c));
@@ -125,6 +128,20 @@ public final class ODSSearchService implements SearchService {
 		return createResult(entityClass, findSearchQuery(entityClass).fetch(attributes, filter));
 	}
 
+	@Override
+	public Map<Class<? extends Entity>, List<Entity>> fetch(String query) throws DataAccessException {
+		if (freeTextSearch == null) {
+			initFreetextSearch();
+		}
+
+		return freeTextSearch.search(query);
+	}
+
+	@Override
+	public boolean isTextSearchAvailable() {
+		return true;
+	}
+	
 	// ======================================================================
 	// Private methods
 	// ======================================================================
@@ -187,6 +204,6 @@ public final class ODSSearchService implements SearchService {
 			throw new DataAccessException("No environment loaded. So the Search does not know where to search");
 		}
 		String sourceName = all.get(0).getSourceName();
-		freeTextSearch = new ODSFreeTextSearch(entityLoader, sourceName);
+		freeTextSearch = new ODSFreeTextSearch(entityLoader, sourceName, esHost);
 	}
 }

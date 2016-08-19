@@ -300,6 +300,16 @@ public class ODSModelManager implements ModelManager {
 		}
 	}
 
+	@Override
+	public EntityType getEntityType(long id) {
+		EntityType entityType = listEntityTypes().stream().filter(et -> et.getId() == id).findFirst().get();
+		if(entityType == null) {
+			throw new IllegalArgumentException("Entity with id '" + id + "' not found.");
+		}
+		
+		return entityType;
+	}
+
 	/**
 	 * Returns the {@link AoSession} of this model manager.
 	 *
