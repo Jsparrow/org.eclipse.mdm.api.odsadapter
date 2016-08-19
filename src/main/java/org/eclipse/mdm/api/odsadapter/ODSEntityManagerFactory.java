@@ -10,12 +10,9 @@ package org.eclipse.mdm.api.odsadapter;
 
 import java.util.Map;
 
-<<<<<<< Upstream, based on eclipse/master
-=======
 import javax.ejb.Stateful;
 import javax.inject.Inject;
 
->>>>>>> cd84632 Added GlobalProperty
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
@@ -74,20 +71,30 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	// ======================================================================
 
 	@Inject
-	@GlobalProperty(value="elasticsearch.url")
+	@GlobalProperty("elasticsearch.url")
 	String host;
-	
+
+	public ODSEntityManagerFactory() {
+		LOGGER.debug("Default constructor called. Setting es-Host later");
+	}
+
+	public ODSEntityManagerFactory(String esHost) {
+		LOGGER.debug("ES constructor called. Host=" + esHost);
+		this.host = esHost;
+	}
+
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p><b>Note:</b> Given parameters {@code Map} must contain values for
-	 * each of the following keys:
+	 * <p>
+	 * <b>Note:</b> Given parameters {@code Map} must contain values for each of
+	 * the following keys:
 	 *
 	 * <ul>
-	 * 	<li>{@value #PARAM_NAMESERVICE}</li>
-	 * 	<li>{@value #PARAM_SERVICENAME}</li>
-	 * 	<li>{@value #PARAM_USER}</li>
-	 * 	<li>{@value #PARAM_PASSWORD}</li>
+	 * <li>{@value #PARAM_NAMESERVICE}</li>
+	 * <li>{@value #PARAM_SERVICENAME}</li>
+	 * <li>{@value #PARAM_USER}</li>
+	 * <li>{@value #PARAM_PASSWORD}</li>
 	 * </ul>
 	 *
 	 * Listed names are available via public fields of this class.
@@ -112,7 +119,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 
 			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
 			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer), host);
-		} catch(AoException e) {
+		} catch (AoException e) {
 			closeSession(aoSession);
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
 		}
@@ -128,7 +135,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	 * @param aoSession The {@code AoSession} that shallbe closed.
 	 */
 	private static void closeSession(AoSession aoSession) {
-		if(aoSession == null) {
+		if (aoSession == null) {
 			return;
 		}
 
@@ -149,7 +156,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	 */
 	private String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
 		String value = parameters.get(name);
-		if(value == null || value.isEmpty()) {
+		if (value == null || value.isEmpty()) {
 			throw new ConnectionException("Connection parameter with name '" + name + "' is either missing or empty.");
 		}
 
@@ -237,9 +244,6 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void close() throws ConnectionException {
 			namingContext._release();
