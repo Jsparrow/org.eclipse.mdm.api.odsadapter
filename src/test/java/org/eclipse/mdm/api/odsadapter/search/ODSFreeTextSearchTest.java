@@ -79,12 +79,12 @@ public class ODSFreeTextSearchTest {
 			}
 		});
 
-		fts = new ODSFreeTextSearch(HOST, loader, "mdm");
+		fts = new ODSFreeTextSearch(loader, "mdm", HOST);
 	}
 
 	@Test
 	public void noIndex_emptyResult() throws DataAccessException {
-		ODSFreeTextSearch ftsOtherIndex = new ODSFreeTextSearch(HOST, loader, "UNKNOWN_INDEX");
+		ODSFreeTextSearch ftsOtherIndex = new ODSFreeTextSearch(loader, "UNKNOWN_INDEX", HOST);
 
 		Map<Class<? extends Entity>, List<Entity>> map = ftsOtherIndex.search("VAG_002");
 		assertTrue(map.isEmpty());
@@ -128,17 +128,11 @@ public class ODSFreeTextSearchTest {
 		loader = mock(EntityLoader.class);
 		when(loader.loadAll(any(Key.class), anyCollection())).thenThrow(new DataAccessException(""));
 		createExampleIndex("TestStep", "mdm2", "asdf");
-		ODSFreeTextSearch fts2 = new ODSFreeTextSearch(HOST, loader, "mdm2");
+		ODSFreeTextSearch fts2 = new ODSFreeTextSearch(loader, "mdm2", HOST);
 		
 		fts2.search("asdf");
 	}
 	
-	@Test
-	public void doubleEscapedSearchString_IsJSONEscaped()
-	{
-		
-	}
-
 	private void createExampleIndex(String type, String name, String value) throws InterruptedException {
 		createExampleIndex(type, name, value, "0");
 	}

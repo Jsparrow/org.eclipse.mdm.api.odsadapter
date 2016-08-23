@@ -24,6 +24,7 @@ buildscript {
 }
 
 repositories {
+	jcenter()
 	mavenLocal()
     mavenCentral()
 }
@@ -79,6 +80,8 @@ dependencies {
     testCompile 'junit:junit:4.12'
 	testRuntime 'org.slf4j:slf4j-simple:1.7.19'
 	testCompile 'org.mockito:mockito-core:1.+'
+  	testCompile(group: 'org.elasticsearch', name: 'elasticsearch', version: '2.3.4')
+	testCompile(group: 'org.elasticsearch', name: 'elasticsearch', version: '2.3.4', classifier: 'tests')
 }
 
 test {
