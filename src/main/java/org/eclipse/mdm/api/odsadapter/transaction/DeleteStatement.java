@@ -72,7 +72,7 @@ final class DeleteStatement extends BaseStatement {
 	 *
 	 * @param transaction The owning {@link ODSTransaction}.
 	 * @param entityType The associated {@link EntityType}.
-	 * @param useAutoDeleteIf {@code true} child relations of {@link
+	 * @param useAutoDelete If {@code true} child relations of {@link
 	 * 		Measurement} entities are not followed.
 	 */
 	DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDelete) {

@@ -114,6 +114,7 @@ public final class ODSEnumerations {
 	 * Converts given ODS enumeration value using given enumeration class to
 	 * the corresponding enumeration constant.
 	 *
+	 * @param <E> The enumeration type.
 	 * @param enumClass The enumeration class.
 	 * @param value The ODS enumeration value.
 	 * @return The corresponding enumeration constant is returned.
@@ -144,8 +145,9 @@ public final class ODSEnumerations {
 	 * Converts given ODS enumeration values using given enumeration class to
 	 * the corresponding enumeration constants.
 	 *
+	 * @param <E> The enumeration type.
 	 * @param enumClass The enumeration class.
-	 * @param value The ODS enumeration values.
+	 * @param values The ODS enumeration values.
 	 * @return The corresponding enumeration constants are returned.
 	 * @throws IllegalArgumentException Thrown if conversion not possible.
 	 */
@@ -182,6 +184,7 @@ public final class ODSEnumerations {
 	 * Converts given enumeration constant to the corresponding ODS enumeration
 	 * value.
 	 *
+	 * @param <E> The enumeration type.
 	 * @param constant The enumeration constant.
 	 * @return The corresponding ODS enumeration value is returned.
 	 * @throws IllegalArgumentException Thrown if conversion not possible.
@@ -207,7 +210,8 @@ public final class ODSEnumerations {
 	 * Converts given enumeration constants to the corresponding ODS
 	 * enumeration values.
 	 *
-	 * @param constant The enumeration constants.
+	 * @param <E> The enumeration type.
+	 * @param constants The enumeration constants.
 	 * @return The corresponding ODS enumeration values are returned.
 	 * @throws IllegalArgumentException Thrown if conversion not possible.
 	 */
@@ -417,6 +421,7 @@ public final class ODSEnumerations {
 	 * constant. The ODS enumeration value is used as the ordinal number of the
 	 * requested enumeration constant.
 	 *
+	 * @param <E> The enumeration type.
 	 * @param enumClass The enumeration class.
 	 * @param value The ODS enumeration value.
 	 * @return The corresponding enumeration constant is returned.
@@ -438,6 +443,7 @@ public final class ODSEnumerations {
 	 * constants. The ODS enumeration values are used as the ordinal numbers of
 	 * the requested enumeration constants.
 	 *
+	 * @param <E> The enumeration type.
 	 * @param enumClass The enumeration class.
 	 * @param values The ODS enumeration values.
 	 * @return The corresponding enumeration constants are returned.

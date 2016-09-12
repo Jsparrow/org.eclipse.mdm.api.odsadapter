@@ -65,8 +65,8 @@ public final class ODSSearchService implements SearchService {
 	public ODSSearchService(ODSModelManager modelManager, EntityLoader entityLoader, String host) {
 		this.modelManager = modelManager;
 		this.entityLoader = entityLoader;
-		this.esHost = host;
-		
+		esHost = host;
+
 		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, c));
 		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(modelManager, c));
 		registerMergedSearchQuery(Measurement.class, c -> new MeasurementSearchQuery(modelManager, c));
@@ -141,7 +141,7 @@ public final class ODSSearchService implements SearchService {
 	public boolean isTextSearchAvailable() {
 		return true;
 	}
-	
+
 	// ======================================================================
 	// Private methods
 	// ======================================================================
@@ -149,6 +149,7 @@ public final class ODSSearchService implements SearchService {
 	/**
 	 * Loads {@link Entity}s of given entity class for given {@link Result}s.
 	 *
+	 * @param <T> The entity type.
 	 * @param entityClass Entity class of the loaded {@code Entity}s.
 	 * @param results The queried {@code Result}s.
 	 * @return All Results are returned in a Map, which maps entities to the

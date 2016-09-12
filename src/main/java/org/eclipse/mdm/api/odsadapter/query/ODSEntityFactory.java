@@ -144,6 +144,7 @@ public final class ODSEntityFactory extends EntityFactory {
 	/**
 	 * Creates a configured {@link Core} for given {@link Key}.
 	 *
+	 * @param <T> The entity type.
 	 * @param key Used as identifier to resolve the {@link EntityConfig}.
 	 * @return The created {@code Core} is returned.
 	 */

@@ -171,6 +171,7 @@ public final class EntityConfigRepository {
 	 * Retrieves the {@link EntityConfig} associated with given {@link Key}
 	 * from given {@code Map}.
 	 *
+	 * @param <T> The entity type.
 	 * @param entityConfigs Used to retrieve requested {@code EntityConfig}.
 	 * @param key Used as identifier.
 	 * @return {@code Optional} is empty if {@code EntityConfig} not found.

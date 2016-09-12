@@ -150,7 +150,7 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public long getId() {
 		return ODSConverter.fromODSLong(odsID);
- 	}
+	}
 
 	@Override
 	public List<Relation> getRelations() {
@@ -266,7 +266,7 @@ public final class ODSEntityType implements EntityType {
 	/**
 	 * Adds given {@link Relation}s.
 	 *
-	 * @param relation {@code Relation}s which will be added.
+	 * @param relations {@code Relation}s which will be added.
 	 */
 	void setRelations(List<Relation> relations) {
 		Map<EntityType, List<Relation>> entityRelationsByTarget = relations.stream().distinct()

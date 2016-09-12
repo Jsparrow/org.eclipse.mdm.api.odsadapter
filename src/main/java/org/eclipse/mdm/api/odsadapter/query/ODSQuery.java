@@ -89,7 +89,7 @@ public class ODSQuery implements Query {
 	/**
 	 * Constructor.
 	 *
-	 * @param applElemAccessUsed to execute the query.
+	 * @param applElemAccess Used to execute the query.
 	 */
 	ODSQuery(ApplElemAccess applElemAccess) {
 		this.applElemAccess = applElemAccess;
@@ -246,6 +246,7 @@ public class ODSQuery implements Query {
 	 *
 	 * @param condition The {@code Condition}.
 	 * @return The corresponding {@code SelValueExt} is returned.
+	 * @throws DataAccessException Thrown in case of errors.
 	 */
 	private SelValueExt createCondition(Condition condition) throws DataAccessException {
 		SelValueExt sve = new SelValueExt();

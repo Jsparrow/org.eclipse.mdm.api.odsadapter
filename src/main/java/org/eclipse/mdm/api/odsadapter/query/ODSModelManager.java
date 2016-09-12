@@ -306,7 +306,7 @@ public class ODSModelManager implements ModelManager {
 		if(entityType == null) {
 			throw new IllegalArgumentException("Entity with id '" + id + "' not found.");
 		}
-		
+
 		return entityType;
 	}
 
@@ -694,6 +694,7 @@ public class ODSModelManager implements ModelManager {
 	/**
 	 * Creates a new {@link EntityConfig}.
 	 *
+	 * @param <T> The entity type.
 	 * @param key Used as identifier.
 	 * @param typeName Name of the associated {@link EntityType}.
 	 * @param appendName Flag indicates whether to append the entity types base

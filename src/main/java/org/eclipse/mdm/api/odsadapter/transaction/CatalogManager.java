@@ -287,6 +287,7 @@ final class CatalogManager {
 	 *
 	 * @param catalogComponents The {@code CatalogComponent}s.
 	 * @throws AoException Thrown in case of errors.
+	 * @throws DataAccessException Thrown in case of errors.
 	 */
 	public void deleteCatalogComponents(Collection<CatalogComponent> catalogComponents)
 			throws AoException, DataAccessException {
@@ -330,6 +331,7 @@ final class CatalogManager {
 	 *
 	 * @param catalogSensors The {@code CatalogSensor}s.
 	 * @throws AoException Thrown in case of errors.
+	 * @throws DataAccessException Thrown in case of errors.
 	 */
 	public void deleteCatalogSensors(Collection<CatalogSensor> catalogSensors) throws AoException, DataAccessException {
 		List<CatalogAttribute> attributes = new ArrayList<>();
@@ -368,6 +370,7 @@ final class CatalogManager {
 	 *
 	 * @param catalogAttributes The {@code CatalogAttribute}s.
 	 * @throws AoException Thrown in case of errors.
+	 * @throws DataAccessException Thrown in case of errors.
 	 */
 	public void deleteCatalogAttributes(Collection<CatalogAttribute> catalogAttributes)
 			throws AoException, DataAccessException {
@@ -423,7 +426,7 @@ final class CatalogManager {
 	 * @param baseElement The {@code BaseElement} the created {@code
 	 * 		ApplicationElement} will be derived from.
 	 * @return The created {@code ApplicationElement} is returned.
-	 * @throws AoException
+	 * @throws AoException Thrown in case of errors.
 	 */
 	private ApplicationElement createApplicationElement(String name, BaseElement baseElement) throws AoException {
 		ApplicationElement applicationElement = getApplicationStructure().createElement(baseElement);

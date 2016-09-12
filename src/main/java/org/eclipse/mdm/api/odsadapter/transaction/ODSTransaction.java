@@ -460,6 +460,7 @@ public final class ODSTransaction implements Transaction {
 	/**
 	 * Executes statements for given entities by using given statement factory.
 	 *
+	 * @param <T> The entity type.
 	 * @param statementFactory Used to create a new statement for a given
 	 * 		{@link EntityType}.
 	 * @param entities The processed {@code Entity}s.

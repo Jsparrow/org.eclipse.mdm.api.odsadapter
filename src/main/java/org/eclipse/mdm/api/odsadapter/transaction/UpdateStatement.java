@@ -155,6 +155,7 @@ final class UpdateStatement extends BaseStatement {
 	 * </ul>
 	 *
 	 * @param core The {@code Core}.
+	 * @throws DataAccessException Thrown in case of errors.
 	 */
 	private void readEntityCore(Core core) throws DataAccessException {
 		if(!core.getTypeName().equals(getEntityType().getName())) {

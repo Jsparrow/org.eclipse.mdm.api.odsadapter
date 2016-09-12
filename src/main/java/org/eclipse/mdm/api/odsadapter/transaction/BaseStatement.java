@@ -124,6 +124,7 @@ abstract class BaseStatement {
 	 * Returns the {@link ApplElemAccess}.
 	 *
 	 * @return The {@code ApplElemAccess} is returned.
+	 * @throws AoException Thrown in case of errors.
 	 */
 	protected ApplElemAccess getApplElemAccess() throws AoException {
 		return transaction.getModelManager().getApplElemAccess();

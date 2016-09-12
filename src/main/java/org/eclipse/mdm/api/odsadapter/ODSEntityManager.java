@@ -88,7 +88,7 @@ public class ODSEntityManager implements EntityManager {
 	 *
 	 * @param modelManager The {@link ODSModelManager}.
 	 */
-	public ODSEntityManager(ODSModelManager modelManager, String esHost) throws ConnectionException {
+	public ODSEntityManager(ODSModelManager modelManager, String esHost) {
 		this.modelManager = modelManager;
 		this.esHost = esHost;
 		entityLoader = new EntityLoader(modelManager);
