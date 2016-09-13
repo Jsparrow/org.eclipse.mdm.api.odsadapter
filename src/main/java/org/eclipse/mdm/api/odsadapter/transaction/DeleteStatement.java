@@ -161,7 +161,6 @@ final class DeleteStatement extends BaseStatement {
 		if(measurement.equals(entityType) || channel.equals(entityType)) {
 			EntityType parameterSet = getModelManager().getEntityType(ParameterSet.class);
 			query.join(entityType.getRelation(parameterSet), Join.OUTER).selectID(parameterSet);
-			delayedDelete.add(parameterSet);
 		}
 
 		Filter filter = Filter.or().ids(entityType, instanceIDs);
