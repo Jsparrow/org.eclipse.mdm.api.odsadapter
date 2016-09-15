@@ -141,18 +141,13 @@ takes parameters, shown in the example below, to establish a
 connection. On success an entity manager is returned.
 
 
-```java
-Map<String, String> connectionParameters = new HashMap<>();
-connectionParameters.put(ODSEntityManagerFactory.PARAM_NAMESERVICE, "corbaloc::1.2@<SERVER>:<PORT>/NameService");
-connectionParameters.put(ODSEntityManagerFactory.PARAM_SERVICENAME, "<SERVICE>.ASAM-ODS");
-connectionParameters.put(ODSEntityManagerFactory.PARAM_USER, "sa");
-connectionParameters.put(ODSEntityManagerFactory.PARAM_PASSWORD, "sa");
-
-EntityManager entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
-
-// do something useful
-
-entityManager.close();
-```
+    Map<String, String> connectionParameters = new HashMap<>();
+    connectionParameters.put(ODSEntityManagerFactory.PARAM_NAMESERVICE, "corbaloc::1.2@<SERVER>:<PORT>/NameService");
+    connectionParameters.put(ODSEntityManagerFactory.PARAM_SERVICENAME, "<SERVICE>.ASAM-ODS");
+    connectionParameters.put(ODSEntityManagerFactory.PARAM_USER, "sa");
+    connectionParameters.put(ODSEntityManagerFactory.PARAM_PASSWORD, "sa");
+    EntityManager entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
+    // do something useful
+    entityManager.close();
 
 Last updated 2016-09-14 07:35:33 MS
