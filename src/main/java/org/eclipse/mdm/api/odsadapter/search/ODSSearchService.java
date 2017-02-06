@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Peak Solution GmbH
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.eclipse.mdm.api.base.model.Channel;
+import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.Measurement;
@@ -29,6 +30,8 @@ import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.base.query.Searchable;
+import org.eclipse.mdm.api.dflt.model.Pool;
+import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -37,13 +40,9 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
  * ODS implementation of the {@link SearchService} interface.
  *
  * @since 1.0.0
- * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ * @author jst, Peak Solution GmbH
  */
 public final class ODSSearchService implements SearchService {
-
-	// ======================================================================
-	// Instance variables
-	// ======================================================================
 
 	private final Map<Class<? extends Entity>, SearchQuery> searchQueries = new HashMap<>();
 
@@ -51,11 +50,7 @@ public final class ODSSearchService implements SearchService {
 	private final EntityLoader entityLoader;
 	private final String esHost;
 	private ODSFreeTextSearch freeTextSearch;
-
-	// ======================================================================
-	// Constructors
-	// ======================================================================
-
+	
 	/**
 	 * Constructor.
 	 *
@@ -67,15 +62,14 @@ public final class ODSSearchService implements SearchService {
 		this.entityLoader = entityLoader;
 		esHost = host;
 
+		registerMergedSearchQuery(Project.class, c -> new ProjectSearchQuery(modelManager, c));
+		registerMergedSearchQuery(Pool.class, c -> new PoolSearchQuery(modelManager, c));
 		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, c));
 		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(modelManager, c));
 		registerMergedSearchQuery(Measurement.class, c -> new MeasurementSearchQuery(modelManager, c));
+		registerMergedSearchQuery(ChannelGroup.class, c -> new ChannelGroupSearchQuery(modelManager, c));
 		registerMergedSearchQuery(Channel.class, c -> new ChannelSearchQuery(modelManager, c));
 	}
-
-	// ======================================================================
-	// Public methods
-	// ======================================================================
 
 	/**
 	 * {@inheritDoc}
@@ -159,11 +153,7 @@ public final class ODSSearchService implements SearchService {
 	public boolean isTextSearchAvailable() {
 		return true;
 	}
-
-	// ======================================================================
-	// Private methods
-	// ======================================================================
-
+	
 	/**
 	 * Delegates to {@link ODSFreeTextSearch} and retrieves a map off all entity IDs found by the given query.
 	 * 

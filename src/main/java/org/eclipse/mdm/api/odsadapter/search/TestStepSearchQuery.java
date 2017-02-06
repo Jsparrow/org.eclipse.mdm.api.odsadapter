@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Peak Solution GmbH
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,8 @@
 
 package org.eclipse.mdm.api.odsadapter.search;
 
+import org.eclipse.mdm.api.base.model.Channel;
+import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
@@ -23,13 +25,9 @@ import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
  * type.
  *
  * @since 1.0.0
- * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ * @author jst, Peak Solution GmbH
  */
 final class TestStepSearchQuery extends BaseEntitySearchQuery {
-
-	// ======================================================================
-	// Constructors
-	// ======================================================================
 
 	/**
 	 * Constructor.
@@ -45,6 +43,8 @@ final class TestStepSearchQuery extends BaseEntitySearchQuery {
 		addJoinConfig(JoinConfig.up(Test.class, Pool.class));
 		addJoinConfig(JoinConfig.up(TestStep.class, Test.class));
 		addJoinConfig(JoinConfig.down(TestStep.class, Measurement.class));
+		addJoinConfig(JoinConfig.down(Measurement.class, ChannelGroup.class));
+		addJoinConfig(JoinConfig.down(Measurement.class, Channel.class));
 
 		// context
 		addJoinConfig(contextState);

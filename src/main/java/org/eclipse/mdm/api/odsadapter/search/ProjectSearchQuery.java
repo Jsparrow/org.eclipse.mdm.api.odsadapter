@@ -21,25 +21,25 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 
 /**
- * {@link SearchQuery} implementation for {@link Test} as source entity type.
+ * {@link SearchQuery} implementation for {@link Project} as source entity type.
  *
  * @since 1.0.0
  * @author jst, Peak Solution GmbH
  */
-final class TestSearchQuery extends BaseEntitySearchQuery {
-
+final class ProjectSearchQuery extends BaseEntitySearchQuery {
+	
 	/**
 	 * Constructor.
 	 *
 	 * @param modelManager Used to load {@link EntityType}s.
 	 * @param contextState The {@link ContextState}.
 	 */
-	TestSearchQuery(ODSModelManager modelManager, ContextState contextState) {
-		super(modelManager, Test.class, Project.class);
+	ProjectSearchQuery(ODSModelManager modelManager, ContextState contextState) {
+		super(modelManager, Project.class, Project.class);
 
 		// layers
-		addJoinConfig(JoinConfig.up(Pool.class, Project.class));
-		addJoinConfig(JoinConfig.up(Test.class, Pool.class));
+		addJoinConfig(JoinConfig.down(Project.class, Pool.class));
+		addJoinConfig(JoinConfig.down(Pool.class, Test.class));
 		addJoinConfig(JoinConfig.down(Test.class, TestStep.class));
 		addJoinConfig(JoinConfig.down(TestStep.class, Measurement.class));
 		addJoinConfig(JoinConfig.down(Measurement.class, ChannelGroup.class));
