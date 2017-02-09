@@ -128,6 +128,24 @@ public final class ODSSearchService implements SearchService {
 		return createResult(entityClass, findSearchQuery(entityClass).fetch(attributes, filter));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public List<Result> fetchResults(Class<? extends Entity> entityClass, List<Attribute> attributes, Filter filter, String query)
+			throws DataAccessException {
+
+		Filter mergedFilter = mergeWithFreetextResults(filter, fetchIds(query));
+
+		EntityType entityType = modelManager.getEntityType(entityClass);
+		Map<Long, Result> recordsByEntityID = new HashMap<>();
+		for (Result result : findSearchQuery(entityClass).fetch(attributes, mergedFilter)) {
+			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
+		}
+		
+		return new ArrayList<>(recordsByEntityID.values());
+	}
+	
 	@Override
 	public Map<Class<? extends Entity>, List<Entity>> fetch(String query) throws DataAccessException {
 		if (freeTextSearch == null) {
@@ -145,6 +163,47 @@ public final class ODSSearchService implements SearchService {
 	// ======================================================================
 	// Private methods
 	// ======================================================================
+
+	/**
+	 * Delegates to {@link ODSFreeTextSearch} and retrieves a map off all entity IDs found by the given query.
+	 * 
+	 * @param query fulltext search query
+	 * @return A map with the found entity IDs grouped by {@link Entity} class.
+	 * @throws DataAccessException Thrown if {@link ODSFreeTextSearch} is unavailable or cannot execute the query.
+	 */
+	private Map<Class<? extends Entity>, List<Long>> fetchIds(String query) throws DataAccessException {
+		if (freeTextSearch == null) {
+			initFreetextSearch();
+		}
+
+		return freeTextSearch.searchIds(query);
+	}
+	
+	/**
+	 * Create a conjuction of the given {@link Filter} and with the given entity IDs.
+	 * 
+	 * @param filter 
+	 * @param entityIdsByEntityClass a map with Lists of entity IDs grouped by their {@link Entity} classes 
+	 * @return conjuction filter of <code>filter</code> and <code>entityIdsByEntityClass</code>
+	 */
+	private Filter mergeWithFreetextResults(Filter filter, Map<Class<? extends Entity>, List<Long>> entityIdsByEntityClass) {
+		if (entityIdsByEntityClass.isEmpty()) {
+			return filter;
+		}
+		
+		Filter newFilter = Filter.and().merge(filter);
+		
+		for (Map.Entry<Class<? extends Entity>, List<Long>> entry : entityIdsByEntityClass.entrySet())
+		{
+			if (!entry.getValue().isEmpty()) {
+				newFilter.ids(
+						modelManager.getEntityType(entry.getKey()), 
+						entry.getValue());
+			}
+		}
+	
+		return newFilter;
+	}
 
 	/**
 	 * Loads {@link Entity}s of given entity class for given {@link Result}s.

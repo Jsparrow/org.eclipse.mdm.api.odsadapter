@@ -16,8 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
@@ -30,7 +28,6 @@ import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
-import org.eclipse.mdm.property.GlobalProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,18 +94,32 @@ public class ODSFreeTextSearch {
 	 */
 	public Map<Class<? extends Entity>, List<Entity>> search(String inputQuery) {
 		Map<Class<? extends Entity>, List<Entity>> result = new HashMap<>();
+		
+		Map<Class<? extends Entity>, List<Long>> instances = searchIds(inputQuery);
+		instances.keySet().forEach(type -> convertIds2Entities(result, instances, type));
+		return result;
+	}
+
+	/**
+	 * A search which is compatible to the Search as defined in the rest of the
+	 * API.
+	 * 
+	 * @param inputQuery
+	 * @return never null, but maybe empty
+	 */
+	public Map<Class<? extends Entity>, List<Long>> searchIds(String inputQuery) {
+		Map<Class<? extends Entity>, List<Long>> instanceIds = new HashMap<>();
+
 		JsonElement root = queryElasticSearch(inputQuery);
 		if (root != null) {
 			JsonArray hits = root.getAsJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
 
-			Map<Class<? extends Entity>, List<Long>> instances = new HashMap<>();
-			hits.forEach(e -> put(e, instances));
-
-			instances.keySet().forEach(type -> convertIds2Entities(result, instances, type));
+			hits.forEach(e -> put(e, instanceIds));
+			
 		}
-		return result;
+		return instanceIds;
 	}
-
+	 
 	/**
 	 * Converts all instances to entities
 	 * 
