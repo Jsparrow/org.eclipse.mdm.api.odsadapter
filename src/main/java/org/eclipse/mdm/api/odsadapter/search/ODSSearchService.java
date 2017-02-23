@@ -9,6 +9,7 @@
 package org.eclipse.mdm.api.odsadapter.search;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,8 @@ import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
+
+import com.google.common.base.Strings;
 
 /**
  * ODS implementation of the {@link SearchService} interface.
@@ -128,8 +131,17 @@ public final class ODSSearchService implements SearchService {
 	@Override
 	public List<Result> fetchResults(Class<? extends Entity> entityClass, List<Attribute> attributes, Filter filter, String query)
 			throws DataAccessException {
-
-		Filter mergedFilter = mergeWithFreetextResults(filter, fetchIds(query));
+		Map<Class<? extends Entity>, List<Long>> ids = Collections.emptyMap();
+		
+		if (!Strings.isNullOrEmpty(query)) {
+			// free text search is only called, if a query was specified
+			ids = fetchIds(query);
+			if (ids.isEmpty()) {
+				return Collections.emptyList();
+			}
+		}
+		
+		Filter mergedFilter = mergeWithFreetextResults(filter, ids);
 
 		EntityType entityType = modelManager.getEntityType(entityClass);
 		Map<Long, Result> recordsByEntityID = new HashMap<>();
@@ -181,18 +193,17 @@ public final class ODSSearchService implements SearchService {
 			return filter;
 		}
 		
-		Filter newFilter = Filter.and().merge(filter);
-		
+		Filter freeTextResultsFilter = Filter.or();
 		for (Map.Entry<Class<? extends Entity>, List<Long>> entry : entityIdsByEntityClass.entrySet())
 		{
 			if (!entry.getValue().isEmpty()) {
-				newFilter.ids(
+				freeTextResultsFilter.ids(
 						modelManager.getEntityType(entry.getKey()), 
 						entry.getValue());
 			}
 		}
-	
-		return newFilter;
+
+		return Filter.and().merge(filter, freeTextResultsFilter);
 	}
 
 	/**
