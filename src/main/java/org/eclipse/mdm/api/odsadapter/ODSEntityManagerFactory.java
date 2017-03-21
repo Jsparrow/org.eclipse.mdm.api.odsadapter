@@ -10,9 +10,6 @@ package org.eclipse.mdm.api.odsadapter;
 
 import java.util.Map;
 
-import javax.ejb.Stateful;
-import javax.inject.Inject;
-
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
@@ -21,7 +18,6 @@ import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.EntityManagerFactory;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
-import org.eclipse.mdm.property.GlobalProperty;
 import org.omg.CORBA.ORB;
 import org.omg.CORBA.Object;
 import org.omg.CosNaming.NameComponent;
@@ -56,6 +52,8 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 
 	public static final String PARAM_PASSWORD = "password";
 
+	public static final String PARAM_ELASTIC_SEARCH_URL = "elasticsearch.url";
+
 	private static final String AUTH_TEMPLATE = "USER=%s,PASSWORD=%s,CREATE_COSESSION_ALLOWED=TRUE";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSEntityManagerFactory.class);
@@ -70,17 +68,8 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	// Public methods
 	// ======================================================================
 
-	@Inject
-	@GlobalProperty("elasticsearch.url")
-	String host;
-
 	public ODSEntityManagerFactory() {
-		LOGGER.debug("Default constructor called. Setting es-Host later");
-	}
-
-	public ODSEntityManagerFactory(String esHost) {
-		LOGGER.debug("ES constructor called. Host=" + esHost);
-		this.host = esHost;
+		LOGGER.debug("Default constructor called.");
 	}
 
 	/**
@@ -95,6 +84,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	 * <li>{@value #PARAM_SERVICENAME}</li>
 	 * <li>{@value #PARAM_USER}</li>
 	 * <li>{@value #PARAM_PASSWORD}</li>
+	 * <li>{@value #PARAM_ELASTIC_SEARCH_URL}</li>
 	 * </ul>
 	 *
 	 * Listed names are available via public fields of this class.
@@ -118,7 +108,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			LOGGER.info("Connection to ODS server established.");
 
 			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
-			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer), host);
+			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer), parameters.get(PARAM_ELASTIC_SEARCH_URL));
 		} catch (AoException e) {
 			closeSession(aoSession);
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
@@ -132,7 +122,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	/**
 	 * Closes given {@link AoSession} with catching and logging errors.
 	 *
-	 * @param aoSession The {@code AoSession} that shallbe closed.
+	 * @param aoSession The {@code AoSession} that shall be closed.
 	 */
 	private static void closeSession(AoSession aoSession) {
 		if (aoSession == null) {
@@ -154,7 +144,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	 * @return The property value is returned.
 	 * @throws ConnectionException Thrown if property does not exist or is empty.
 	 */
-	private String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
+	private static String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
 		String value = parameters.get(name);
 		if (value == null || value.isEmpty()) {
 			throw new ConnectionException("Connection parameter with name '" + name + "' is either missing or empty.");

@@ -58,7 +58,6 @@ dependencies {
 	// MDM5 API
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.base:1.0.0'
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.default:1.0.0'
-	compile 'org.eclipse.mdm:org.eclipse.mdm.property:1.0.0'
 	
 	// compile CORBA idl using JDK tools
     generatedCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
