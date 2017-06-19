@@ -70,8 +70,10 @@ public final class ODSEntityFactory extends EntityFactory {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used to create {@link Core}s.
-	 * @param loggedInUser The logged in {@link User}.
+	 * @param modelManager
+	 *            Used to create {@link Core}s.
+	 * @param loggedInUser
+	 *            The logged in {@link User}.
 	 */
 	public ODSEntityFactory(ODSModelManager modelManager, User loggedInUser) {
 		this.modelManager = modelManager;
@@ -112,9 +114,9 @@ public final class ODSEntityFactory extends EntityFactory {
 	@Override
 	protected <T extends Entity> Core createCore(String name, Class<T> entityClass) {
 		EntityConfig<?> entityConfig = modelManager.getEntityConfig(modelManager.getEntityType(name));
-		if(!entityClass.equals(entityConfig.getEntityClass())) {
+		if (!entityClass.equals(entityConfig.getEntityClass())) {
 			throw new IllegalArgumentException("Incompatible entity class expected '" + entityClass.getName()
-			+ "' but got '" + entityConfig.getEntityClass().getName() + "'");
+					+ "' but got '" + entityConfig.getEntityClass().getName() + "'");
 		}
 		Core core = new DefaultCore(entityConfig.getEntityType());
 		core.getValues().get(Entity.ATTR_MIMETYPE).set(entityConfig.getMimeType());
@@ -127,8 +129,9 @@ public final class ODSEntityFactory extends EntityFactory {
 	 */
 	@Override
 	protected void validateEnum(Class<? extends Enum<?>> enumClass) {
-		if(ENUM_CLASSES.contains(enumClass)) {
-			// given enumeration class is a default one, which is always supported
+		if (ENUM_CLASSES.contains(enumClass)) {
+			// given enumeration class is a default one, which is always
+			// supported
 			return;
 		}
 
@@ -144,8 +147,10 @@ public final class ODSEntityFactory extends EntityFactory {
 	/**
 	 * Creates a configured {@link Core} for given {@link Key}.
 	 *
-	 * @param <T> The entity type.
-	 * @param key Used as identifier to resolve the {@link EntityConfig}.
+	 * @param <T>
+	 *            The entity type.
+	 * @param key
+	 *            Used as identifier to resolve the {@link EntityConfig}.
 	 * @return The created {@code Core} is returned.
 	 */
 	private <T extends Entity> Core createCore(Key<T> key) {
@@ -153,7 +158,7 @@ public final class ODSEntityFactory extends EntityFactory {
 		Core core = new DefaultCore(entityConfig.getEntityType());
 		core.getValues().get(Entity.ATTR_MIMETYPE).set(entityConfig.getMimeType());
 
-		if(CatalogAttribute.class.equals(entityConfig.getEntityClass())) {
+		if (CatalogAttribute.class.equals(entityConfig.getEntityClass())) {
 			core.getValues().put(VATTR_ENUMERATION_CLASS, ValueType.STRING.create(VATTR_ENUMERATION_CLASS));
 			core.getValues().put(VATTR_SCALAR_TYPE, ValueType.ENUMERATION.create(ScalarType.class, VATTR_SCALAR_TYPE));
 			core.getValues().put(VATTR_SEQUENCE, ValueType.BOOLEAN.create(VATTR_SEQUENCE));

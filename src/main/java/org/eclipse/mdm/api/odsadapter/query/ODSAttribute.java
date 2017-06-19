@@ -41,10 +41,14 @@ final class ODSAttribute implements Attribute {
 	/**
 	 * Constructor.
 	 *
-	 * @param entityType The parent {@link EntityType}.
-	 * @param applAttr The ODS meta data for this attribute.
-	 * @param unit The unit name.
-	 * @param enumClass The enumeration class, may be null.
+	 * @param entityType
+	 *            The parent {@link EntityType}.
+	 * @param applAttr
+	 *            The ODS meta data for this attribute.
+	 * @param unit
+	 *            The unit name.
+	 * @param enumClass
+	 *            The enumeration class, may be null.
 	 */
 	ODSAttribute(EntityType entityType, ApplAttr applAttr, String unit, Class<? extends Enum<?>> enumClass) {
 		this.entityType = entityType;
@@ -52,9 +56,9 @@ final class ODSAttribute implements Attribute {
 		this.unit = unit == null ? "" : unit;
 		valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);
 
-		if(valueType.isEnumerationType() && enumClass == null) {
-			throw new IllegalStateException("A modeled attribute with an enumeration vaue type must have an "
-					+ "enumeration definition.");
+		if (valueType.isEnumerationType() && enumClass == null) {
+			throw new IllegalStateException(
+					"A modeled attribute with an enumeration vaue type must have an " + "enumeration definition.");
 		}
 
 		this.enumClass = enumClass;
@@ -101,7 +105,7 @@ final class ODSAttribute implements Attribute {
 	 */
 	@Override
 	public Class<? extends Enum<?>> getEnumClass() {
-		if(getValueType().isEnumerationType()) {
+		if (getValueType().isEnumerationType()) {
 			return enumClass;
 		}
 
@@ -121,7 +125,7 @@ final class ODSAttribute implements Attribute {
 	 */
 	@Override
 	public boolean equals(Object object) {
-		if(object instanceof ODSAttribute) {
+		if (object instanceof ODSAttribute) {
 			Attribute attribute = (Attribute) object;
 			return getEntityType().equals(attribute.getEntityType()) && getName().equals(attribute.getName());
 		}

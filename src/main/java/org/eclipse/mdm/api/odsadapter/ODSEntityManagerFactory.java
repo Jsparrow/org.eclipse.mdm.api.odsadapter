@@ -62,7 +62,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	// Instance variables
 	// ======================================================================
 
-	private final ORB orb = ORB.init(new String[]{}, System.getProperties());
+	private final ORB orb = ORB.init(new String[] {}, System.getProperties());
 
 	// ======================================================================
 	// Public methods
@@ -92,7 +92,7 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	@Override
 	public EntityManager connect(Map<String, String> parameters) throws ConnectionException {
 		AoSession aoSession = null;
-		try(ServiceLocator serviceLocator = new ServiceLocator(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
+		try (ServiceLocator serviceLocator = new ServiceLocator(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
 			String nameOfService = getParameter(parameters, PARAM_SERVICENAME).replace(".ASAM-ODS", "");
 
 			AoFactory aoFactory = serviceLocator.resolveFactory(nameOfService);
@@ -108,7 +108,8 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 			LOGGER.info("Connection to ODS server established.");
 
 			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
-			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer), parameters.get(PARAM_ELASTIC_SEARCH_URL));
+			return new ODSEntityManager(new ODSModelManager(orb, aoSession, fileServer),
+					parameters.get(PARAM_ELASTIC_SEARCH_URL));
 		} catch (AoException e) {
 			closeSession(aoSession);
 			throw new ConnectionException("Unablte to connect to ODS server due to: " + e.reason, e);
@@ -122,7 +123,8 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	/**
 	 * Closes given {@link AoSession} with catching and logging errors.
 	 *
-	 * @param aoSession The {@code AoSession} that shall be closed.
+	 * @param aoSession
+	 *            The {@code AoSession} that shall be closed.
 	 */
 	private static void closeSession(AoSession aoSession) {
 		if (aoSession == null) {
@@ -139,10 +141,13 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 	/**
 	 * Reads the property identified by given property name.
 	 *
-	 * @param parameters The properties {@code Map}.
-	 * @param name The property name.
+	 * @param parameters
+	 *            The properties {@code Map}.
+	 * @param name
+	 *            The property name.
 	 * @return The property value is returned.
-	 * @throws ConnectionException Thrown if property does not exist or is empty.
+	 * @throws ConnectionException
+	 *             Thrown if property does not exist or is empty.
 	 */
 	private static String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
 		String value = parameters.get(name);
@@ -175,13 +180,16 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		/**
 		 * Constructor.
 		 *
-		 * @param orb The {@link ORB} singleton instance.
-		 * @param path The naming context path.
-		 * @throws ConnectionException Thrown if unable to resolve the naming context.
+		 * @param orb
+		 *            The {@link ORB} singleton instance.
+		 * @param path
+		 *            The naming context path.
+		 * @throws ConnectionException
+		 *             Thrown if unable to resolve the naming context.
 		 */
 		public ServiceLocator(ORB orb, String path) throws ConnectionException {
 			namingContext = NamingContextExtHelper.narrow(orb.string_to_object(path));
-			if(namingContext == null) {
+			if (namingContext == null) {
 				throw new ConnectionException("Unable to resolve NameService '" + path + "'.");
 			}
 		}
@@ -193,9 +201,11 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		/**
 		 * Resolves and returns the {@link AoFactory} service for given ID.
 		 *
-		 * @param id Used as identifier.
+		 * @param id
+		 *            Used as identifier.
 		 * @return The {@code AoFactory} is returned.
-		 * @throws ConnectionException Thrown if unable to resolve the {@code
+		 * @throws ConnectionException
+		 *             Thrown if unable to resolve the {@code
 		 * 		AoFactory}.
 		 */
 		public AoFactory resolveFactory(String id) throws ConnectionException {
@@ -203,16 +213,18 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		}
 
 		/**
-		 * Resolves and returns the {@link CORBAFileServerIF} service for
-		 * given ID.
+		 * Resolves and returns the {@link CORBAFileServerIF} service for given
+		 * ID.
 		 *
-		 * @param id Used as identifier.
-		 * @return The {@code CORBAFileServerIF} or null, if none found, is returned.
+		 * @param id
+		 *            Used as identifier.
+		 * @return The {@code CORBAFileServerIF} or null, if none found, is
+		 *         returned.
 		 */
 		public CORBAFileServerIF resolveFileServer(String id) {
 			try {
 				return CORBAFileServerIFHelper.narrow(resolve(id, "CORBA-FT"));
-			} catch(ConnectionException e) {
+			} catch (ConnectionException e) {
 				LOGGER.warn(e.getMessage());
 				return null;
 			}
@@ -221,15 +233,18 @@ public class ODSEntityManagerFactory implements EntityManagerFactory<EntityManag
 		/**
 		 * Resolves a CORBA service object for given id and kind.
 		 *
-		 * @param id Used as identifier.
-		 * @param kind Used as qualifier.
+		 * @param id
+		 *            Used as identifier.
+		 * @param kind
+		 *            Used as qualifier.
 		 * @return The resolved CORBA service object is returned.
-		 * @throws ConnectionException Thrown in case of errors.
+		 * @throws ConnectionException
+		 *             Thrown in case of errors.
 		 */
-		public Object resolve(String id, String kind) throws  ConnectionException {
+		public Object resolve(String id, String kind) throws ConnectionException {
 			try {
 				return namingContext.resolve(new NameComponent[] { new NameComponent(id, kind) });
-			} catch(NotFound | CannotProceed | InvalidName e) {
+			} catch (NotFound | CannotProceed | InvalidName e) {
 				throw new ConnectionException("Unable to resolve service '" + id + "." + kind + "'.", e);
 			}
 		}

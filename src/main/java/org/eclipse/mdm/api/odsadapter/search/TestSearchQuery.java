@@ -31,8 +31,10 @@ final class TestSearchQuery extends BaseEntitySearchQuery {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used to load {@link EntityType}s.
-	 * @param contextState The {@link ContextState}.
+	 * @param modelManager
+	 *            Used to load {@link EntityType}s.
+	 * @param contextState
+	 *            The {@link ContextState}.
 	 */
 	TestSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, Test.class, Project.class);

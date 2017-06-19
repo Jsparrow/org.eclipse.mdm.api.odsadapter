@@ -51,11 +51,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Test notification service. 
+ * Test notification service.
  * 
- * Needs a running ODS and Notification Server.
- * Assumes an existing Test with name defined in {@link PeakNotificationTest#PARENT_TEST},
- * an UnitUnderTest with ID 11 and an UnitUnderTestPart with ID 34.
+ * Needs a running ODS and Notification Server. Assumes an existing Test with
+ * name defined in {@link PeakNotificationTest#PARENT_TEST}, an UnitUnderTest
+ * with ID 11 and an UnitUnderTestPart with ID 34.
  * 
  * @author Matthias Koller, Peak Solution GmbH
  *
@@ -63,17 +63,16 @@ import org.slf4j.LoggerFactory;
 public class PeakNotificationTest {
 
 	/*
-	 * ATTENTION:
-	 * ==========
+	 * ATTENTION: ==========
 	 *
-	 * To run this test make sure the target service is running a
-	 * MDM default model and any database constraint which enforces
-	 * a relation of Test to a parent entity is deactivated!
+	 * To run this test make sure the target service is running a MDM default
+	 * model and any database constraint which enforces a relation of Test to a
+	 * parent entity is deactivated!
 	 */
-	
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
-	
-	// TODO name service:  corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
+
+	// TODO name service: corbaloc::1.2@<SERVER_IP>:<SERVER_PORT>/NameService
 	private static final String NAME_SERVICE = "corbaloc::1.2@127.0.0.1:2809/NameService";
 
 	// TODO service name: <SERVICE_NAME>.ASAM-ODS
@@ -84,12 +83,11 @@ public class PeakNotificationTest {
 
 	private static final String PARENT_TEST = "PBN_UNECE_R51_13022014_1349";
 
-	
 	private static final String NOTIFICATION_URL = "http://localhost:8080/api";
 	private static final String NOTIFICATION_REGISTRATION_NAME = "mdm";
 	private static final String NOTIFICATION_USER = "sa";
 	private static final String NOTIFICATION_PASSWORD = "sa";
-	
+
 	private static EntityManager entityManager;
 	private static NotificationManager notificationManager;
 
@@ -102,143 +100,131 @@ public class PeakNotificationTest {
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
 		entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
-		
+
 		Map<String, String> notificationParameters = new HashMap<>();
-		notificationParameters.put(ODSNotificationManagerFactory.PARAM_SERVER_TYPE, ODSNotificationManagerFactory.SERVER_TYPE_PEAK);
+		notificationParameters.put(ODSNotificationManagerFactory.PARAM_SERVER_TYPE,
+				ODSNotificationManagerFactory.SERVER_TYPE_PEAK);
 		notificationParameters.put(ODSNotificationManagerFactory.PARAM_URL, NOTIFICATION_URL);
 		notificationParameters.put(ODSEntityManagerFactory.PARAM_USER, NOTIFICATION_USER);
 		notificationParameters.put(ODSEntityManagerFactory.PARAM_PASSWORD, NOTIFICATION_PASSWORD);
 		notificationParameters.put(ODSNotificationManagerFactory.PARAM_EVENT_MEDIATYPE, "application/json");
-		
-		notificationManager = new ODSNotificationManagerFactory().create((ODSEntityManager) entityManager, notificationParameters);
+
+		notificationManager = new ODSNotificationManagerFactory().create((ODSEntityManager) entityManager,
+				notificationParameters);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws ConnectionException, NotificationException {
-		if (entityManager != null)
-		{
+		if (entityManager != null) {
 			entityManager.close();
 		}
-		
-		if (notificationManager != null)
-		{
+
+		if (notificationManager != null) {
 			notificationManager.deregister(NOTIFICATION_REGISTRATION_NAME);
 			notificationManager.close(true);
 		}
 	}
-	
+
 	@org.junit.Test
-	public void testCreateTestStep() throws NotificationException, DataAccessException, InterruptedException
-	{ 
+	public void testCreateTestStep() throws NotificationException, DataAccessException, InterruptedException {
 		String testStepName = USER + "_TestStep";
-		
+
 		NotificationListener l = Mockito.mock(NotificationListener.class);
 
 		notificationManager.register(NOTIFICATION_REGISTRATION_NAME, new NotificationFilter(), l);
 
-		try
-		{	
+		try {
 			createTestStep(PARENT_TEST, testStepName);
-			
+
 			// make sure notification has some time to be pushed
 			Thread.sleep(1000L);
-			
+
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			ArgumentCaptor<List<TestStep>> testStepCaptor = ArgumentCaptor.forClass((Class) List.class);
 			ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-			
+
 			verify(l, times(1)).instanceCreated(testStepCaptor.capture(), userCaptor.capture());
-			
+
 			assertThat(testStepCaptor.getValue().size(), is(1));
 			assertThat(testStepCaptor.getValue().get(0).getName(), is(testStepName));
 			assertThat(userCaptor.getValue().getName(), is(USER));
-		}
-		finally
-		{
+		} finally {
 			notificationManager.deregister(NOTIFICATION_REGISTRATION_NAME);
 			deleteTestStep(testStepName);
 		}
 	}
 
-	
 	@org.junit.Test
-	public void testModifyContextRoot() throws NotificationException, DataAccessException, InterruptedException, IOException
-	{ 		
+	public void testModifyContextRoot()
+			throws NotificationException, DataAccessException, InterruptedException, IOException {
 		NotificationListener l = Mockito.mock(NotificationListener.class);
-	
+
 		notificationManager.register(NOTIFICATION_REGISTRATION_NAME, new NotificationFilter(), l);
-	
-		try
-		{	
+
+		try {
 			updateUUT(11, "application/x-asam.aounitundertest.unitundertest");
-	
+
 			// make sure notification has some time to be pushed
 			Thread.sleep(1000L);
-			
+
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			ArgumentCaptor<List<Entity>> entityCaptor = ArgumentCaptor.forClass((Class) List.class);
 			ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-			
+
 			verify(l, times(1)).instanceModified(entityCaptor.capture(), userCaptor.capture());
-			
+
 			assertThat(entityCaptor.getValue().size(), is(1));
 			assertThat(entityCaptor.getValue().get(0).getName(), is("PBN_UNECE_R51_Left_AccV"));
 			assertThat(userCaptor.getValue().getName(), is(USER));
-		}
-		finally
-		{
+		} finally {
 			notificationManager.deregister(NOTIFICATION_REGISTRATION_NAME);
 		}
 	}
-	
+
 	@org.junit.Test
-	public void testModifyContextComponent() throws NotificationException, DataAccessException, InterruptedException, IOException
-	{ 		
+	public void testModifyContextComponent()
+			throws NotificationException, DataAccessException, InterruptedException, IOException {
 		NotificationListener l = Mockito.mock(NotificationListener.class);
-	
+
 		notificationManager.register(NOTIFICATION_REGISTRATION_NAME, new NotificationFilter(), l);
-	
-		try
-		{	
+
+		try {
 			updateUUTP(34, "test");
-	
+
 			// make sure notification has some time to be pushed
 			Thread.sleep(1000L);
-			
+
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			ArgumentCaptor<List<Entity>> entityCaptor = ArgumentCaptor.forClass((Class) List.class);
 			ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-			
+
 			verify(l, times(1)).instanceModified(entityCaptor.capture(), userCaptor.capture());
-			
+
 			assertThat(entityCaptor.getValue().size(), is(1));
 			assertThat(entityCaptor.getValue().get(0).getName(), is("PBN_UNECE_R51_Left_SteadyV"));
 			assertThat(userCaptor.getValue().getName(), is(USER));
-		}
-		finally
-		{
+		} finally {
 			notificationManager.deregister(NOTIFICATION_REGISTRATION_NAME);
 		}
 	}
-	
+
 	private void createTestStep(String parentName, String name) throws DataAccessException {
 		Transaction transaction = entityManager.startTransaction();
-	
+
 		List<Test> tests = entityManager.loadAll(Test.class, parentName);
-	
+
 		assertThat("Parent test not found!", !tests.isEmpty());
-		
+
 		Optional<EntityFactory> entityFactory = entityManager.getEntityFactory();
-		if (!entityFactory.isPresent())
-		{
+		if (!entityFactory.isPresent()) {
 			throw new IllegalStateException("Entity factory not present!");
 		}
-	
+
 		TestStep testStep = entityFactory.get().createTestStep(name, tests.get(0));
 		testStep.setSortIndex(0);
-		
+
 		transaction.create(Arrays.asList(testStep));
-		
+
 		transaction.commit();
 	}
 
@@ -248,44 +234,39 @@ public class PeakNotificationTest {
 		List<TestStep> testSteps = entityManager.loadAll(TestStep.class, name);
 
 		transaction.delete(testSteps);
-		
+
 		transaction.commit();
 	}
-	
+
 	private void updateUUT(int uutId, String newValue) throws DataAccessException {
-		
+
 		AoSession session = null;
-		try
-		{
+		try {
 			session = ((ODSModelManager) entityManager.getModelManager().get()).getAoSession().createCoSession();
-			
+
 			ApplicationElement aeUUT = session.getApplicationStructure().getElementsByBaseType("AoUnitUnderTest")[0];
-		      
+
 			final ApplElemAccess aea = session.getApplElemAccess();
-	
+
 			TS_UnionSeq uId = new TS_UnionSeq();
-			uId.longlongVal(new T_LONGLONG[] { new T_LONGLONG(0, uutId)});
-	
+			uId.longlongVal(new T_LONGLONG[] { new T_LONGLONG(0, uutId) });
+
 			TS_UnionSeq uManufacturer = new TS_UnionSeq();
 			uManufacturer.stringVal(new String[] { newValue });
-	
+
 			AIDNameValueSeqUnitId[] val = new AIDNameValueSeqUnitId[] {
-					new AIDNameValueSeqUnitId(new AIDName(aeUUT.getId(), "Id"), new T_LONGLONG(), new TS_ValueSeq(uId, new short[] { (short) 15 }))  ,
-					new AIDNameValueSeqUnitId(new AIDName(aeUUT.getId(), "Mimetype"), new T_LONGLONG(), new TS_ValueSeq(uManufacturer, new short[] { (short) 15 }))  
-			};
+					new AIDNameValueSeqUnitId(new AIDName(aeUUT.getId(), "Id"), new T_LONGLONG(),
+							new TS_ValueSeq(uId, new short[] { (short) 15 })),
+					new AIDNameValueSeqUnitId(new AIDName(aeUUT.getId(), "Mimetype"), new T_LONGLONG(),
+							new TS_ValueSeq(uManufacturer, new short[] { (short) 15 })) };
 			session.startTransaction();
 			aea.updateInstances(val);
 			session.commitTransaction();
-			
-		}
-		catch (AoException e)
-		{
+
+		} catch (AoException e) {
 			throw new DataAccessException(e.reason, e);
-		}
-		finally
-		{
-			if (session != null)
-			{
+		} finally {
+			if (session != null) {
 				try {
 					session.close();
 				} catch (AoException e) {
@@ -294,41 +275,36 @@ public class PeakNotificationTest {
 			}
 		}
 	}
-	
+
 	private void updateUUTP(int tyreId, String newValue) throws DataAccessException {
-		
+
 		AoSession session = null;
-		try
-		{
+		try {
 			session = ((ODSModelManager) entityManager.getModelManager().get()).getAoSession().createCoSession();
-			
+
 			ApplicationElement aeTyre = session.getApplicationStructure().getElementByName("tyre");
-		      
+
 			final ApplElemAccess aea = session.getApplElemAccess();
-	
+
 			TS_UnionSeq uId = new TS_UnionSeq();
-			uId.longlongVal(new T_LONGLONG[] { new T_LONGLONG(0, tyreId)});
-	
+			uId.longlongVal(new T_LONGLONG[] { new T_LONGLONG(0, tyreId) });
+
 			TS_UnionSeq uManufacturer = new TS_UnionSeq();
 			uManufacturer.stringVal(new String[] { newValue });
-	
+
 			AIDNameValueSeqUnitId[] val = new AIDNameValueSeqUnitId[] {
-					new AIDNameValueSeqUnitId(new AIDName(aeTyre.getId(), "Id"), new T_LONGLONG(), new TS_ValueSeq(uId, new short[] { (short) 15 }))  ,
-					new AIDNameValueSeqUnitId(new AIDName(aeTyre.getId(), "manufacturer"), new T_LONGLONG(), new TS_ValueSeq(uManufacturer, new short[] { (short) 15 }))  
-			};
+					new AIDNameValueSeqUnitId(new AIDName(aeTyre.getId(), "Id"), new T_LONGLONG(),
+							new TS_ValueSeq(uId, new short[] { (short) 15 })),
+					new AIDNameValueSeqUnitId(new AIDName(aeTyre.getId(), "manufacturer"), new T_LONGLONG(),
+							new TS_ValueSeq(uManufacturer, new short[] { (short) 15 })) };
 			session.startTransaction();
 			aea.updateInstances(val);
 			session.commitTransaction();
-			
-		}
-		catch (AoException e)
-		{
+
+		} catch (AoException e) {
 			throw new DataAccessException(e.reason, e);
-		}
-		finally
-		{
-			if (session != null)
-			{
+		} finally {
+			if (session != null) {
 				try {
 					session.close();
 				} catch (AoException e) {

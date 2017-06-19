@@ -51,24 +51,28 @@ final class UploadService {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used for setup.
-	 * @param entity Used for security checks.
-	 * @param transfer The transfer type.
+	 * @param modelManager
+	 *            Used for setup.
+	 * @param entity
+	 *            Used for security checks.
+	 * @param transfer
+	 *            The transfer type.
 	 */
-	UploadService(ODSModelManager modelManager,Entity entity,  Transfer transfer) {
+	UploadService(ODSModelManager modelManager, Entity entity, Transfer transfer) {
 		fileService = new CORBAFileService(modelManager, transfer);
 		this.entity = entity;
 
 		scheduler.scheduleAtFixedRate(() -> {
 			try {
 				modelManager.getAoSession().getName();
-			} catch(AoException e) {
+			} catch (AoException e) {
 				/*
-				 * NOTE: This is done to keep the parent transaction's session alive
-				 * till its commit or abort method is called. If this session refresh
-				 * results in an error, then any running file transfer will abort
-				 * with a proper error, therefore any exception here is completely
-				 * ignored and explicitly NOT logged!
+				 * NOTE: This is done to keep the parent transaction's session
+				 * alive till its commit or abort method is called. If this
+				 * session refresh results in an error, then any running file
+				 * transfer will abort with a proper error, therefore any
+				 * exception here is completely ignored and explicitly NOT
+				 * logged!
 				 */
 			}
 		}, 5, 5, TimeUnit.MINUTES);
@@ -79,27 +83,30 @@ final class UploadService {
 	// ======================================================================
 
 	/**
-	 * Uploads new externally linked files stored in given {@link
-	 * TemplateAttribute}s. The upload progress may be traced with a progress
-	 * listener.
+	 * Uploads new externally linked files stored in given
+	 * {@link TemplateAttribute}s. The upload progress may be traced with a
+	 * progress listener.
 	 *
-	 * @param templateAttributes The {@link TemplateAttribute}s.
-	 * @param progressListener The progress listener.
-	 * @throws IOException Thrown if unable to upload files.
+	 * @param templateAttributes
+	 *            The {@link TemplateAttribute}s.
+	 * @param progressListener
+	 *            The progress listener.
+	 * @throws IOException
+	 *             Thrown if unable to upload files.
 	 */
 	public void upload(Collection<TemplateAttribute> templateAttributes, ProgressListener progressListener)
 			throws IOException {
 		List<FileLink> fileLinks = new ArrayList<>();
-		for(TemplateAttribute templateAttribute : templateAttributes) {
+		for (TemplateAttribute templateAttribute : templateAttributes) {
 			Value defaultValue = templateAttribute.getDefaultValue();
-			if(!defaultValue.isValid()) {
+			if (!defaultValue.isValid()) {
 				continue;
 			}
 
-			if(defaultValue.getValueType().isFileLink()) {
+			if (defaultValue.getValueType().isFileLink()) {
 				fileLinks.add(defaultValue.extract());
-			} else if(defaultValue.getValueType().isFileLinkSequence()) {
-				fileLinks.addAll(Arrays.asList((FileLink[])defaultValue.extract()));
+			} else if (defaultValue.getValueType().isFileLinkSequence()) {
+				fileLinks.addAll(Arrays.asList((FileLink[]) defaultValue.extract()));
 			} else {
 				throw new IllegalStateException("Template attribute's value type is not of type file link.");
 			}
@@ -107,7 +114,7 @@ final class UploadService {
 			templateAttributeFileLinks.put(templateAttribute, defaultValue);
 		}
 
-		if(!fileLinks.isEmpty()) {
+		if (!fileLinks.isEmpty()) {
 			uploadParallel(fileLinks, progressListener);
 			// remote paths available -> update template attribute
 			templateAttributeFileLinks.forEach((ta, v) -> ta.setDefaultValue(v.extract()));
@@ -119,9 +126,12 @@ final class UploadService {
 	 * multiple times are uploaded only once. The upload progress may be traced
 	 * with a progress listener.
 	 *
-	 * @param fileLinks Collection of {@code FileLink}s to upload.
-	 * @param progressListener The progress listener.
-	 * @throws IOException Thrown if unable to upload files.
+	 * @param fileLinks
+	 *            Collection of {@code FileLink}s to upload.
+	 * @param progressListener
+	 *            The progress listener.
+	 * @throws IOException
+	 *             Thrown if unable to upload files.
 	 */
 	public void uploadParallel(Collection<FileLink> fileLinks, ProgressListener progressListener) throws IOException {
 		List<FileLink> filtered = retainForUpload(fileLinks);
@@ -139,7 +149,8 @@ final class UploadService {
 	 * Once {@link #commit()} is called given {@link FileLink}s will be deleted
 	 * from the remote storage.
 	 *
-	 * @param fileLinks Collection of {@code FileLink}s to delete.
+	 * @param fileLinks
+	 *            Collection of {@code FileLink}s to delete.
 	 */
 	public void addToRemove(Collection<FileLink> fileLinks) {
 		toRemove.addAll(fileLinks);
@@ -170,14 +181,15 @@ final class UploadService {
 	/**
 	 * Filters given {@link FileLink}s by removing already uploaded ones.
 	 *
-	 * @param fileLinks Will be filtered.
+	 * @param fileLinks
+	 *            Will be filtered.
 	 * @return Returns {@code FileLink}s which have to be uploaded.
 	 */
 	private List<FileLink> retainForUpload(Collection<FileLink> fileLinks) {
 		List<FileLink> filtered = new ArrayList<>(fileLinks);
-		for(FileLink fileLink : fileLinks) {
+		for (FileLink fileLink : fileLinks) {
 			String remotePath = remotePaths.get(fileLink.getLocalPath());
-			if(remotePath != null && !remotePath.isEmpty()) {
+			if (remotePath != null && !remotePath.isEmpty()) {
 				fileLink.setRemotePath(remotePath);
 				filtered.remove(fileLink);
 				uploaded.add(fileLink);

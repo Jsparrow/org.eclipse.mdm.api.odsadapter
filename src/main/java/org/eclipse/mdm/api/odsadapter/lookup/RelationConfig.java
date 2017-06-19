@@ -37,9 +37,12 @@ public final class RelationConfig {
 	/**
 	 * Constructor.
 	 *
-	 * @param source The source {@link EntityType}.
-	 * @param entityConfig The target {@link EntityConfig}.
-	 * @param mandatory Flag indicates whether a related must exist or not.
+	 * @param source
+	 *            The source {@link EntityType}.
+	 * @param entityConfig
+	 *            The target {@link EntityConfig}.
+	 * @param mandatory
+	 *            Flag indicates whether a related must exist or not.
 	 */
 	public RelationConfig(EntityType source, EntityConfig<?> entityConfig, boolean mandatory) {
 		this.entityConfig = entityConfig;
@@ -52,18 +55,20 @@ public final class RelationConfig {
 	// ======================================================================
 
 	/**
-	 * Given {@link EntityRecord} depends on {@link Entity}s which are loaded
-	 * by processing this relation config. Therefore given {@code EntityRecord}
+	 * Given {@link EntityRecord} depends on {@link Entity}s which are loaded by
+	 * processing this relation config. Therefore given {@code EntityRecord}
 	 * cached and satisfied as soon as the corresponding entities are loaded.
 	 *
-	 * @param entityRecord The dependant {@code EntityRecord}.
-	 * @param record The {@link Record} associated with given {@link EntityRecord}.
+	 * @param entityRecord
+	 *            The dependant {@code EntityRecord}.
+	 * @param record
+	 *            The {@link Record} associated with given {@link EntityRecord}.
 	 */
 	public void add(EntityRecord<?> entityRecord, Record record) {
 		Optional<Long> relatedEntityID = record.getID(relation);
-		if(relatedEntityID.isPresent()) {
+		if (relatedEntityID.isPresent()) {
 			dependants.computeIfAbsent(relatedEntityID.get(), k -> new ArrayList<>()).add(entityRecord);
-		} else if(mandatory) {
+		} else if (mandatory) {
 			throw new IllegalStateException("Mandatory relation unsatisfied.");
 		}
 	}

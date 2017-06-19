@@ -39,7 +39,8 @@ final class SearchableNode implements Searchable {
 	/**
 	 * Constructor.
 	 *
-	 * @param entityType The associated {@link EntityType}.
+	 * @param entityType
+	 *            The associated {@link EntityType}.
 	 */
 	SearchableNode(EntityType entityType) {
 		this.entityType = entityType;
@@ -72,11 +73,9 @@ final class SearchableNode implements Searchable {
 	public String toString() {
 		StringBuilder sb = new StringBuilder("Searchable(").append("EntityType = ").append(entityType);
 
-		if(!isLeaf()) {
-			sb.append(", relatedSearchables = ").append(
-					relatedSearchables.stream()
-					.map(Searchable::getEntityType)
-					.collect(Collectors.toList()));
+		if (!isLeaf()) {
+			sb.append(", relatedSearchables = ")
+					.append(relatedSearchables.stream().map(Searchable::getEntityType).collect(Collectors.toList()));
 		}
 
 		return sb.append(')').toString();
@@ -89,7 +88,8 @@ final class SearchableNode implements Searchable {
 	/**
 	 * Adds given {@link Searchable} as a child to this searchable.
 	 *
-	 * @param searchable Will be added a child.
+	 * @param searchable
+	 *            Will be added a child.
 	 */
 	void addRelated(Searchable searchable) {
 		relatedSearchables.add(searchable);

@@ -25,15 +25,17 @@ import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
  * type.
  *
  * @since 1.0.0
- * @author 
+ * @author
  */
 final class ChannelGroupSearchQuery extends BaseEntitySearchQuery {
-	
+
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used to load {@link EntityType}s.
-	 * @param contextState The {@link ContextState}.
+	 * @param modelManager
+	 *            Used to load {@link EntityType}s.
+	 * @param contextState
+	 *            The {@link ContextState}.
 	 */
 	ChannelGroupSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, ChannelGroup.class, Project.class);
@@ -45,7 +47,7 @@ final class ChannelGroupSearchQuery extends BaseEntitySearchQuery {
 		addJoinConfig(JoinConfig.up(Measurement.class, TestStep.class));
 		addJoinConfig(JoinConfig.up(ChannelGroup.class, Measurement.class));
 		addJoinConfig(JoinConfig.down(Measurement.class, Channel.class));
-		
+
 		// context
 		addJoinConfig(contextState);
 	}

@@ -94,7 +94,7 @@ public class ODSFreeTextSearch {
 	 */
 	public Map<Class<? extends Entity>, List<Entity>> search(String inputQuery) {
 		Map<Class<? extends Entity>, List<Entity>> result = new HashMap<>();
-		
+
 		Map<Class<? extends Entity>, List<Long>> instances = searchIds(inputQuery);
 		instances.keySet().forEach(type -> convertIds2Entities(result, instances, type));
 		return result;
@@ -115,11 +115,11 @@ public class ODSFreeTextSearch {
 			JsonArray hits = root.getAsJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
 
 			hits.forEach(e -> put(e, instanceIds));
-			
+
 		}
 		return instanceIds;
 	}
-	 
+
 	/**
 	 * Converts all instances to entities
 	 * 

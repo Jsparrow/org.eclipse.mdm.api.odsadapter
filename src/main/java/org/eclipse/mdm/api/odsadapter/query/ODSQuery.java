@@ -89,7 +89,8 @@ public class ODSQuery implements Query {
 	/**
 	 * Constructor.
 	 *
-	 * @param applElemAccess Used to execute the query.
+	 * @param applElemAccess
+	 *            Used to execute the query.
 	 */
 	ODSQuery(ApplElemAccess applElemAccess) {
 		this.applElemAccess = applElemAccess;
@@ -165,9 +166,9 @@ public class ODSQuery implements Query {
 	@Override
 	public Optional<Result> fetchSingleton(Filter filter) throws DataAccessException {
 		List<Result> results = fetch(filter);
-		if(results.isEmpty()) {
+		if (results.isEmpty()) {
 			return Optional.empty();
-		} else if(results.size() > 1) {
+		} else if (results.size() > 1) {
 			throw new DataAccessException("Multiple results found after executing the singleton query!");
 		}
 
@@ -183,11 +184,11 @@ public class ODSQuery implements Query {
 
 			List<SelItem> condSeq = new ArrayList<>();
 			int condCount = 0;
-			for(FilterItem conditionItem : filter) {
+			for (FilterItem conditionItem : filter) {
 				SelItem selItem = new SelItem();
-				if(conditionItem.isCondition()) {
+				if (conditionItem.isCondition()) {
 					selItem.value(createCondition(conditionItem.getCondition()));
-				} else if(conditionItem.isOperator()) {
+				} else if (conditionItem.isOperator()) {
 					selItem._operator(ODSUtils.OPERATORS.convert(conditionItem.getOperator()));
 					condCount++;
 				} else {
@@ -206,7 +207,7 @@ public class ODSQuery implements Query {
 
 			List<Result> results = new ArrayList<>();
 			long start = System.currentTimeMillis();
-			for(Result result : new ResultFactory(entityTypesByID, applElemAccess.getInstancesExt(qse, 0)[0])) {
+			for (Result result : new ResultFactory(entityTypesByID, applElemAccess.getInstancesExt(qse, 0)[0])) {
 				results.add(result);
 			}
 			long stop = System.currentTimeMillis();
@@ -214,7 +215,7 @@ public class ODSQuery implements Query {
 			LOGGER.debug("Query executed in {} ms and retrieved {} result rows ({} selections, {} conditions, "
 					+ "{} joins).", stop - start, results.size(), anuSeq.size(), condCount, joinSeq.size());
 			return results;
-		} catch(AoException aoe) {
+		} catch (AoException aoe) {
 			throw new DataAccessException(aoe.reason, aoe);
 		}
 	}
@@ -227,8 +228,10 @@ public class ODSQuery implements Query {
 	 * Converts given {@link Attribute} and {@link Aggregation} to an ODS
 	 * {@link SelAIDNameUnitId}.
 	 *
-	 * @param attribute The {@code Attribute}.
-	 * @param aggregation The {@code Aggregation}.
+	 * @param attribute
+	 *            The {@code Attribute}.
+	 * @param aggregation
+	 *            The {@code Aggregation}.
 	 * @return The corresponding {@code SelAIDNameUnitId} is returned.
 	 */
 	private SelAIDNameUnitId createSelect(Attribute attribute, Aggregation aggregation) {
@@ -244,9 +247,11 @@ public class ODSQuery implements Query {
 	/**
 	 * Converts given {@link Condition} to an ODS {@link SelValueExt}.
 	 *
-	 * @param condition The {@code Condition}.
+	 * @param condition
+	 *            The {@code Condition}.
 	 * @return The corresponding {@code SelValueExt} is returned.
-	 * @throws DataAccessException Thrown in case of errors.
+	 * @throws DataAccessException
+	 *             Thrown in case of errors.
 	 */
 	private SelValueExt createCondition(Condition condition) throws DataAccessException {
 		SelValueExt sve = new SelValueExt();
@@ -261,11 +266,13 @@ public class ODSQuery implements Query {
 	}
 
 	/**
-	 * Converts given {@link Relation} and {@link Join} to an ODS {@link
-	 * JoinDef}.
+	 * Converts given {@link Relation} and {@link Join} to an ODS
+	 * {@link JoinDef}.
 	 *
-	 * @param relation The {@code Relation}.
-	 * @param join The {@code Join}.
+	 * @param relation
+	 *            The {@code Relation}.
+	 * @param join
+	 *            The {@code Join}.
 	 * @return The corresponding {@code JoinDef} is returned.
 	 */
 	private JoinDef createJoin(Relation relation, Join join) {
@@ -280,11 +287,13 @@ public class ODSQuery implements Query {
 	}
 
 	/**
-	 * Converts given {@link Attribute} and sort order flag to an ODS {@link
-	 * SelOrder}.
+	 * Converts given {@link Attribute} and sort order flag to an ODS
+	 * {@link SelOrder}.
 	 *
-	 * @param attribute The {@code Attribute}.
-	 * @param ascending The sort order.
+	 * @param attribute
+	 *            The {@code Attribute}.
+	 * @param ascending
+	 *            The sort order.
 	 * @return The corresponding {@code SelOrder} is returned.
 	 */
 	private SelOrder createOrderBy(Attribute attribute, boolean ascending) {
@@ -299,7 +308,8 @@ public class ODSQuery implements Query {
 	/**
 	 * Converts given {@link Attribute} to an ODS {@link AIDName}.
 	 *
-	 * @param attribute The {@code Attribute}.
+	 * @param attribute
+	 *            The {@code Attribute}.
 	 * @return The corresponding {@code AIDName} is returned.
 	 */
 	private AIDName createAIDName(Attribute attribute) {
@@ -336,12 +346,15 @@ public class ODSQuery implements Query {
 		/**
 		 * Constructor.
 		 *
-		 * @param entityTypes Used to access {@link EntityType} by its ODS ID.
-		 * @param resultSetExt The ODS values sequence containers.
-		 * @throws DataAccessException Thrown on conversion errors.
+		 * @param entityTypes
+		 *            Used to access {@link EntityType} by its ODS ID.
+		 * @param resultSetExt
+		 *            The ODS values sequence containers.
+		 * @throws DataAccessException
+		 *             Thrown on conversion errors.
 		 */
 		public ResultFactory(Map<Long, EntityType> entityTypes, ResultSetExt resultSetExt) throws DataAccessException {
-			for(ElemResultSetExt elemResultSetExt : resultSetExt.firstElems) {
+			for (ElemResultSetExt elemResultSetExt : resultSetExt.firstElems) {
 				EntityType entityType = entityTypes.get(ODSConverter.fromODSLong(elemResultSetExt.aid));
 				recordFactories.add(new RecordFactory(entityType, elemResultSetExt.values));
 			}
@@ -366,12 +379,12 @@ public class ODSQuery implements Query {
 		 */
 		@Override
 		public Result next() {
-			if(!hasNext()) {
+			if (!hasNext()) {
 				throw new NoSuchElementException("No such element available.");
 			}
 			Result result = new Result();
 
-			for(RecordFactory recordFactory : recordFactories) {
+			for (RecordFactory recordFactory : recordFactories) {
 				result.addRecord(recordFactory.createRecord(index));
 			}
 
@@ -390,8 +403,8 @@ public class ODSQuery implements Query {
 	}
 
 	/**
-	 * Creates a {@link Record} for given index from the original
-	 * ODS values sequence for a given {@link EntityType}.
+	 * Creates a {@link Record} for given index from the original ODS values
+	 * sequence for a given {@link EntityType}.
 	 */
 	private static final class RecordFactory {
 
@@ -409,9 +422,12 @@ public class ODSQuery implements Query {
 		/**
 		 * Constructor.
 		 *
-		 * @param entityType The associated {@link EntityType}.
-		 * @param nvsuis The ODS value sequence containers.
-		 * @throws DataAccessException Thrown on conversion errors.
+		 * @param entityType
+		 *            The associated {@link EntityType}.
+		 * @param nvsuis
+		 *            The ODS value sequence containers.
+		 * @throws DataAccessException
+		 *             Thrown on conversion errors.
 		 */
 		private RecordFactory(EntityType entityType, NameValueSeqUnitId[] nvsuis) throws DataAccessException {
 			this.entityType = entityType;
@@ -432,7 +448,7 @@ public class ODSQuery implements Query {
 
 		private Record createRecord(int index) {
 			Record record = new Record(entityType);
-			for(ValueFactory valueFactory : valueFactories) {
+			for (ValueFactory valueFactory : valueFactories) {
 				record.addValue(valueFactory.createValue(index));
 			}
 
@@ -442,8 +458,8 @@ public class ODSQuery implements Query {
 	}
 
 	/**
-	 * Creates a {@link Value} container for given index from the original
-	 * ODS value sequence for a given {@link Attribute}.
+	 * Creates a {@link Value} container for given index from the original ODS
+	 * value sequence for a given {@link Attribute}.
 	 */
 	private static final class ValueFactory {
 
@@ -462,9 +478,12 @@ public class ODSQuery implements Query {
 		/**
 		 * Constructor.
 		 *
-		 * @param attribute The associated {@link Attribute}.
-		 * @param nvsui The ODS value sequence container.
-		 * @throws DataAccessException Thrown on conversion errors.
+		 * @param attribute
+		 *            The associated {@link Attribute}.
+		 * @param nvsui
+		 *            The ODS value sequence container.
+		 * @throws DataAccessException
+		 *             Thrown on conversion errors.
 		 */
 		private ValueFactory(Attribute attribute, NameValueSeqUnitId nvsui) throws DataAccessException {
 			length = nvsui.value.flag.length;
@@ -488,7 +507,8 @@ public class ODSQuery implements Query {
 		/**
 		 * Returns the {@link Value} for given index.
 		 *
-		 * @param index Index within the sequence.
+		 * @param index
+		 *            Index within the sequence.
 		 * @return The corresponding {@code Value} is returned.
 		 */
 		private Value createValue(int index) {

@@ -71,8 +71,10 @@ public class CORBAFileService implements FileService {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used for {@link Entity} to {@link ElemId} conversion.
-	 * @param transfer The transfer type for up- and downloads.
+	 * @param modelManager
+	 *            Used for {@link Entity} to {@link ElemId} conversion.
+	 * @param transfer
+	 *            The transfer type for up- and downloads.
 	 */
 	public CORBAFileService(ODSModelManager modelManager, Transfer transfer) {
 		this.modelManager = modelManager;
@@ -97,17 +99,17 @@ public class CORBAFileService implements FileService {
 		LocalTime start = LocalTime.now();
 		UUID id = UUID.randomUUID();
 		LOGGER.debug("Sequential download of {} file(s) with id '{}' started.", groups.size(), id);
-		for(List<FileLink> group : groups.values()) {
+		for (List<FileLink> group : groups.values()) {
 			FileLink fileLink = group.get(0);
 
 			download(entity, target, fileLink, (b, p) -> {
 				double tranferredBytes = transferred.addAndGet(b);
-				if(progressListener != null) {
+				if (progressListener != null) {
 					progressListener.progress(b, (float) (tranferredBytes / totalSize));
 				}
 			});
 
-			for(FileLink other : group.subList(1, group.size())) {
+			for (FileLink other : group.subList(1, group.size())) {
 				other.setLocalPath(fileLink.getLocalPath());
 			}
 		}
@@ -132,12 +134,12 @@ public class CORBAFileService implements FileService {
 
 				download(entity, target, fileLink, (b, p) -> {
 					double tranferredBytes = transferred.addAndGet(b);
-					if(progressListener != null) {
+					if (progressListener != null) {
 						progressListener.progress(b, (float) (tranferredBytes / totalSize));
 					}
 				});
 
-				for(FileLink other : group.subList(1, group.size())) {
+				for (FileLink other : group.subList(1, group.size())) {
 					other.setLocalPath(fileLink.getLocalPath());
 				}
 
@@ -154,13 +156,13 @@ public class CORBAFileService implements FileService {
 				try {
 					future.get();
 					return null;
-				} catch(ExecutionException | InterruptedException e) {
+				} catch (ExecutionException | InterruptedException e) {
 					LOGGER.error("Download of failed due to: " + e.getMessage(), e);
 					return e;
 				}
 			}).filter(Objects::nonNull).collect(Collectors.toList());
 
-			if(!errors.isEmpty()) {
+			if (!errors.isEmpty()) {
 				throw new IOException("Download faild for '" + errors.size() + "' files.");
 			}
 			LOGGER.debug("Parallel download with id '{}' finished in {}.", id,
@@ -176,17 +178,17 @@ public class CORBAFileService implements FileService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void download(Entity entity, Path target, FileLink fileLink,
-			ProgressListener progressListener) throws IOException {
-		if(Files.exists(target)) {
-			if(!Files.isDirectory(target)) {
+	public void download(Entity entity, Path target, FileLink fileLink, ProgressListener progressListener)
+			throws IOException {
+		if (Files.exists(target)) {
+			if (!Files.isDirectory(target)) {
 				throw new IllegalArgumentException("Target path is not a directory.");
 			}
 		} else {
 			Files.createDirectory(target);
 		}
 
-		try(InputStream inputStream = openStream(entity, fileLink, progressListener)) {
+		try (InputStream inputStream = openStream(entity, fileLink, progressListener)) {
 			fileLink.setLocalPath(target.resolve(fileLink.getFileName()));
 			Path absolutePath = fileLink.getLocalPath().toAbsolutePath();
 			String remotePath = fileLink.getRemotePath();
@@ -202,22 +204,23 @@ public class CORBAFileService implements FileService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public InputStream openStream(Entity entity, FileLink fileLink,
-			ProgressListener progressListener) throws IOException {
+	public InputStream openStream(Entity entity, FileLink fileLink, ProgressListener progressListener)
+			throws IOException {
 		InputStream sourceStream;
-		if(fileLink.isLocal()) {
+		if (fileLink.isLocal()) {
 			// file is locally available -> USE this shortcut!
 			sourceStream = Files.newInputStream(fileLink.getLocalPath());
-		} else if(fileLink.isRemote()) {
+		} else if (fileLink.isRemote()) {
 			sourceStream = fileServer.openStream(fileLink, toElemID(entity));
 		} else {
 			throw new IllegalArgumentException("File link is neither in local nor remote state: " + fileLink);
 		}
 
 		// NOTE: Access to immediate input stream is buffered.
-		if(progressListener != null) {
+		if (progressListener != null) {
 			loadSize(entity, fileLink);
-			// NOTE: Progress updates immediately triggered by the stream consumer.
+			// NOTE: Progress updates immediately triggered by the stream
+			// consumer.
 			return new TracedInputStream(sourceStream, progressListener, fileLink.getSize());
 		}
 
@@ -229,12 +232,12 @@ public class CORBAFileService implements FileService {
 	 */
 	@Override
 	public void loadSize(Entity entity, FileLink fileLink) throws IOException {
-		if(fileLink.getSize() > -1) {
+		if (fileLink.getSize() > -1) {
 			// file size is already known
 			return;
-		} else if(fileLink.isLocal()) {
+		} else if (fileLink.isLocal()) {
 			fileLink.setFileSize(Files.size(fileLink.getLocalPath()));
-		} else if(fileLink.isRemote()) {
+		} else if (fileLink.isRemote()) {
 			fileLink.setFileSize(fileServer.loadSize(fileLink, toElemID(entity)));
 		} else {
 			throw new IllegalArgumentException("File link is neither in local nor remote state: " + fileLink);
@@ -246,13 +249,17 @@ public class CORBAFileService implements FileService {
 	 * multiple times are uploaded only once. The upload progress may be traced
 	 * with a progress listener.
 	 *
-	 * @param entity Used for security checks.
-	 * @param fileLinks Collection of {@code FileLink}s to upload.
-	 * @param progressListener The progress listener.
-	 * @throws IOException Thrown if unable to upload files.
+	 * @param entity
+	 *            Used for security checks.
+	 * @param fileLinks
+	 *            Collection of {@code FileLink}s to upload.
+	 * @param progressListener
+	 *            The progress listener.
+	 * @throws IOException
+	 *             Thrown if unable to upload files.
 	 */
-	public void uploadSequential(Entity entity, Collection<FileLink> fileLinks,
-			ProgressListener progressListener) throws IOException {
+	public void uploadSequential(Entity entity, Collection<FileLink> fileLinks, ProgressListener progressListener)
+			throws IOException {
 		Map<Path, List<FileLink>> groups = fileLinks.stream().filter(FileLink::isLocal)
 				.collect(Collectors.groupingBy(FileLink::getLocalPath));
 
@@ -261,17 +268,17 @@ public class CORBAFileService implements FileService {
 		LocalTime start = LocalTime.now();
 		UUID id = UUID.randomUUID();
 		LOGGER.debug("Sequential upload of {} file(s) with id '{}' started.", groups.size(), id);
-		for(List<FileLink> group : groups.values()) {
+		for (List<FileLink> group : groups.values()) {
 			FileLink fileLink = group.get(0);
 
 			upload(entity, fileLink, (b, p) -> {
 				double tranferredBytes = transferred.addAndGet(b);
-				if(progressListener != null) {
+				if (progressListener != null) {
 					progressListener.progress(b, (float) (tranferredBytes / totalSize));
 				}
 			});
 
-			for(FileLink other : group.subList(1, group.size())) {
+			for (FileLink other : group.subList(1, group.size())) {
 				other.setRemotePath(fileLink.getRemotePath());
 			}
 		}
@@ -283,13 +290,17 @@ public class CORBAFileService implements FileService {
 	 * multiple times are uploaded only once. The upload progress may be traced
 	 * with a progress listener.
 	 *
-	 * @param entity Used for security checks.
-	 * @param fileLinks Collection of {@code FileLink}s to upload.
-	 * @param progressListener The progress listener.
-	 * @throws IOException Thrown if unable to upload files.
+	 * @param entity
+	 *            Used for security checks.
+	 * @param fileLinks
+	 *            Collection of {@code FileLink}s to upload.
+	 * @param progressListener
+	 *            The progress listener.
+	 * @throws IOException
+	 *             Thrown if unable to upload files.
 	 */
-	public void uploadParallel(Entity entity, Collection<FileLink> fileLinks,
-			ProgressListener progressListener) throws IOException {
+	public void uploadParallel(Entity entity, Collection<FileLink> fileLinks, ProgressListener progressListener)
+			throws IOException {
 		Map<Path, List<FileLink>> groups = fileLinks.stream().filter(FileLink::isLocal)
 				.collect(Collectors.groupingBy(FileLink::getLocalPath));
 
@@ -302,12 +313,12 @@ public class CORBAFileService implements FileService {
 
 				upload(entity, fileLink, (b, p) -> {
 					double tranferredBytes = transferred.addAndGet(b);
-					if(progressListener != null) {
+					if (progressListener != null) {
 						progressListener.progress(b, (float) (tranferredBytes / totalSize));
 					}
 				});
 
-				for(FileLink other : group.subList(1, group.size())) {
+				for (FileLink other : group.subList(1, group.size())) {
 					other.setRemotePath(fileLink.getRemotePath());
 				}
 
@@ -324,13 +335,13 @@ public class CORBAFileService implements FileService {
 				try {
 					future.get();
 					return null;
-				} catch(ExecutionException | InterruptedException e) {
+				} catch (ExecutionException | InterruptedException e) {
 					LOGGER.error("Upload of failed due to: " + e.getMessage(), e);
 					return e;
 				}
 			}).filter(Objects::nonNull).collect(Collectors.toList());
 
-			if(!errors.isEmpty()) {
+			if (!errors.isEmpty()) {
 				throw new IOException("Upload faild for '" + errors.size() + "' files.");
 			}
 			LOGGER.debug("Parallel upload with id '{}' finished in {}.", id, Duration.between(start, LocalTime.now()));
@@ -344,24 +355,27 @@ public class CORBAFileService implements FileService {
 	/**
 	 * Deletes given {@link FileLink}s form the remote storage.
 	 *
-	 * @param entity Used for security checks.
-	 * @param fileLinks Collection of {@code FileLink}s to delete.
+	 * @param entity
+	 *            Used for security checks.
+	 * @param fileLinks
+	 *            Collection of {@code FileLink}s to delete.
 	 */
 	public void delete(Entity entity, Collection<FileLink> fileLinks) {
 		fileLinks.stream().filter(FileLink::isRemote)
-		.collect(groupingBy(FileLink::getRemotePath, reducing((fl1, fl2) -> fl1)))
-		.values().stream().filter(Optional::isPresent).map(Optional::get)
-		.forEach(fl -> delete(entity, fl));
+				.collect(groupingBy(FileLink::getRemotePath, reducing((fl1, fl2) -> fl1))).values().stream()
+				.filter(Optional::isPresent).map(Optional::get).forEach(fl -> delete(entity, fl));
 	}
 
 	/**
 	 * Deletes given {@link FileLink} form the remote storage.
 	 *
-	 * @param entity Used for security checks.
-	 * @param fileLink The {@code FileLink}s to delete.
+	 * @param entity
+	 *            Used for security checks.
+	 * @param fileLink
+	 *            The {@code FileLink}s to delete.
 	 */
 	public void delete(Entity entity, FileLink fileLink) {
-		if(!fileLink.isRemote()) {
+		if (!fileLink.isRemote()) {
 			// nothing to do
 			return;
 		}
@@ -379,24 +393,28 @@ public class CORBAFileService implements FileService {
 	// ======================================================================
 
 	/**
-	 * Uploads given {@link FileLink}. The upload progress may be traced with
-	 * a progress listener.
+	 * Uploads given {@link FileLink}. The upload progress may be traced with a
+	 * progress listener.
 	 *
-	 * @param entity Used for security checks.
-	 * @param fileLink The {@code FileLink} to upload.
-	 * @param progressListener The progress listener.
-	 * @throws IOException Thrown if unable to upload file.
+	 * @param entity
+	 *            Used for security checks.
+	 * @param fileLink
+	 *            The {@code FileLink} to upload.
+	 * @param progressListener
+	 *            The progress listener.
+	 * @throws IOException
+	 *             Thrown if unable to upload file.
 	 */
 	private void upload(Entity entity, FileLink fileLink, ProgressListener progressListener) throws IOException {
-		if(fileLink.isRemote()) {
+		if (fileLink.isRemote()) {
 			// nothing to do
 			return;
-		} else if(!fileLink.isLocal()) {
+		} else if (!fileLink.isLocal()) {
 			throw new IllegalArgumentException("File link does not have a local path.");
 		}
 
 		InputStream sourceStream = Files.newInputStream(fileLink.getLocalPath());
-		if(progressListener != null) {
+		if (progressListener != null) {
 			sourceStream = new TracedInputStream(sourceStream, progressListener, fileLink.getSize());
 		}
 
@@ -409,10 +427,11 @@ public class CORBAFileService implements FileService {
 	}
 
 	/**
-	 * Creates an ODS entity identity {@link ElemId} object for given {@link
-	 * Entity}.
+	 * Creates an ODS entity identity {@link ElemId} object for given
+	 * {@link Entity}.
 	 *
-	 * @param entity The {@code Entity}.
+	 * @param entity
+	 *            The {@code Entity}.
 	 * @return The created {@code ElemId} is returned.
 	 */
 	private ElemId toElemID(Entity entity) {
@@ -423,15 +442,18 @@ public class CORBAFileService implements FileService {
 	/**
 	 * Calculates the total download size for given {@link FileLink} groups.
 	 *
-	 * @param entity Used for security checks.
-	 * @param groups The {@code FileLink} groups.
+	 * @param entity
+	 *            Used for security checks.
+	 * @param groups
+	 *            The {@code FileLink} groups.
 	 * @return The total download size is returned.
-	 * @throws IOException Thrown if unable to load the file size.
+	 * @throws IOException
+	 *             Thrown if unable to load the file size.
 	 */
 	private long calculateDownloadSize(Entity entity, Map<String, List<FileLink>> groups) throws IOException {
 		List<FileLink> links = groups.values().stream().map(l -> l.get(0)).collect(Collectors.toList());
 		long totalSize = 0;
-		for(FileLink fileLink : links) {
+		for (FileLink fileLink : links) {
 			loadSize(entity, fileLink);
 			// overflow may occur in case of total size exceeds 9223 PB!
 			totalSize = Math.addExact(totalSize, fileLink.getSize());

@@ -21,19 +21,20 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 
 /**
- * {@link SearchQuery} implementation for {@link Channel} as source entity
- * type.
+ * {@link SearchQuery} implementation for {@link Channel} as source entity type.
  *
  * @since 1.0.0
  * @author jst, Peak Solution GmbH
  */
 final class ChannelSearchQuery extends BaseEntitySearchQuery {
-	
+
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used to load {@link EntityType}s.
-	 * @param contextState The {@link ContextState}.
+	 * @param modelManager
+	 *            Used to load {@link EntityType}s.
+	 * @param contextState
+	 *            The {@link ContextState}.
 	 */
 	ChannelSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, Channel.class, Project.class);
@@ -45,11 +46,12 @@ final class ChannelSearchQuery extends BaseEntitySearchQuery {
 		addJoinConfig(JoinConfig.up(Measurement.class, TestStep.class));
 		addJoinConfig(JoinConfig.up(Channel.class, Measurement.class));
 		addJoinConfig(JoinConfig.down(Measurement.class, ChannelGroup.class));
-		
+
 		// context
 		addJoinConfig(contextState);
 
-		// TODO join to sensor tables.... || this will break the joins to context data
+		// TODO join to sensor tables.... || this will break the joins to
+		// context data
 		// multiple outer join to the same table...
 	}
 

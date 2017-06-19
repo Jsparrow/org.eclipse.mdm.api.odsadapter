@@ -123,16 +123,16 @@ public class ODSFreeTextSearchTest {
 		assertEquals(2, search.get(org.eclipse.mdm.api.base.model.Test.class).size());
 	}
 
-	@Test(expected=IllegalStateException.class)
+	@Test(expected = IllegalStateException.class)
 	public void illegalLoadRequest_niceExceptionIsThrown() throws DataAccessException, InterruptedException {
 		loader = mock(EntityLoader.class);
 		when(loader.loadAll(any(Key.class), anyCollection())).thenThrow(new DataAccessException(""));
 		createExampleIndex("TestStep", "mdm2", "asdf");
 		ODSFreeTextSearch fts2 = new ODSFreeTextSearch(loader, "mdm2", HOST);
-		
+
 		fts2.search("asdf");
 	}
-	
+
 	private void createExampleIndex(String type, String name, String value) throws InterruptedException {
 		createExampleIndex(type, name, value, "0");
 	}

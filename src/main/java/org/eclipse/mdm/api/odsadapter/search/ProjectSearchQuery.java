@@ -27,12 +27,14 @@ import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
  * @author jst, Peak Solution GmbH
  */
 final class ProjectSearchQuery extends BaseEntitySearchQuery {
-	
+
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used to load {@link EntityType}s.
-	 * @param contextState The {@link ContextState}.
+	 * @param modelManager
+	 *            Used to load {@link EntityType}s.
+	 * @param contextState
+	 *            The {@link ContextState}.
 	 */
 	ProjectSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, Project.class, Project.class);

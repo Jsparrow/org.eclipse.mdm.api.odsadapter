@@ -14,8 +14,10 @@ import java.util.Map;
 /**
  * Bidirectional mapping of configured values.
  *
- * @param <T> Mapped object type one.
- * @param <S> Mapped object type two.
+ * @param <T>
+ *            Mapped object type one.
+ * @param <S>
+ *            Mapped object type two.
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
@@ -34,7 +36,8 @@ public final class BiDiMapper<T, S> {
 	/**
 	 * Returns the mapping for given value.
 	 *
-	 * @param input The value.
+	 * @param input
+	 *            The value.
 	 * @return The corresponding mapped value is returned.
 	 */
 	@SuppressWarnings("unchecked")
@@ -45,7 +48,8 @@ public final class BiDiMapper<T, S> {
 	/**
 	 * Returns the mapping for given value.
 	 *
-	 * @param input The value.
+	 * @param input
+	 *            The value.
 	 * @return The corresponding mapped value is returned.
 	 */
 	@SuppressWarnings("unchecked")
@@ -60,8 +64,10 @@ public final class BiDiMapper<T, S> {
 	/**
 	 * Adds a new bidirectional mapping for given values.
 	 *
-	 * @param t Not allowed to be null.
-	 * @param s Not allowed to be null.
+	 * @param t
+	 *            Not allowed to be null.
+	 * @param s
+	 *            Not allowed to be null.
 	 */
 	void addMappings(T t, S s) {
 		map.put(t, s);

@@ -35,67 +35,51 @@ import com.google.protobuf.util.JsonFormat.Printer;
 @Provider
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class JsonMessageBodyProvider implements MessageBodyReader<Message>,
-    MessageBodyWriter<Message>
-{
-  private static final Charset charset = Charsets.UTF_8;
-  private Printer jsonPrinter = JsonFormat.printer();
-  private Parser jsonParser = JsonFormat.parser();
+public class JsonMessageBodyProvider implements MessageBodyReader<Message>, MessageBodyWriter<Message> {
+	private static final Charset charset = Charsets.UTF_8;
+	private Printer jsonPrinter = JsonFormat.printer();
+	private Parser jsonParser = JsonFormat.parser();
 
-  public JsonMessageBodyProvider()
-  {
+	public JsonMessageBodyProvider() {
 
-  }
+	}
 
-  @Override
-  public boolean isReadable(final Class<?> type, final Type genericType,
-      final Annotation[] annotations, final MediaType mediaType)
-  {
-    return Message.class.isAssignableFrom(type);
-  }
+	@Override
+	public boolean isReadable(final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType) {
+		return Message.class.isAssignableFrom(type);
+	}
 
-  @Override
-  public Message readFrom(final Class<Message> type, final Type genericType,
-      final Annotation[] annotations, final MediaType mediaType,
-      final MultivaluedMap<String, String> httpHeaders,
-      final InputStream entityStream) throws IOException
-  {
-    try
-    {
-      final Method newBuilder = type.getMethod("newBuilder");
-      final GeneratedMessage.Builder<?> builder = (GeneratedMessage.Builder<?>) newBuilder
-          .invoke(type);
-      jsonParser.merge(new InputStreamReader(entityStream, charset), builder);
-      return builder.build();
-    }
-    catch (Exception e)
-    {
-      throw new WebApplicationException(e);
-    }
-  }
+	@Override
+	public Message readFrom(final Class<Message> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType, final MultivaluedMap<String, String> httpHeaders, final InputStream entityStream)
+			throws IOException {
+		try {
+			final Method newBuilder = type.getMethod("newBuilder");
+			final GeneratedMessage.Builder<?> builder = (GeneratedMessage.Builder<?>) newBuilder.invoke(type);
+			jsonParser.merge(new InputStreamReader(entityStream, charset), builder);
+			return builder.build();
+		} catch (Exception e) {
+			throw new WebApplicationException(e);
+		}
+	}
 
-  @Override
-  public long getSize(final Message m, final Class<?> type,
-      final Type genericType, final Annotation[] annotations,
-      final MediaType mediaType)
-  {
-    return -1;
-  }
+	@Override
+	public long getSize(final Message m, final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType) {
+		return -1;
+	}
 
-  @Override
-  public boolean isWriteable(final Class<?> type, final Type genericType,
-      final Annotation[] annotations, final MediaType mediaType)
-  {
-    return Message.class.isAssignableFrom(type);
-  }
+	@Override
+	public boolean isWriteable(final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType) {
+		return Message.class.isAssignableFrom(type);
+	}
 
-  @Override
-  public void writeTo(final Message m, final Class<?> type,
-      final Type genericType, final Annotation[] annotations,
-      final MediaType mediaType,
-      final MultivaluedMap<String, Object> httpHeaders,
-      final OutputStream entityStream) throws IOException
-  {
-    entityStream.write(jsonPrinter.print(m).getBytes(charset));
-  }
+	@Override
+	public void writeTo(final Message m, final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
+			final OutputStream entityStream) throws IOException {
+		entityStream.write(jsonPrinter.print(m).getBytes(charset));
+	}
 }

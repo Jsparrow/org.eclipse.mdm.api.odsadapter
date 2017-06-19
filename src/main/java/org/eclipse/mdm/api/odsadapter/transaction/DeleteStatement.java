@@ -57,8 +57,8 @@ final class DeleteStatement extends BaseStatement {
 	// Class variables
 	// ======================================================================
 
-	private static final List<String> AUTO_DELETABLE =
-			Arrays.asList("MeaQuantity", "SubMatrix", "LocalColumn", "ExternalComponent");
+	private static final List<String> AUTO_DELETABLE = Arrays.asList("MeaQuantity", "SubMatrix", "LocalColumn",
+			"ExternalComponent");
 	private static final Logger LOGGER = LoggerFactory.getLogger(DeleteStatement.class);
 
 	private final boolean useAutoDelete;
@@ -70,10 +70,13 @@ final class DeleteStatement extends BaseStatement {
 	/**
 	 * Constructor.
 	 *
-	 * @param transaction The owning {@link ODSTransaction}.
-	 * @param entityType The associated {@link EntityType}.
-	 * @param useAutoDelete If {@code true} child relations of {@link
-	 * 		Measurement} entities are not followed.
+	 * @param transaction
+	 *            The owning {@link ODSTransaction}.
+	 * @param entityType
+	 *            The associated {@link EntityType}.
+	 * @param useAutoDelete
+	 *            If {@code true} child relations of {@link Measurement}
+	 *            entities are not followed.
 	 */
 	DeleteStatement(ODSTransaction transaction, EntityType entityType, boolean useAutoDelete) {
 		super(transaction, entityType);
@@ -89,7 +92,7 @@ final class DeleteStatement extends BaseStatement {
 	 */
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException {
-		if(entities.stream().filter(e -> !e.getTypeName().equals(getEntityType().getName())).findAny().isPresent()) {
+		if (entities.stream().filter(e -> !e.getTypeName().equals(getEntityType().getName())).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is of incompatible type.");
 		}
 
@@ -103,37 +106,43 @@ final class DeleteStatement extends BaseStatement {
 	// ======================================================================
 
 	/**
-	 * Recursively follows child relations of given entities and deletes
-	 * all child entities before deleting parent entities.
+	 * Recursively follows child relations of given entities and deletes all
+	 * child entities before deleting parent entities.
 	 *
-	 * @param entityType {@link EntityType} of the deleted entities.
-	 * @param instanceIDs Instance IDs of entities which have to be deleted.
-	 * @param ignoreSiblings Is it required to check whether {@link Measurement}
-	 * 		siblings share a common {@link ContextRoot}s.
+	 * @param entityType
+	 *            {@link EntityType} of the deleted entities.
+	 * @param instanceIDs
+	 *            Instance IDs of entities which have to be deleted.
+	 * @param ignoreSiblings
+	 *            Is it required to check whether {@link Measurement} siblings
+	 *            share a common {@link ContextRoot}s.
 	 * @return Returns the total number of deleted instances.
-	 * @throws AoException Thrown if unable to delete entities.
-	 * @throws DataAccessException Thrown if unable to query child entities.
+	 * @throws AoException
+	 *             Thrown if unable to delete entities.
+	 * @throws DataAccessException
+	 *             Thrown if unable to query child entities.
 	 */
 	private int delete(EntityType entityType, Collection<Long> instanceIDs, boolean ignoreSiblings)
 			throws AoException, DataAccessException {
-		if(instanceIDs.isEmpty()) {
+		if (instanceIDs.isEmpty()) {
 			return 0;
 		}
 
 		Query query = getModelManager().createQuery().selectID(entityType);
-		for(Relation relation : entityType.getChildRelations()) {
-			if(useAutoDelete && AUTO_DELETABLE.contains(relation.getTarget().getName())) {
+		for (Relation relation : entityType.getChildRelations()) {
+			if (useAutoDelete && AUTO_DELETABLE.contains(relation.getTarget().getName())) {
 				continue;
 			}
 
-			if(!relation.getTarget().equals(relation.getSource())) {
+			if (!relation.getTarget().equals(relation.getSource())) {
 				query.join(relation, Join.OUTER).selectID(relation.getTarget());
 			}
 		}
 
-		// select attributes containing file links only for entity types implementing FilesAttachable
+		// select attributes containing file links only for entity types
+		// implementing FilesAttachable
 		EntityConfig<?> entityConfig = getModelManager().getEntityConfig(entityType);
-		if(FilesAttachable.class.isAssignableFrom(entityConfig.getEntityClass())) {
+		if (FilesAttachable.class.isAssignableFrom(entityConfig.getEntityClass())) {
 			entityType.getAttributes().stream().filter(a -> a.getValueType().isFileLinkType()).forEach(query::select);
 		}
 
@@ -145,12 +154,13 @@ final class DeleteStatement extends BaseStatement {
 		EntityType testSequence = getModelManager().getEntityType(ContextRoot.class, ContextType.TESTSEQUENCE);
 		EntityType testEquipment = getModelManager().getEntityType(ContextRoot.class, ContextType.TESTEQUIPMENT);
 
-		// type in this list must be deleted AFTER this this instances have been deleted
+		// type in this list must be deleted AFTER this this instances have been
+		// deleted
 		// informative relation is considered as a child relation
 		List<EntityType> delayedDelete = new ArrayList<>();
 
 		// join context roots
-		if(measurement.equals(entityType) || testStep.equals(entityType)) {
+		if (measurement.equals(entityType) || testStep.equals(entityType)) {
 			query.join(entityType.getRelation(unitUnderTest), Join.OUTER).selectID(unitUnderTest);
 			query.join(entityType.getRelation(testSequence), Join.OUTER).selectID(testSequence);
 			query.join(entityType.getRelation(testEquipment), Join.OUTER).selectID(testEquipment);
@@ -158,44 +168,43 @@ final class DeleteStatement extends BaseStatement {
 		}
 
 		// join parameter sets
-		if(measurement.equals(entityType) || channel.equals(entityType)) {
+		if (measurement.equals(entityType) || channel.equals(entityType)) {
 			EntityType parameterSet = getModelManager().getEntityType(ParameterSet.class);
 			query.join(entityType.getRelation(parameterSet), Join.OUTER).selectID(parameterSet);
 		}
 
 		Filter filter = Filter.or().ids(entityType, instanceIDs);
 		entityType.getParentRelations().stream().filter(r -> r.getTarget().equals(entityType))
-		.forEach(relation -> filter.ids(relation, instanceIDs));
+				.forEach(relation -> filter.ids(relation, instanceIDs));
 
 		// query child IDs
 		Map<EntityType, Set<Long>> children = new HashMap<>();
-		for(Result result : query.fetch(filter)) {
+		for (Result result : query.fetch(filter)) {
 			// load children of other types
-			result.stream().filter(r -> r.getID().longValue() > 0)
-			.forEach(r -> {
+			result.stream().filter(r -> r.getID().longValue() > 0).forEach(r -> {
 				children.computeIfAbsent(r.getEntityType(), k -> new HashSet<>()).add(r.getID());
 			});
 
 			// collect file links to remove
 			List<FileLink> fileLinks = new ArrayList<>();
-			for(Value value : result.getRecord(entityType).getValues().values()) {
-				if(value.getValueType().isFileLink()) {
+			for (Value value : result.getRecord(entityType).getValues().values()) {
+				if (value.getValueType().isFileLink()) {
 					fileLinks.add(value.extract());
-				} else if(value.getValueType().isFileLinkSequence()) {
+				} else if (value.getValueType().isFileLinkSequence()) {
 					fileLinks.addAll(Arrays.asList((FileLink[]) value.extract()));
 				}
 			}
 
-			if(!fileLinks.isEmpty()) {
+			if (!fileLinks.isEmpty()) {
 				getTransaction().getUploadService().addToRemove(fileLinks);
 			}
 		}
 
 		// omit context roots with references to not removed measurements
-		if(!ignoreSiblings && measurement.equals(entityType)) {
-			for(EntityType contextRoot : Arrays.asList(unitUnderTest, testSequence, testEquipment)) {
+		if (!ignoreSiblings && measurement.equals(entityType)) {
+			for (EntityType contextRoot : Arrays.asList(unitUnderTest, testSequence, testEquipment)) {
 				Set<Long> contextRootIDs = children.getOrDefault(contextRoot, Collections.emptySet());
-				if(contextRootIDs.isEmpty()) {
+				if (contextRootIDs.isEmpty()) {
 					continue;
 				}
 
@@ -203,8 +212,8 @@ final class DeleteStatement extends BaseStatement {
 				contextQuery.selectID(contextRoot, measurement);
 				contextQuery.join(contextRoot, measurement);
 
-				for(Result result : contextQuery.fetch(Filter.idsOnly(contextRoot, contextRootIDs))) {
-					if(instanceIDs.contains(result.getRecord(measurement).getID())) {
+				for (Result result : contextQuery.fetch(Filter.idsOnly(contextRoot, contextRootIDs))) {
+					if (instanceIDs.contains(result.getRecord(measurement).getID())) {
 						continue;
 					}
 
@@ -217,22 +226,22 @@ final class DeleteStatement extends BaseStatement {
 		int amount = 0;
 		// delete real children
 		List<Entry<EntityType, Set<Long>>> consideredChildren = new ArrayList<>();
-		for(Entry<EntityType, Set<Long>> entry : children.entrySet()) {
+		for (Entry<EntityType, Set<Long>> entry : children.entrySet()) {
 			EntityType childType = entry.getKey();
 			Set<Long> childInstanceIDs = entry.getValue();
-			if(entityType.equals(childType)) {
+			if (entityType.equals(childType)) {
 				childInstanceIDs.removeAll(instanceIDs);
-			} else if(delayedDelete.contains(entry.getKey())) {
+			} else if (delayedDelete.contains(entry.getKey())) {
 				consideredChildren.add(entry);
 				continue;
 			}
 			amount += delete(entry.getKey(), childInstanceIDs, true);
 		}
 
-		getApplElemAccess().deleteInstances(((ODSEntityType)entityType).getODSID(), toODSIDs(instanceIDs));
+		getApplElemAccess().deleteInstances(((ODSEntityType) entityType).getODSID(), toODSIDs(instanceIDs));
 
 		// delete considered children (informative relation)
-		for(Entry<EntityType, Set<Long>> entry : consideredChildren) {
+		for (Entry<EntityType, Set<Long>> entry : consideredChildren) {
 			amount += delete(entry.getKey(), entry.getValue(), true);
 		}
 
@@ -240,10 +249,11 @@ final class DeleteStatement extends BaseStatement {
 	}
 
 	/**
-	 * Converts given {@code Collection} of instance IDs to ODS a {@link
-	 * T_LONGLONG} array.
+	 * Converts given {@code Collection} of instance IDs to ODS a
+	 * {@link T_LONGLONG} array.
 	 *
-	 * @param instanceIDs The instance IDs.
+	 * @param instanceIDs
+	 *            The instance IDs.
 	 * @return The corresponding ODS {@code T_LONGLONG[]} is returned.
 	 */
 	private T_LONGLONG[] toODSIDs(Collection<Long> instanceIDs) {

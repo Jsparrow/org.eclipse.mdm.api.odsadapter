@@ -64,11 +64,15 @@ public final class ODSEntityType implements EntityType {
 	/**
 	 * Constructor.
 	 *
-	 * @param sourceName Name of the data source.
-	 * @param applElem The ODS meta data for this entity type.
-	 * @param units The unit {@code Map} for unit mapping of attributes.
-	 * @param enumClasses The enumeration class {@code Map} for enum mapping
-	 * 		of attributes.
+	 * @param sourceName
+	 *            Name of the data source.
+	 * @param applElem
+	 *            The ODS meta data for this entity type.
+	 * @param units
+	 *            The unit {@code Map} for unit mapping of attributes.
+	 * @param enumClasses
+	 *            The enumeration class {@code Map} for enum mapping of
+	 *            attributes.
 	 */
 	ODSEntityType(String sourceName, ApplElem applElem, Map<Long, String> units,
 			Map<String, Class<? extends Enum<?>>> enumClasses) {
@@ -77,9 +81,9 @@ public final class ODSEntityType implements EntityType {
 		name = applElem.aeName;
 		odsID = applElem.aid;
 
-		attributeByName = Arrays.stream(applElem.attributes)
-				.map(a -> new ODSAttribute(this, a, units.get(ODSConverter.fromODSLong(a.unitId)),
-						enumClasses.get(a.aaName)))
+		attributeByName = Arrays
+				.stream(applElem.attributes).map(a -> new ODSAttribute(this, a,
+						units.get(ODSConverter.fromODSLong(a.unitId)), enumClasses.get(a.aaName)))
 				.collect(toMap(Attribute::getName, Function.identity()));
 	}
 
@@ -126,11 +130,10 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public Attribute getAttribute(String name) {
 		Attribute attribute = attributeByName.get(name);
-		if(attribute == null) {
+		if (attribute == null) {
 			Optional<Relation> relation = getRelations().stream().filter(r -> r.getName().equals(name)).findAny();
-			return relation.map(Relation::getAttribute)
-					.orElseThrow(() -> new IllegalArgumentException("Attribute with name '" + name
-							+ "' not found at entity type '" + getName() + "'."));
+			return relation.map(Relation::getAttribute).orElseThrow(() -> new IllegalArgumentException(
+					"Attribute with name '" + name + "' not found at entity type '" + getName() + "'."));
 		}
 		return attribute;
 	}
@@ -163,8 +166,7 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public List<Relation> getParentRelations() {
 		return getRelations(Relationship.FATHER_CHILD).stream()
-				.filter(r -> ((ODSRelation) r).isOutgoing(Relationship.FATHER_CHILD))
-				.collect(Collectors.toList());
+				.filter(r -> ((ODSRelation) r).isOutgoing(Relationship.FATHER_CHILD)).collect(Collectors.toList());
 	}
 
 	/**
@@ -173,8 +175,7 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public List<Relation> getChildRelations() {
 		return getRelations(Relationship.FATHER_CHILD).stream()
-				.filter(r -> ((ODSRelation) r).isIncoming(Relationship.FATHER_CHILD))
-				.collect(Collectors.toList());
+				.filter(r -> ((ODSRelation) r).isIncoming(Relationship.FATHER_CHILD)).collect(Collectors.toList());
 	}
 
 	/**
@@ -182,8 +183,7 @@ public final class ODSEntityType implements EntityType {
 	 */
 	@Override
 	public List<Relation> getInfoRelations() {
-		return getRelations(Relationship.INFO).stream()
-				.filter(r -> ((ODSRelation) r).isOutgoing(Relationship.INFO))
+		return getRelations(Relationship.INFO).stream().filter(r -> ((ODSRelation) r).isOutgoing(Relationship.INFO))
 				.collect(Collectors.toList());
 	}
 
@@ -202,10 +202,10 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public Relation getRelation(EntityType target) {
 		Relation relation = relationsByEntity.get(target);
-		if(relation == null) {
+		if (relation == null) {
 			// multiple relations to target exist, try to use a default
 			Map<String, Relation> relationsByName = relationsByEntityName.get(target);
-			if(relationsByName == null) {
+			if (relationsByName == null) {
 				throw new IllegalArgumentException("Relations to '" + target + "' not found!");
 			}
 
@@ -220,12 +220,12 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public Relation getRelation(EntityType target, String name) {
 		Map<String, Relation> relationsByName = relationsByEntityName.get(target);
-		if(relationsByName == null) {
+		if (relationsByName == null) {
 			throw new IllegalArgumentException("Relations to '" + target + "' not found!");
 		}
 
 		Relation relation = relationsByName.get(name);
-		if(relation == null) {
+		if (relation == null) {
 			throw new IllegalArgumentException("Relation to '" + target + "' with name '" + name + "' not found!");
 		}
 		return relation;
@@ -244,7 +244,7 @@ public final class ODSEntityType implements EntityType {
 	 */
 	@Override
 	public boolean equals(Object object) {
-		if(object instanceof ODSEntityType) {
+		if (object instanceof ODSEntityType) {
 			return getName().equals(((EntityType) object).getName());
 		}
 
@@ -266,20 +266,20 @@ public final class ODSEntityType implements EntityType {
 	/**
 	 * Adds given {@link Relation}s.
 	 *
-	 * @param relations {@code Relation}s which will be added.
+	 * @param relations
+	 *            {@code Relation}s which will be added.
 	 */
 	void setRelations(List<Relation> relations) {
 		Map<EntityType, List<Relation>> entityRelationsByTarget = relations.stream().distinct()
-				.filter(r -> equals(r.getSource()))
-				.collect(groupingBy(Relation::getTarget));
+				.filter(r -> equals(r.getSource())).collect(groupingBy(Relation::getTarget));
 
-		for(Entry<EntityType, List<Relation>> entry : entityRelationsByTarget.entrySet()) {
+		for (Entry<EntityType, List<Relation>> entry : entityRelationsByTarget.entrySet()) {
 			List<Relation> entityTypeRelations = entry.getValue();
 			EntityType target = entry.getKey();
 
 			entityTypeRelations.forEach(this::addRelation);
 
-			if(entityTypeRelations.size() > 1) {
+			if (entityTypeRelations.size() > 1) {
 				relationsByEntityName.put(target,
 						entityTypeRelations.stream().collect(toMap(Relation::getName, identity())));
 			} else {
@@ -293,24 +293,25 @@ public final class ODSEntityType implements EntityType {
 	// ======================================================================
 
 	/**
-	 * Tries to find a parent {@link Relation} to given target {@link
-	 * EntityType}.
+	 * Tries to find a parent {@link Relation} to given target
+	 * {@link EntityType}.
 	 *
-	 * @param target The target {@code EntityType}.
+	 * @param target
+	 *            The target {@code EntityType}.
 	 * @return The requested parent {@code Relation} is returned.
-	 * @throws IllegalArgumentException Thrown if no such {@code Relation}
-	 * 		exists.
+	 * @throws IllegalArgumentException
+	 *             Thrown if no such {@code Relation} exists.
 	 */
 	private Relation getParentRelation(EntityType target) {
-		return getParentRelations().stream().filter(et -> et.getTarget().equals(target)).findAny()
-				.orElseThrow(() -> new IllegalArgumentException("Relation to entity type '" + target
-						+ "' does not exist."));
+		return getParentRelations().stream().filter(et -> et.getTarget().equals(target)).findAny().orElseThrow(
+				() -> new IllegalArgumentException("Relation to entity type '" + target + "' does not exist."));
 	}
 
 	/**
 	 * Adds given {@link Relation}.
 	 *
-	 * @param relation {@code Relation} which will be added.
+	 * @param relation
+	 *            {@code Relation} which will be added.
 	 */
 	private void addRelation(Relation relation) {
 		relationsByType.computeIfAbsent(relation.getRelationship(), k -> new ArrayList<>()).add(relation);
