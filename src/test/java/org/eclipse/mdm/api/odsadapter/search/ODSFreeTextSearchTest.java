@@ -100,9 +100,9 @@ public class ODSFreeTextSearchTest {
 
 	@Test
 	public void specialCharacters_correctlyEscaped() throws InterruptedException {
-		createExampleIndex("Measurement", "mdm", "hallo\"!ง");
+		createExampleIndex("Measurement", "mdm", "hallo\"!ยง");
 
-		Map<Class<? extends Entity>, List<Entity>> search = fts.search("hallo\"!ง");
+		Map<Class<? extends Entity>, List<Entity>> search = fts.search("hallo\"!ยง");
 		assertEquals(ts, search.get(Measurement.class).get(0));
 	}
 
