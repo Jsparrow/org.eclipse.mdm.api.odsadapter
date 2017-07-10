@@ -51,9 +51,13 @@ import org.eclipse.mdm.api.dflt.model.TemplateTest;
 import org.eclipse.mdm.api.dflt.model.TemplateTestStep;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore
+// FIXME 10.7.2017: this test needs a running ODS Server, that is not suitable for continous build in Jenkins.
+// Comment this in for local tests only.
 public class ODSAdapterTest {
 
 	/*

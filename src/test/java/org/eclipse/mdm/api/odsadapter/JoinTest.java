@@ -33,6 +33,7 @@ import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,9 @@ import org.slf4j.LoggerFactory;
  * @since 1.0.0
  * @author jst, Peak Solution GmbH
  */
+@Ignore
+// FIXME 10.7.2017: this test needs a running ODS Server, that is not suitable for continous build in Jenkins.
+// Comment this in for local tests only.
 public class JoinTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JoinTest.class);
 

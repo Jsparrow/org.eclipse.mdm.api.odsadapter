@@ -26,11 +26,15 @@ import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableMap;
 
+@Ignore
+// FIXME 10.7.2017: this test needs a running ODS Server, that is not suitable for continous build in Jenkins.
+// Comment this in for local tests only.
 public class ODSSearchServiceTest {
 
 	/*

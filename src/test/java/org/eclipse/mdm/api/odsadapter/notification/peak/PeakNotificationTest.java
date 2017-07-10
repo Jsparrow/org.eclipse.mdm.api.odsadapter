@@ -45,6 +45,7 @@ import org.eclipse.mdm.api.odsadapter.notification.peak.EventProcessor;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -60,6 +61,9 @@ import org.slf4j.LoggerFactory;
  * @author Matthias Koller, Peak Solution GmbH
  *
  */
+@Ignore
+// FIXME 10.7.2017: this test needs a running ODS Server, that is not suitable for continous build in Jenkins.
+// Comment this in for local tests only.
 public class PeakNotificationTest {
 
 	/*
