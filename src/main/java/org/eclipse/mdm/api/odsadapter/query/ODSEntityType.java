@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.asam.ods.ApplElem;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
@@ -74,8 +75,9 @@ public final class ODSEntityType implements EntityType {
 	 *            The enumeration class {@code Map} for enum mapping of
 	 *            attributes.
 	 */
+
 	ODSEntityType(String sourceName, ApplElem applElem, Map<String, String> units,
-			Map<String, Class<? extends Enum<?>>> enumClasses) {
+			Map<String, Enumeration<?>> enumObjs) {
 		this.sourceName = sourceName;
 		baseName = applElem.beName;
 		name = applElem.aeName;
@@ -83,8 +85,7 @@ public final class ODSEntityType implements EntityType {
 
 		attributeByName = Arrays
 				.stream(applElem.attributes).map(a -> new ODSAttribute(this, a,
-						units.get(Long.toString(ODSConverter.fromODSLong(a.unitId))),
-						enumClasses.get(a.aaName)))
+						units.get(Long.toString(ODSConverter.fromODSLong(a.unitId))), enumObjs.get(a.aaName)))
 				.collect(toMap(Attribute::getName, Function.identity()));
 	}
 

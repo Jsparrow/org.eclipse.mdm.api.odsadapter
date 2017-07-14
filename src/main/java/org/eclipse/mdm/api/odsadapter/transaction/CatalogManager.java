@@ -233,7 +233,7 @@ final class CatalogManager {
 				applicationAttribute.setName(catalogAttribute.getName());
 				if (dataType == DataType.DT_ENUM) {
 					applicationAttribute.setEnumerationDefinition(getApplicationStructure().getEnumerationDefinition(
-							ODSEnumerations.getEnumName(catalogAttribute.getEnumerationClass())));
+							ODSEnumerations.getEnumName(catalogAttribute.getEnumerationObject())));
 				}
 				Optional<Unit> unit = catalogAttribute.getUnit();
 				if (unit.isPresent()) {

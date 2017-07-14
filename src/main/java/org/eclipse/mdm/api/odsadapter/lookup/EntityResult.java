@@ -18,7 +18,8 @@ import java.util.stream.Collectors;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.ScalarType;
+import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
@@ -171,11 +172,12 @@ final class EntityResult<T extends Entity> {
 		Value enumerationClass = ValueType.STRING.create(VATTR_ENUMERATION_CLASS);
 		values.put(VATTR_ENUMERATION_CLASS, enumerationClass);
 		if (attribute.getValueType().isEnumerationType()) {
-			enumerationClass.set(attribute.getEnumClass().getName());
+			enumerationClass.set(attribute.getEnumObj().getName());
 		}
 
-		Value scalarType = ValueType.ENUMERATION.create(ScalarType.class, VATTR_SCALAR_TYPE);
-		scalarType.set(ScalarType.valueOf(attribute.getValueType().toSingleType().name()));
+		Enumeration<?> scalarTypeObj=EnumRegistry.getInstance().get("ScalarType");
+		Value scalarType = ValueType.ENUMERATION.create(scalarTypeObj, VATTR_SCALAR_TYPE);
+		scalarType.set(scalarTypeObj.valueOf(attribute.getValueType().toSingleType().name()));
 		values.put(VATTR_SCALAR_TYPE, scalarType);
 
 		values.put(VATTR_SEQUENCE, ValueType.BOOLEAN.create(VATTR_SEQUENCE, attribute.getValueType().isSequence()));
