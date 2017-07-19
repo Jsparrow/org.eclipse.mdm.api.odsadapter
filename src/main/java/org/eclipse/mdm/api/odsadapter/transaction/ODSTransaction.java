@@ -131,7 +131,9 @@ public final class ODSTransaction implements Transaction {
 	public <T extends Entity> void create(Collection<T> entities) throws DataAccessException {
 		if (entities.isEmpty()) {
 			return;
-		} else if (entities.stream().filter(e -> e.getID() > 0).findAny().isPresent()) {
+		} else if (entities.stream()
+				.filter(e -> e.getID() == null || e.getID().isEmpty()).findAny()
+				.isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is already persisted.");
 		}
 
@@ -210,7 +212,9 @@ public final class ODSTransaction implements Transaction {
 	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
 		if (entities.isEmpty()) {
 			return;
-		} else if (entities.stream().filter(e -> e.getID() < 1).findAny().isPresent()) {
+		} else if (entities.stream()
+				.filter(e -> e.getID() == null || e.getID().isEmpty()).findAny()
+				.isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is not yet persisted.");
 		}
 
@@ -250,7 +254,9 @@ public final class ODSTransaction implements Transaction {
 			return;
 		}
 
-		List<T> filteredEntities = entities.stream().filter(e -> e.getID() > 0).collect(Collectors.toList());
+		List<T> filteredEntities = entities.stream()
+				.filter(e -> e.getID() != null && !e.getID().isEmpty())
+				.collect(Collectors.toList());
 
 		try {
 			Map<Class<?>, List<T>> entitiesByClassType = filteredEntities.stream()
@@ -370,7 +376,7 @@ public final class ODSTransaction implements Transaction {
 			contextRoots.forEach(cr -> cr.setVersion(null));
 
 			// reset instance IDs
-			Long virtualID = Long.valueOf(0L);
+			String virtualID = "0";
 			created.forEach(c -> c.setID(virtualID));
 
 			modelManager.getAoSession().abortTransaction();

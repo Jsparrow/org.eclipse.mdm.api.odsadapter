@@ -161,7 +161,8 @@ public class ODSEntityManager implements EntityManager {
 		InstanceElement ieUser = null;
 		try {
 			ieUser = modelManager.getAoSession().getUser();
-			return Optional.of(entityLoader.load(new Key<>(User.class), ODSConverter.fromODSLong(ieUser.getId())));
+			return Optional.of(
+					entityLoader.load(new Key<>(User.class), Long.toString(ODSConverter.fromODSLong(ieUser.getId()))));
 		} catch (AoException e) {
 			throw new DataAccessException("Unable to load the logged in user entity due to: " + e.reason, e);
 		} finally {
@@ -181,7 +182,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, Long instanceID) throws DataAccessException {
+	public <T extends Entity> T load(Class<T> entityClass, String instanceID) throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass), instanceID);
 	}
 
@@ -189,7 +190,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, Long instanceID)
+	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, String instanceID)
 			throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass, contextType), instanceID);
 	}
@@ -212,7 +213,7 @@ public class ODSEntityManager implements EntityManager {
 			query.join(childEntityType, parentEntityType);
 		}
 
-		Optional<Long> instanceID = query.fetchSingleton(Filter.idOnly(childEntityType, child.getID()))
+		Optional<String> instanceID = query.fetchSingleton(Filter.idOnly(childEntityType, child.getID()))
 				.map(r -> r.getRecord(parentEntityType)).map(Record::getID);
 		if (instanceID.isPresent()) {
 			return Optional.of(entityLoader.load(new Key<>(entityClass), instanceID.get()));
@@ -240,7 +241,7 @@ public class ODSEntityManager implements EntityManager {
 	// EntityType statusEntityType =
 	// modelManager.getEntityType(status.getTypeName());
 	//
-	// List<Long> instanceIDs = modelManager.createQuery()
+	// List<String> instanceIDs = modelManager.createQuery()
 	// .join(entityType, statusEntityType).selectID(entityType)
 	// .fetch(Filter.and()
 	// .id(statusEntityType, status.getID())
@@ -287,7 +288,7 @@ public class ODSEntityManager implements EntityManager {
 			query.join(childEntityType, parentEntityType);
 		}
 
-		List<Long> instanceIDs = query.selectID(childEntityType)
+		List<String> instanceIDs = query.selectID(childEntityType)
 				.fetch(Filter.and().id(parentEntityType, parent.getID()).name(childEntityType, pattern)).stream()
 				.map(r -> r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
 		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
@@ -305,7 +306,7 @@ public class ODSEntityManager implements EntityManager {
 	// EntityType statusEntityType =
 	// modelManager.getEntityType(status.getTypeName());
 	//
-	// List<Long> instanceIDs = modelManager.createQuery()
+	// List<String> instanceIDs = modelManager.createQuery()
 	// .join(childEntityType, parentEntityType, statusEntityType)
 	// .selectID(childEntityType)
 	// .fetch(Filter.and()
@@ -338,7 +339,7 @@ public class ODSEntityManager implements EntityManager {
 		if (result.isPresent()) {
 			List<ContextType> contextTypes = new ArrayList<>();
 			for (Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
-				Optional<Long> instanceID = result.map(r -> r.getRecord(entry.getValue())).map(Record::getID);
+				Optional<String> instanceID = result.map(r -> r.getRecord(entry.getValue())).map(Record::getID);
 				if (instanceID.isPresent()) {
 					contextTypes.add(entry.getKey());
 				}
@@ -371,8 +372,8 @@ public class ODSEntityManager implements EntityManager {
 		if (result.isPresent()) {
 			Map<ContextType, ContextRoot> contextRoots = new EnumMap<>(ContextType.class);
 			for (Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
-				Long instanceID = result.get().getRecord(entry.getValue()).getID();
-				if (instanceID > 0) {
+				String instanceID = result.get().getRecord(entry.getValue()).getID();
+				if (instanceID != null && !instanceID.isEmpty()) {
 					contextRoots.put(entry.getKey(),
 							entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
 				}

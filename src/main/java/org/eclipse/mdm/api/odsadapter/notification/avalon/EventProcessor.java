@@ -140,7 +140,7 @@ public class EventProcessor extends StructuredPullConsumerPOA implements Runnabl
 	 * @throws NotificationException
 	 *             if the filter cannot be set
 	 */
-	public void setFilter(List<Long> aids, Set<ModificationType> modificationTypes) throws NotificationException {
+	public void setFilter(List<String> aids, Set<ModificationType> modificationTypes) throws NotificationException {
 		if (!isConnected()) {
 			throw new IllegalStateException("Cannot set filter when disconnected. Please connect first.");
 		}
@@ -219,7 +219,7 @@ public class EventProcessor extends StructuredPullConsumerPOA implements Runnabl
 	 *            no filter.
 	 * @return Constraint filter containing the given aids
 	 */
-	private String getConstraintFilter(List<Long> aids) {
+	private String getConstraintFilter(List<String> aids) {
 		if (aids.isEmpty()) {
 			return "TRUE";
 		} else {

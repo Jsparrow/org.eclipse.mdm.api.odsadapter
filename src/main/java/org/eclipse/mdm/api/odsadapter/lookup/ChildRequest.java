@@ -101,8 +101,8 @@ final class ChildRequest<T extends Deletable> extends EntityRequest<T> {
 		// load entities and prepare mappings for required related entities
 		List<EntityRecord<?>> parentRecords = new ArrayList<>();
 		for (Record record : collectRecords(query.fetch(adjustedFilter))) {
-			Optional<Long> parentID = record.getID(parentRelation);
-			Optional<Long> reflexiveParentID = Optional.empty();
+			Optional<String> parentID = record.getID(parentRelation);
+			Optional<String> reflexiveParentID = Optional.empty();
 			if (entityConfig.isReflexive()) {
 				reflexiveParentID = record.getID(reflexiveRelation);
 			}

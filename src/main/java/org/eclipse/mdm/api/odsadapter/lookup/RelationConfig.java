@@ -25,7 +25,7 @@ public final class RelationConfig {
 	// Instance variables
 	// ======================================================================
 
-	final Map<Long, List<EntityRecord<?>>> dependants = new HashMap<>();
+	final Map<String, List<EntityRecord<?>>> dependants = new HashMap<>();
 	final EntityConfig<?> entityConfig;
 	final Relation relation;
 	final boolean mandatory;
@@ -65,7 +65,7 @@ public final class RelationConfig {
 	 *            The {@link Record} associated with given {@link EntityRecord}.
 	 */
 	public void add(EntityRecord<?> entityRecord, Record record) {
-		Optional<Long> relatedEntityID = record.getID(relation);
+		Optional<String> relatedEntityID = record.getID(relation);
 		if (relatedEntityID.isPresent()) {
 			dependants.computeIfAbsent(relatedEntityID.get(), k -> new ArrayList<>()).add(entityRecord);
 		} else if (mandatory) {

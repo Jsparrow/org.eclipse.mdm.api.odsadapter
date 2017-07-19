@@ -61,7 +61,7 @@ final class InsertStatement extends BaseStatement {
 
 	private final List<FileLink> fileLinkToUpload = new ArrayList<>();
 
-	private final Map<Long, SortIndexTestSteps> sortIndexTestSteps = new HashMap<>();
+	private final Map<String, SortIndexTestSteps> sortIndexTestSteps = new HashMap<>();
 	private boolean loadSortIndex;
 
 	// ======================================================================
@@ -155,7 +155,7 @@ final class InsertStatement extends BaseStatement {
 		ElemId[] elemIds = getApplElemAccess()
 				.insertInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
 		for (int i = 0; i < elemIds.length; i++) {
-			cores.get(i).setID(ODSConverter.fromODSLong(elemIds[i].iid));
+			cores.get(i).setID(Long.toString(ODSConverter.fromODSLong(elemIds[i].iid)));
 		}
 		long stop = System.currentTimeMillis();
 
@@ -234,7 +234,8 @@ final class InsertStatement extends BaseStatement {
 	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for (Entity relatedEntity : relatedEntities) {
-			if (relatedEntity.getID() < 1) {
+			if (relatedEntity.getID() != null && relatedEntity.getID().length() > 0
+					&& Long.valueOf(relatedEntity.getID()) < 1) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 

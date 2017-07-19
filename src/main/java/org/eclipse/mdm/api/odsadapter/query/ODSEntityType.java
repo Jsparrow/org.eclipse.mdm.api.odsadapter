@@ -74,7 +74,7 @@ public final class ODSEntityType implements EntityType {
 	 *            The enumeration class {@code Map} for enum mapping of
 	 *            attributes.
 	 */
-	ODSEntityType(String sourceName, ApplElem applElem, Map<Long, String> units,
+	ODSEntityType(String sourceName, ApplElem applElem, Map<String, String> units,
 			Map<String, Class<? extends Enum<?>>> enumClasses) {
 		this.sourceName = sourceName;
 		baseName = applElem.beName;
@@ -83,7 +83,8 @@ public final class ODSEntityType implements EntityType {
 
 		attributeByName = Arrays
 				.stream(applElem.attributes).map(a -> new ODSAttribute(this, a,
-						units.get(ODSConverter.fromODSLong(a.unitId)), enumClasses.get(a.aaName)))
+						units.get(Long.toString(ODSConverter.fromODSLong(a.unitId))),
+						enumClasses.get(a.aaName)))
 				.collect(toMap(Attribute::getName, Function.identity()));
 	}
 
@@ -151,8 +152,8 @@ public final class ODSEntityType implements EntityType {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public long getId() {
-		return ODSConverter.fromODSLong(odsID);
+	public String getId() {
+		return Long.toString(ODSConverter.fromODSLong(odsID));
 	}
 
 	@Override

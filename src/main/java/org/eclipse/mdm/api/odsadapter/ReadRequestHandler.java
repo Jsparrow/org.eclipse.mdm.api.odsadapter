@@ -155,7 +155,7 @@ final class ReadRequestHandler {
 	 */
 	private ValueMatrix getValueMatrix(ReadRequest readRequest) throws AoException {
 		Entity entity = readRequest.getChannelGroup();
-		T_LONGLONG iid = ODSConverter.toODSLong(entity.getID());
+		T_LONGLONG iid = ODSConverter.toODSLong(Long.valueOf(entity.getID()));
 		T_LONGLONG aid = ((ODSEntityType) modelManager.getEntityType(entity)).getODSID();
 		return modelManager.getApplElemAccess().getValueMatrixInMode(new ElemId(aid, iid), ValueMatrixMode.CALCULATED);
 	}

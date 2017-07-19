@@ -214,7 +214,8 @@ final class UpdateStatement extends BaseStatement {
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent()
 				.entrySet()) {
 			Map<Boolean, List<Entity>> patrition = entry.getValue().stream()
-					.collect(Collectors.partitioningBy(e -> e.getID() < 1));
+					.collect(Collectors.partitioningBy(
+							e -> e.getID() != null && !e.getID().isEmpty()));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
 			if (virtualEntities != null && !virtualEntities.isEmpty()) {
 				childrenToCreate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(virtualEntities);
@@ -227,7 +228,8 @@ final class UpdateStatement extends BaseStatement {
 
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getRemoved()
 				.entrySet()) {
-			List<Deletable> toDelete = entry.getValue().stream().filter(e -> e.getID() > 0)
+			List<Deletable> toDelete = entry.getValue().stream()
+					.filter(e -> e.getID() != null && !e.getID().isEmpty())
 					.collect(Collectors.toList());
 			childrenToRemove.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(toDelete);
 		}
@@ -241,7 +243,7 @@ final class UpdateStatement extends BaseStatement {
 	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for (Entity relatedEntity : relatedEntities) {
-			if (relatedEntity.getID() < 1) {
+			if (relatedEntity.getID() == null || relatedEntity.getID().isEmpty()) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 

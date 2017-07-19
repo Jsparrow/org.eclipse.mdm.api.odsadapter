@@ -237,7 +237,7 @@ final class CatalogManager {
 				}
 				Optional<Unit> unit = catalogAttribute.getUnit();
 				if (unit.isPresent()) {
-					applicationAttribute.setUnit(ODSConverter.toODSLong(unit.get().getID()));
+					applicationAttribute.setUnit(ODSConverter.toODSLong(Long.valueOf(unit.get().getID())));
 				}
 
 				// release resources
@@ -272,7 +272,7 @@ final class CatalogManager {
 
 				Optional<Unit> unit = catalogAttribute.getUnit();
 				if (unit.isPresent()) {
-					applicationAttribute.setUnit(ODSConverter.toODSLong(unit.get().getID()));
+					applicationAttribute.setUnit(ODSConverter.toODSLong(Long.valueOf(unit.get().getID())));
 				}
 
 				// release resources
@@ -553,10 +553,10 @@ final class CatalogManager {
 	 *
 	 * @param entities
 	 *            The {@link Entity}s.
-	 * @return The instance IDs a {@code long[]} are turned.
+	 * @return The instance IDs a {@code String[]} are turned.
 	 */
-	private static long[] collectInstanceIDs(List<Entity> entities) {
-		long[] ids = new long[entities.size()];
+	private static String[] collectInstanceIDs(List<Entity> entities) {
+		String[] ids = new String[entities.size()];
 
 		for (int i = 0; i < ids.length; i++) {
 			ids[i] = entities.get(i).getID();

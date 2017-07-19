@@ -24,8 +24,6 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.primitives.Longs;
-
 public class NotificationEntityLoader {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NotificationEntityLoader.class);
@@ -41,11 +39,11 @@ public class NotificationEntityLoader {
 		this.loadContextDescribable = loadContextDescribable;
 	}
 
-	public <T extends Entity> T load(Key<T> key, long userId) throws DataAccessException {
+	public <T extends Entity> T load(Key<T> key, String userId) throws DataAccessException {
 		return loader.load(key, userId);
 	}
 
-	public List<? extends Entity> loadEntities(long aid, List<Long> ids) throws DataAccessException {
+	public List<? extends Entity> loadEntities(String aid, List<String> ids) throws DataAccessException {
 		return loadEntities(modelManager.getEntityType(aid), ids);
 	}
 
@@ -58,7 +56,7 @@ public class NotificationEntityLoader {
 	 * @throws DataAccessException
 	 *             Throw if the entities cannot be loaded.
 	 */
-	public List<? extends Entity> loadEntities(EntityType entityType, List<Long> ids) throws DataAccessException {
+	public List<? extends Entity> loadEntities(EntityType entityType, List<String> ids) throws DataAccessException {
 
 		if (ids.isEmpty()) {
 			return Collections.emptyList();
@@ -97,20 +95,20 @@ public class NotificationEntityLoader {
 	 * @throws DataAccessException
 	 *             Throw if the ContextDescribables cannot be loaded.
 	 */
-	private List<ContextDescribable> loadEntityForContextRoot(EntityType contextRoot, List<Long> ids)
+	private List<ContextDescribable> loadEntityForContextRoot(EntityType contextRoot, List<String> ids)
 			throws DataAccessException {
 
 		final EntityType testStep = modelManager.getEntityType(TestStep.class);
 		final EntityType measurement = modelManager.getEntityType(Measurement.class);
 
-		List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
+		List<String> testStepIDs = modelManager.createQuery().selectID(testStep)
 				.join(testStep.getRelation(contextRoot), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), Longs.toArray(ids))))
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
-		List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
+		List<String> measurementIDs = modelManager.createQuery().selectID(measurement)
 				.join(measurement.getRelation(contextRoot), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), Longs.toArray(ids))))
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
 
 		List<ContextDescribable> list = new ArrayList<>();
@@ -131,7 +129,7 @@ public class NotificationEntityLoader {
 	 * @throws DataAccessException
 	 *             Throw if the ContextDescribables cannot be loaded.
 	 */
-	private List<ContextDescribable> loadEntityForContextComponent(EntityType contextComponent, List<Long> ids)
+	private List<ContextDescribable> loadEntityForContextComponent(EntityType contextComponent, List<String> ids)
 			throws DataAccessException {
 
 		// ContextComponent can only have one parent
@@ -140,16 +138,16 @@ public class NotificationEntityLoader {
 		final EntityType testStep = modelManager.getEntityType(TestStep.class);
 		final EntityType measurement = modelManager.getEntityType(Measurement.class);
 
-		List<Long> testStepIDs = modelManager.createQuery().selectID(testStep)
+		List<String> testStepIDs = modelManager.createQuery().selectID(testStep)
 				.join(testStep.getRelation(contextRoot), Join.OUTER)
 				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), Longs.toArray(ids))))
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
-		List<Long> measurementIDs = modelManager.createQuery().selectID(measurement)
+		List<String> measurementIDs = modelManager.createQuery().selectID(measurement)
 				.join(measurement.getRelation(contextRoot), Join.OUTER)
 				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), Longs.toArray(ids))))
+				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
 
 		List<ContextDescribable> list = new ArrayList<>();

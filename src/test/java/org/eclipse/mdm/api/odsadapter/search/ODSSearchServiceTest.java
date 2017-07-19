@@ -107,16 +107,16 @@ public class ODSSearchServiceTest {
 		ODSSearchService service = Mockito.spy((ODSSearchService) entityManager.getSearchService()
 				.orElseThrow(() -> new IllegalStateException("No SearchService available!")));
 
-		Mockito.doReturn(ImmutableMap.of(TestStep.class, Arrays.asList(10L))).when(service)
+		Mockito.doReturn(ImmutableMap.of(TestStep.class, Arrays.asList("10"))).when(service)
 				.fetchIds(Mockito.anyString());
 
 		EntityType testStep = modelManager.getEntityType(TestStep.class);
 
-		assertThat(service.getMergedFilter(Filter.idOnly(testStep, 11L), "query")).hasSize(7)
+		assertThat(service.getMergedFilter(Filter.idOnly(testStep, "11"), "query")).hasSize(7)
 				.extracting(filterExtractors).containsExactly(tuple(Operator.OPEN, null, null, null),
-						tuple(null, "Id", Operation.EQUAL, 11L), tuple(Operator.CLOSE, null, null, null),
+						tuple(null, "Id", Operation.EQUAL, "10"), tuple(Operator.CLOSE, null, null, null),
 						tuple(Operator.AND, null, null, null), tuple(Operator.OPEN, null, null, null),
-						tuple(null, "Id", Operation.IN_SET, new long[] { 10L }),
+						tuple(null, "Id", Operation.IN_SET, new String[] { "10" }),
 						tuple(Operator.CLOSE, null, null, null));
 	}
 
@@ -124,11 +124,11 @@ public class ODSSearchServiceTest {
 	public void testGetMergedFilterNoAttributeFilter() throws Exception {
 		ODSSearchService service = Mockito.spy((ODSSearchService) entityManager.getSearchService().get());
 
-		Mockito.doReturn(ImmutableMap.of(TestStep.class, Arrays.asList(10L))).when(service)
+		Mockito.doReturn(ImmutableMap.of(TestStep.class, Arrays.asList("10"))).when(service)
 				.fetchIds(Mockito.anyString());
 
 		assertThat(service.getMergedFilter(Filter.and(), "query")).extracting(filterExtractors)
-				.containsExactly(tuple(null, "Id", Operation.IN_SET, new long[] { 10L }));
+				.containsExactly(tuple(null, "Id", Operation.IN_SET, new String[] { "10" }));
 	}
 
 	@Test
@@ -139,8 +139,8 @@ public class ODSSearchServiceTest {
 
 		EntityType testStep = modelManager.getEntityType(TestStep.class);
 
-		assertThat(service.getMergedFilter(Filter.idOnly(testStep, 11L), "")).extracting(filterExtractors)
-				.containsExactly(tuple(null, "Id", Operation.EQUAL, 11L));
+		assertThat(service.getMergedFilter(Filter.idOnly(testStep, "11"), "")).extracting(filterExtractors)
+				.containsExactly(tuple(null, "Id", Operation.EQUAL, "11"));
 	}
 
 	@Test

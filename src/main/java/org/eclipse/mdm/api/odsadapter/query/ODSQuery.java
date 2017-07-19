@@ -73,7 +73,7 @@ public class ODSQuery implements Query {
 	// Instance variables
 	// ======================================================================
 
-	private final Map<Long, EntityType> entityTypesByID = new HashMap<>();
+	private final Map<String, EntityType> entityTypesByID = new HashMap<>();
 	private final Set<EntityType> queriedEntityTypes = new HashSet<>();
 	private final List<SelAIDNameUnitId> anuSeq = new ArrayList<>();
 	private final List<JoinDef> joinSeq = new ArrayList<>();
@@ -114,7 +114,8 @@ public class ODSQuery implements Query {
 	@Override
 	public Query select(Attribute attribute, Aggregation aggregation) {
 		EntityType entityType = attribute.getEntityType();
-		entityTypesByID.put(ODSConverter.fromODSLong(((ODSEntityType) entityType).getODSID()), entityType);
+		entityTypesByID.put(Long.toString(ODSConverter.fromODSLong(((ODSEntityType) entityType).getODSID())),
+				entityType);
 		queriedEntityTypes.add(entityType);
 		anuSeq.add(createSelect(attribute, aggregation));
 		return this;
@@ -353,7 +354,8 @@ public class ODSQuery implements Query {
 		 * @throws DataAccessException
 		 *             Thrown on conversion errors.
 		 */
-		public ResultFactory(Map<Long, EntityType> entityTypes, ResultSetExt resultSetExt) throws DataAccessException {
+		public ResultFactory(Map<String, EntityType> entityTypes, ResultSetExt resultSetExt)
+				throws DataAccessException {
 			for (ElemResultSetExt elemResultSetExt : resultSetExt.firstElems) {
 				EntityType entityType = entityTypes.get(ODSConverter.fromODSLong(elemResultSetExt.aid));
 				recordFactories.add(new RecordFactory(entityType, elemResultSetExt.values));

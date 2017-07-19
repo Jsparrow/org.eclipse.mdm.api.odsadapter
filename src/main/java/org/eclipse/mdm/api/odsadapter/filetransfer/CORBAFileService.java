@@ -436,7 +436,7 @@ public class CORBAFileService implements FileService {
 	 */
 	private ElemId toElemID(Entity entity) {
 		return new ElemId(((ODSEntityType) modelManager.getEntityType(entity)).getODSID(),
-				ODSConverter.toODSLong(entity.getID()));
+				ODSConverter.toODSLong(Long.valueOf(entity.getID())));
 	}
 
 	/**

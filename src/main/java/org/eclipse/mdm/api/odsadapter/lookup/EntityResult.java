@@ -42,7 +42,7 @@ final class EntityResult<T extends Entity> {
 	// Instance variables
 	// ======================================================================
 
-	private final Map<Long, EntityRecord<T>> entityRecords = new HashMap<>();
+	private final Map<String, EntityRecord<T>> entityRecords = new HashMap<>();
 	private final List<T> entities = new ArrayList<>();
 
 	final EntityRequest<T> request;
@@ -72,7 +72,7 @@ final class EntityResult<T extends Entity> {
 	 *            The instance ID.
 	 * @return {@code Optional} is empty if {@code EntityRecord} not found.
 	 */
-	public Optional<EntityRecord<T>> get(Long id) {
+	public Optional<EntityRecord<T>> get(String id) {
 		return Optional.ofNullable(entityRecords.get(id));
 	}
 
@@ -137,7 +137,7 @@ final class EntityResult<T extends Entity> {
 	 *
 	 * @return Returned {@code Collection} is unmodifiable.
 	 */
-	public Collection<Long> getIDs() {
+	public Collection<String> getIDs() {
 		return Collections.unmodifiableCollection(entityRecords.keySet());
 	}
 
