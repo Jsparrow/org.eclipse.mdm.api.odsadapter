@@ -357,7 +357,7 @@ public class ODSQuery implements Query {
 		public ResultFactory(Map<String, EntityType> entityTypes, ResultSetExt resultSetExt)
 				throws DataAccessException {
 			for (ElemResultSetExt elemResultSetExt : resultSetExt.firstElems) {
-				EntityType entityType = entityTypes.get(ODSConverter.fromODSLong(elemResultSetExt.aid));
+				EntityType entityType = entityTypes.get(Long.toString(ODSConverter.fromODSLong(elemResultSetExt.aid)));
 				recordFactories.add(new RecordFactory(entityType, elemResultSetExt.values));
 			}
 
