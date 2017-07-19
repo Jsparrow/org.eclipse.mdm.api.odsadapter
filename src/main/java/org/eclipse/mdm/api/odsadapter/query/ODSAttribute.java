@@ -8,9 +8,11 @@
 
 package org.eclipse.mdm.api.odsadapter.query;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.asam.ods.ApplAttr;
+import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -33,6 +35,7 @@ final class ODSAttribute implements Attribute {
 	private final String unit;
 	private final EntityType entityType;
 	private final ValueType valueType;
+	private final boolean isIdAttribute;
 
 	// ======================================================================
 	// Constructors
@@ -54,13 +57,12 @@ final class ODSAttribute implements Attribute {
 		this.entityType = entityType;
 		name = applAttr.aaName;
 		this.unit = unit == null ? "" : unit;
-		if ("id".equalsIgnoreCase(applAttr.baName))
-		{
+		if ("id".equalsIgnoreCase(applAttr.baName)) {
 			valueType = ValueType.STRING;
-		}
-		else
-		{
+			isIdAttribute = true;
+		} else {
 			valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);
+			isIdAttribute = false;
 		}
 
 		if (valueType.isEnumerationType() && enumClass == null) {
@@ -148,4 +150,42 @@ final class ODSAttribute implements Attribute {
 		return getName();
 	}
 
+	@Override
+	public Value createValue(Object input) {
+		return Attribute.super.createValue(convertInputForIdAttribute(input));
+	}
+
+	@Override
+	public Value createValue(String unit, boolean valid, Object input) {
+		return Attribute.super.createValue(unit, valid, convertInputForIdAttribute(input));
+	}
+
+	@Override
+	public Value createValue(String unit, Object input) {
+		return Attribute.super.createValue(unit, convertInputForIdAttribute(input));
+	}
+
+	@Override
+	public Value createValueSeq(String unit, Object input) {
+		return Attribute.super.createValueSeq(unit, input);
+	}
+
+	/**
+	 * Converts the input object from long/long-array to a String/String-array
+	 * 
+	 * @param input
+	 *            The input to convert
+	 * @return The converted input
+	 */
+	private Object convertInputForIdAttribute(Object input) {
+		if (isIdAttribute) {
+			if (input.getClass().isArray()) {
+				return Arrays.asList(input.toString());
+			} else {
+				return input.toString();
+			}
+		}
+
+		return input;
+	}
 }
