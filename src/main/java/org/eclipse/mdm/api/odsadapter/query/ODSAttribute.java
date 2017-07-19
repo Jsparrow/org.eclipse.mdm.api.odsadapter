@@ -54,7 +54,14 @@ final class ODSAttribute implements Attribute {
 		this.entityType = entityType;
 		name = applAttr.aaName;
 		this.unit = unit == null ? "" : unit;
-		valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);
+		if ("id".equalsIgnoreCase(applAttr.baName))
+		{
+			valueType = ValueType.STRING;
+		}
+		else
+		{
+			valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);
+		}
 
 		if (valueType.isEnumerationType() && enumClass == null) {
 			throw new IllegalStateException(

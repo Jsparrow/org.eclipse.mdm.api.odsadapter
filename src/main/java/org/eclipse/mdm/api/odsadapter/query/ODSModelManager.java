@@ -450,8 +450,8 @@ public class ODSModelManager implements ModelManager {
 		// create relations
 		List<Relation> relations = new ArrayList<>();
 		for (ApplRel applRel : applicationStructureValue.applRels) {
-			EntityType source = entityTypesByID.get(ODSConverter.fromODSLong(applRel.elem1));
-			EntityType target = entityTypesByID.get(ODSConverter.fromODSLong(applRel.elem2));
+			EntityType source = entityTypesByID.get(Long.toString(ODSConverter.fromODSLong(applRel.elem1)));
+			EntityType target = entityTypesByID.get(Long.toString(ODSConverter.fromODSLong(applRel.elem2)));
 			relations.add(new ODSRelation(applRel, source, target));
 		}
 
