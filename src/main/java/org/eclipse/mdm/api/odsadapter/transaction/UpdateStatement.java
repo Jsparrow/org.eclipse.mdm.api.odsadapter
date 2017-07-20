@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -28,11 +28,13 @@ import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.FilesAttachable;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,10 +119,12 @@ final class UpdateStatement extends BaseStatement {
 				continue;
 			}
 
+			Attribute attribute = getEntityType().getAttribute(entry.getKey());
+
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
 			anvsu.unitId = ODSConverter.toODSLong(0);
-			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
+			anvsu.values = ODSConverter.toODSValueSeq(attribute, entry.getValue());
 			anvsuList.add(anvsu);
 		}
 
@@ -214,7 +218,7 @@ final class UpdateStatement extends BaseStatement {
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent()
 				.entrySet()) {
 			Map<Boolean, List<Entity>> patrition = entry.getValue().stream()
-					.collect(Collectors.partitioningBy(e -> e.getID() < 1));
+					.collect(Collectors.partitioningBy(e -> ODSUtils.isValidID(e.getID())));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
 			if (virtualEntities != null && !virtualEntities.isEmpty()) {
 				childrenToCreate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(virtualEntities);
@@ -227,7 +231,7 @@ final class UpdateStatement extends BaseStatement {
 
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getRemoved()
 				.entrySet()) {
-			List<Deletable> toDelete = entry.getValue().stream().filter(e -> e.getID() > 0)
+			List<Deletable> toDelete = entry.getValue().stream().filter(e -> ODSUtils.isValidID(e.getID()))
 					.collect(Collectors.toList());
 			childrenToRemove.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(toDelete);
 		}
@@ -241,7 +245,7 @@ final class UpdateStatement extends BaseStatement {
 	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for (Entity relatedEntity : relatedEntities) {
-			if (relatedEntity.getID() < 1) {
+			if (!ODSUtils.isValidID(relatedEntity.getID())) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 

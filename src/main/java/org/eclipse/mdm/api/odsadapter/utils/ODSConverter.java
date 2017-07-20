@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.asam.ods.Blob;
 import org.asam.ods.DataType;
@@ -37,6 +39,7 @@ import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.odsadapter.query.ODSAttribute;
 
 /**
  * Utility class for value conversions from/to ODS types.
@@ -94,6 +97,34 @@ public final class ODSConverter {
 		DataType dataType = odsValueSeq.u.discriminator();
 		short[] flags = odsValueSeq.flag;
 		List<Value> values = new ArrayList<>(flags.length);
+
+		if (((ODSAttribute) attribute).isIdAttribute()) {
+			if (DataType.DT_LONGLONG == dataType) {
+				T_LONGLONG[] odsValues = odsValueSeq.u.longlongVal();
+				for (int i = 0; i < flags.length; i++) {
+					values.add(attribute.createValue(unit, flags[i] == 15, Long.toString(fromODSLong(odsValues[i]))));
+				}
+				return values;
+			} else if (DataType.DS_LONGLONG == dataType) {
+				T_LONGLONG[][] odsValues = odsValueSeq.u.longlongSeq();
+				for (int i = 0; i < flags.length; i++) {
+					values.add(attribute.createValue(unit, flags[i] == 15, toString(odsValues[i])));
+				}
+				return values;
+			} else if (DataType.DT_LONG == dataType) {
+				int[] odsValues = odsValueSeq.u.longVal();
+				for (int i = 0; i < flags.length; i++) {
+					values.add(attribute.createValue(unit, flags[i] == 15, Integer.toString(odsValues[i])));
+				}
+				return values;
+			} else if (DataType.DS_LONG == dataType) {
+				int[][] odsValues = odsValueSeq.u.longSeq();
+				for (int i = 0; i < flags.length; i++) {
+					values.add(attribute.createValue(unit, flags[i] == 15, toString(odsValues[i])));
+				}
+				return values;
+			}
+		}
 
 		if (DataType.DT_STRING == dataType) {
 			String[] odsValues = odsValueSeq.u.stringVal();
@@ -249,6 +280,14 @@ public final class ODSConverter {
 		return values;
 	}
 
+	private static String[] toString(int[] odsValues) {
+		return IntStream.of(odsValues).mapToObj(Integer::toString).toArray(String[]::new);
+	}
+
+	private static String[] toString(T_LONGLONG[] odsValues) {
+		return Stream.of(odsValues).map(l -> Long.toString(fromODSLong(l))).toArray(String[]::new);
+	}
+
 	/**
 	 * Converts given {@link Value}s to {@link TS_ValueSeq}.
 	 *
@@ -258,7 +297,7 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	public static TS_ValueSeq toODSValueSeq(List<Value> values) throws DataAccessException {
+	public static TS_ValueSeq toODSValueSeq(Attribute attribute, List<Value> values) throws DataAccessException {
 		int size = values == null ? 0 : values.size();
 		short[] flags = new short[size];
 
@@ -276,7 +315,11 @@ public final class ODSConverter {
 				flags[i] = toODSValidFlag(value.isValid());
 				odsValues[i] = value.extract();
 			}
-			odsValueSeq.u.stringVal(odsValues);
+			if (((ODSAttribute) attribute).isIdAttribute()) {
+				odsValueSeq.u.longlongVal(toLongLong(odsValues));
+			} else {
+				odsValueSeq.u.stringVal(odsValues);
+			}
 		} else if (ValueType.STRING_SEQUENCE == type) {
 			String[][] odsValues = new String[size][];
 			for (int i = 0; i < size; i++) {
@@ -284,7 +327,12 @@ public final class ODSConverter {
 				flags[i] = toODSValidFlag(value.isValid());
 				odsValues[i] = value.extract();
 			}
-			odsValueSeq.u.stringSeq(odsValues);
+			if (((ODSAttribute) attribute).isIdAttribute()) {
+				odsValueSeq.u.longlongSeq(toLongLongSeq(odsValues));
+			} else {
+				odsValueSeq.u.stringSeq(odsValues);
+			}
+
 		} else if (ValueType.DATE == type) {
 			String[] odsValues = new String[size];
 			for (int i = 0; i < flags.length; i++) {
@@ -509,6 +557,30 @@ public final class ODSConverter {
 	}
 
 	/**
+	 * Converts given two dimensional String array to two dimensional
+	 * {@link T_LONGLONG} array.
+	 * 
+	 * @param value
+	 *            The String array.
+	 * @return The converted {@link T_LONGLONG} array.
+	 */
+	private static T_LONGLONG[][] toLongLongSeq(String[][] value) {
+
+		return Stream.of(value).map(ODSConverter::toLongLong).toArray(T_LONGLONG[][]::new);
+	}
+
+	/**
+	 * Converts given String array to {@link T_LONGLONG} array.
+	 * 
+	 * @param value
+	 *            The String array.
+	 * @return The converted {@link T_LONGLONG} array.
+	 */
+	private static T_LONGLONG[] toLongLong(String[] value) {
+		return Stream.of(value).map(s -> toODSID(s)).toArray(T_LONGLONG[]::new);
+	}
+
+	/**
 	 * Converts given {@link NameValueSeqUnit[]} to {@link MeasuredValues}s.
 	 *
 	 * @param odsMeasuredValuesSeq
@@ -600,14 +672,23 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	public static TS_Value toODSValue(Value value) throws DataAccessException {
+	public static TS_Value toODSValue(Attribute attribute, Value value) throws DataAccessException {
 		TS_Value odsValue = new TS_Value(new TS_Union(), toODSValidFlag(value.isValid()));
 		ValueType type = value.getValueType();
 
 		if (ValueType.STRING == type) {
-			odsValue.u.stringVal(value.extract());
+			if (((ODSAttribute) attribute).isIdAttribute()) {
+				odsValue.u.longlongVal(ODSConverter.toODSID(value.extract()));
+			} else {
+				odsValue.u.stringVal(value.extract());
+			}
 		} else if (ValueType.STRING_SEQUENCE == type) {
-			odsValue.u.stringSeq(value.extract());
+			if (((ODSAttribute) attribute).isIdAttribute()) {
+				odsValue.u.longlongSeq(
+						Stream.of((String[]) value.extract()).map(ODSConverter::toODSID).toArray(T_LONGLONG[]::new));
+			} else {
+				odsValue.u.stringSeq(value.extract());
+			}
 		} else if (ValueType.DATE == type) {
 			odsValue.u.dateVal(toODSDate(value.extract()));
 		} else if (ValueType.DATE_SEQUENCE == type) {
@@ -776,6 +857,21 @@ public final class ODSConverter {
 	 */
 	public static T_LONGLONG toODSLong(long input) {
 		return new T_LONGLONG((int) (input >> 32 & 0xffffffffL), (int) (input & 0xffffffffL));
+	}
+
+	/**
+	 * Converts a given MDM ID string to {@link T_LONGLONG}.
+	 * 
+	 * @param input
+	 *            The MDM ID string.
+	 * @return The converted {@code T_LONGLONG} is returned.
+	 */
+	public static T_LONGLONG toODSID(String input) {
+		try {
+			return toODSLong(Long.valueOf(input));
+		} catch (NumberFormatException e) {
+			return new T_LONGLONG();
+		}
 	}
 
 	/**

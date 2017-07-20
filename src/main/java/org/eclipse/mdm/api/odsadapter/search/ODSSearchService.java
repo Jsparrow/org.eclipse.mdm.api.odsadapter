@@ -140,7 +140,7 @@ public class ODSSearchService implements SearchService {
 		}
 
 		EntityType entityType = modelManager.getEntityType(entityClass);
-		Map<Long, Result> recordsByEntityID = new HashMap<>();
+		Map<String, Result> recordsByEntityID = new HashMap<>();
 		for (Result result : findSearchQuery(entityClass).fetch(attributes, mergedFilter)) {
 			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
 		}
@@ -199,7 +199,7 @@ public class ODSSearchService implements SearchService {
 	 *             Thrown if {@link ODSFreeTextSearch} is unavailable or cannot
 	 *             execute the query.
 	 */
-	protected Map<Class<? extends Entity>, List<Long>> fetchIds(String query) throws DataAccessException {
+	protected Map<Class<? extends Entity>, List<String>> fetchIds(String query) throws DataAccessException {
 		if (Strings.isNullOrEmpty(query)) {
 			return Collections.emptyMap();
 		}
@@ -227,7 +227,7 @@ public class ODSSearchService implements SearchService {
 	private Filter getFilterForFreetextQuery(String query) throws DataAccessException {
 
 		Filter freeTextResultsFilter = Filter.or();
-		for (Map.Entry<Class<? extends Entity>, List<Long>> entry : fetchIds(query).entrySet()) {
+		for (Map.Entry<Class<? extends Entity>, List<String>> entry : fetchIds(query).entrySet()) {
 			if (!entry.getValue().isEmpty()) {
 				freeTextResultsFilter.ids(modelManager.getEntityType(entry.getKey()), entry.getValue());
 			}
@@ -253,7 +253,7 @@ public class ODSSearchService implements SearchService {
 	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results)
 			throws DataAccessException {
 		EntityType entityType = modelManager.getEntityType(entityClass);
-		Map<Long, Result> recordsByEntityID = new HashMap<>();
+		Map<String, Result> recordsByEntityID = new HashMap<>();
 		for (Result result : results) {
 			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
 		}

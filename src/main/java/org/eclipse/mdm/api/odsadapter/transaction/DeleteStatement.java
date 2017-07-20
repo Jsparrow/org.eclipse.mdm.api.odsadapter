@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -122,7 +122,7 @@ final class DeleteStatement extends BaseStatement {
 	 * @throws DataAccessException
 	 *             Thrown if unable to query child entities.
 	 */
-	private int delete(EntityType entityType, Collection<Long> instanceIDs, boolean ignoreSiblings)
+	private int delete(EntityType entityType, Collection<String> instanceIDs, boolean ignoreSiblings)
 			throws AoException, DataAccessException {
 		if (instanceIDs.isEmpty()) {
 			return 0;
@@ -178,10 +178,10 @@ final class DeleteStatement extends BaseStatement {
 				.forEach(relation -> filter.ids(relation, instanceIDs));
 
 		// query child IDs
-		Map<EntityType, Set<Long>> children = new HashMap<>();
+		Map<EntityType, Set<String>> children = new HashMap<>();
 		for (Result result : query.fetch(filter)) {
 			// load children of other types
-			result.stream().filter(r -> r.getID().longValue() > 0).forEach(r -> {
+			result.stream().filter(r -> r.getID() != null && r.getID().length() > 0).forEach(r -> {
 				children.computeIfAbsent(r.getEntityType(), k -> new HashSet<>()).add(r.getID());
 			});
 
@@ -203,7 +203,7 @@ final class DeleteStatement extends BaseStatement {
 		// omit context roots with references to not removed measurements
 		if (!ignoreSiblings && measurement.equals(entityType)) {
 			for (EntityType contextRoot : Arrays.asList(unitUnderTest, testSequence, testEquipment)) {
-				Set<Long> contextRootIDs = children.getOrDefault(contextRoot, Collections.emptySet());
+				Set<String> contextRootIDs = children.getOrDefault(contextRoot, Collections.emptySet());
 				if (contextRootIDs.isEmpty()) {
 					continue;
 				}
@@ -225,10 +225,10 @@ final class DeleteStatement extends BaseStatement {
 
 		int amount = 0;
 		// delete real children
-		List<Entry<EntityType, Set<Long>>> consideredChildren = new ArrayList<>();
-		for (Entry<EntityType, Set<Long>> entry : children.entrySet()) {
+		List<Entry<EntityType, Set<String>>> consideredChildren = new ArrayList<>();
+		for (Entry<EntityType, Set<String>> entry : children.entrySet()) {
 			EntityType childType = entry.getKey();
-			Set<Long> childInstanceIDs = entry.getValue();
+			Set<String> childInstanceIDs = entry.getValue();
 			if (entityType.equals(childType)) {
 				childInstanceIDs.removeAll(instanceIDs);
 			} else if (delayedDelete.contains(entry.getKey())) {
@@ -241,7 +241,7 @@ final class DeleteStatement extends BaseStatement {
 		getApplElemAccess().deleteInstances(((ODSEntityType) entityType).getODSID(), toODSIDs(instanceIDs));
 
 		// delete considered children (informative relation)
-		for (Entry<EntityType, Set<Long>> entry : consideredChildren) {
+		for (Entry<EntityType, Set<String>> entry : consideredChildren) {
 			amount += delete(entry.getKey(), entry.getValue(), true);
 		}
 
@@ -256,9 +256,8 @@ final class DeleteStatement extends BaseStatement {
 	 *            The instance IDs.
 	 * @return The corresponding ODS {@code T_LONGLONG[]} is returned.
 	 */
-	private T_LONGLONG[] toODSIDs(Collection<Long> instanceIDs) {
-		List<T_LONGLONG> odsIDs = instanceIDs.stream().map(ODSConverter::toODSLong).collect(Collectors.toList());
-		return odsIDs.toArray(new T_LONGLONG[odsIDs.size()]);
+	private T_LONGLONG[] toODSIDs(Collection<String> instanceIDs) {
+		return instanceIDs.stream().map(ODSConverter::toODSID).toArray(T_LONGLONG[]::new);
 	}
 
 }

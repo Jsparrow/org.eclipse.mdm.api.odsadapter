@@ -55,7 +55,7 @@ public class EntityLoader {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load entities.
 	 */
-	public <T extends Entity> T load(Key<T> key, Long instanceID) throws DataAccessException {
+	public <T extends Entity> T load(Key<T> key, String instanceID) throws DataAccessException {
 		List<T> entities = loadAll(key, Collections.singletonList(instanceID));
 		if (entities.size() != 1) {
 			throw new DataAccessException("Faild to load entity by instance ID.");
@@ -95,7 +95,7 @@ public class EntityLoader {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load entities.
 	 */
-	public <T extends Entity> List<T> loadAll(Key<T> key, Collection<Long> instanceIDs) throws DataAccessException {
+	public <T extends Entity> List<T> loadAll(Key<T> key, Collection<String> instanceIDs) throws DataAccessException {
 		return createRequest(key).loadAll(instanceIDs);
 	}
 

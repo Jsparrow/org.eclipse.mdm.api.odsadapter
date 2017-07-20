@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -73,7 +73,7 @@ public class ODSQuery implements Query {
 	// Instance variables
 	// ======================================================================
 
-	private final Map<Long, EntityType> entityTypesByID = new HashMap<>();
+	private final Map<String, EntityType> entityTypesByID = new HashMap<>();
 	private final Set<EntityType> queriedEntityTypes = new HashSet<>();
 	private final List<SelAIDNameUnitId> anuSeq = new ArrayList<>();
 	private final List<JoinDef> joinSeq = new ArrayList<>();
@@ -114,7 +114,8 @@ public class ODSQuery implements Query {
 	@Override
 	public Query select(Attribute attribute, Aggregation aggregation) {
 		EntityType entityType = attribute.getEntityType();
-		entityTypesByID.put(ODSConverter.fromODSLong(((ODSEntityType) entityType).getODSID()), entityType);
+		entityTypesByID.put(Long.toString(ODSConverter.fromODSLong(((ODSEntityType) entityType).getODSID())),
+				entityType);
 		queriedEntityTypes.add(entityType);
 		anuSeq.add(createSelect(attribute, aggregation));
 		return this;
@@ -260,7 +261,7 @@ public class ODSQuery implements Query {
 		sve.attr = new AIDNameUnitId();
 		sve.attr.unitId = new T_LONGLONG();
 		sve.attr.attr = createAIDName(condition.getAttribute());
-		sve.value = ODSConverter.toODSValue(condition.getValue());
+		sve.value = ODSConverter.toODSValue(condition.getAttribute(), condition.getValue());
 
 		return sve;
 	}
@@ -353,9 +354,10 @@ public class ODSQuery implements Query {
 		 * @throws DataAccessException
 		 *             Thrown on conversion errors.
 		 */
-		public ResultFactory(Map<Long, EntityType> entityTypes, ResultSetExt resultSetExt) throws DataAccessException {
+		public ResultFactory(Map<String, EntityType> entityTypes, ResultSetExt resultSetExt)
+				throws DataAccessException {
 			for (ElemResultSetExt elemResultSetExt : resultSetExt.firstElems) {
-				EntityType entityType = entityTypes.get(ODSConverter.fromODSLong(elemResultSetExt.aid));
+				EntityType entityType = entityTypes.get(Long.toString(ODSConverter.fromODSLong(elemResultSetExt.aid)));
 				recordFactories.add(new RecordFactory(entityType, elemResultSetExt.values));
 			}
 

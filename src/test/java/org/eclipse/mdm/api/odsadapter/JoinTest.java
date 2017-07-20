@@ -101,7 +101,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
-		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, 37L));
+		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, "37"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -114,7 +114,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
-		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, 65L));
+		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, "65"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -127,7 +127,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 
-		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, 80L));
+		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, "80"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -140,7 +140,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
-		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, 302L));
+		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, "302"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -153,7 +153,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
-		List<TestStep> list = searchService.fetch(TestStep.class, Filter.idOnly(et, 28L));
+		List<TestStep> list = searchService.fetch(TestStep.class, Filter.idOnly(et, "28"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -166,7 +166,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
-		List<TestStep> list = searchService.fetch(TestStep.class, Filter.idOnly(et, 65L));
+		List<TestStep> list = searchService.fetch(TestStep.class, Filter.idOnly(et, "65"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -179,7 +179,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 
-		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, 80L));
+		List<Test> list = searchService.fetch(Test.class, Filter.idOnly(et, "80"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -192,7 +192,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
-		List<TestStep> list = searchService.fetch(TestStep.class, Filter.idOnly(et, 302L));
+		List<TestStep> list = searchService.fetch(TestStep.class, Filter.idOnly(et, "302"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -205,7 +205,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
-		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, 28L));
+		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, "28"));
 
 		assertEquals(9, list.size());
 		System.out.println(list.size());
@@ -218,7 +218,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
-		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, 37L));
+		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, "37"));
 
 		assertEquals(9, list.size());
 		System.out.println(list.size());
@@ -231,7 +231,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 
-		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, 80L));
+		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, "80"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -244,7 +244,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
-		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, 302L));
+		List<Measurement> list = searchService.fetch(Measurement.class, Filter.idOnly(et, "302"));
 
 		assertEquals(1, list.size());
 		System.out.println(list.size());
@@ -257,7 +257,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
-		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, 28L));
+		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, "28"));
 
 		assertEquals(14, list.size());
 		System.out.println(list.size());
@@ -270,7 +270,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
-		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, 37L));
+		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, "37"));
 
 		assertEquals(14, list.size());
 		System.out.println(list.size());
@@ -283,7 +283,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
-		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, 65L));
+		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, "65"));
 
 		assertEquals(2, list.size());
 		System.out.println(list.size());
@@ -296,7 +296,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
-		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, 302L));
+		List<ChannelGroup> list = searchService.fetch(ChannelGroup.class, Filter.idOnly(et, "302"));
 
 		assertEquals(2, list.size());
 		System.out.println(list.size());
@@ -309,7 +309,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
-		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, 28L));
+		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, "28"));
 
 		assertEquals(43, list.size());
 		System.out.println(list.size());
@@ -322,7 +322,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
-		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, 37L));
+		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, "37"));
 
 		assertEquals(43, list.size());
 		System.out.println(list.size());
@@ -335,7 +335,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
-		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, 65L));
+		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, "65"));
 
 		assertEquals(2, list.size());
 		System.out.println(list.size());
@@ -348,7 +348,7 @@ public class JoinTest {
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 
-		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, 80L));
+		List<Channel> list = searchService.fetch(Channel.class, Filter.idOnly(et, "80"));
 
 		assertEquals(2, list.size());
 		System.out.println(list.size());

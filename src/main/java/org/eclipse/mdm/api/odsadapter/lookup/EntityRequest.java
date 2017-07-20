@@ -115,7 +115,7 @@ public class EntityRequest<T extends Entity> {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load entities.
 	 */
-	public List<T> loadAll(Collection<Long> instanceIDs) throws DataAccessException {
+	public List<T> loadAll(Collection<String> instanceIDs) throws DataAccessException {
 		if (instanceIDs.isEmpty()) {
 			// just to be sure...
 			return Collections.emptyList();
@@ -279,7 +279,7 @@ public class EntityRequest<T extends Entity> {
 		// load entities and prepare mappings for required related entities
 		List<EntityRecord<?>> parentRecords = new ArrayList<>();
 		for (Record record : collectRecords(query.fetch(adjustedFilter))) {
-			Optional<Long> reflexiveParentID = Optional.empty();
+			Optional<String> reflexiveParentID = Optional.empty();
 			if (entityConfig.isReflexive()) {
 				reflexiveParentID = record.getID(reflexiveRelation);
 			}

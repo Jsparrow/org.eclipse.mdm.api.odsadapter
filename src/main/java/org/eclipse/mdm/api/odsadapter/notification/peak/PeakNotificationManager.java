@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -197,9 +198,9 @@ public class PeakNotificationManager implements NotificationManager {
 		}
 
 		try {
-			User user = loader.load(new Key<>(User.class), n.getUserId());
+			User user = loader.load(new Key<>(User.class), Long.toString(n.getUserId()));
 
-			EntityType entityType = modelManager.getEntityType(n.getAid());
+			EntityType entityType = modelManager.getEntityType(Long.toString(n.getAid()));
 
 			if (LOGGER.isTraceEnabled()) {
 				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);
@@ -207,19 +208,21 @@ public class PeakNotificationManager implements NotificationManager {
 
 			switch (n.getType()) {
 			case NEW:
-				notificationListener.instanceCreated(loader.loadEntities(entityType, n.getIidList()), user);
+				notificationListener.instanceCreated(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList())), user);
 				break;
 			case MODIFY:
-				notificationListener.instanceModified(loader.loadEntities(entityType, n.getIidList()), user);
+				notificationListener.instanceModified(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList())), user);
 				break;
 			case DELETE:
-				notificationListener.instanceDeleted(entityType, n.getIidList(), user);
+				notificationListener.instanceDeleted(entityType,
+						n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList()), user);
 				break;
 			case MODEL:
 				notificationListener.modelModified(entityType, user);
 				break;
 			case SECURITY:
-				notificationListener.securityModified(entityType, n.getIidList(), user);
+				notificationListener.securityModified(entityType,
+						n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList()), user);
 				break;
 			default:
 				processException(new NotificationException("Invalid notification type!"));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -30,6 +30,7 @@ import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Aggregation;
+import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
@@ -38,6 +39,7 @@ import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +63,7 @@ final class InsertStatement extends BaseStatement {
 
 	private final List<FileLink> fileLinkToUpload = new ArrayList<>();
 
-	private final Map<Long, SortIndexTestSteps> sortIndexTestSteps = new HashMap<>();
+	private final Map<String, SortIndexTestSteps> sortIndexTestSteps = new HashMap<>();
 	private boolean loadSortIndex;
 
 	// ======================================================================
@@ -144,10 +146,12 @@ final class InsertStatement extends BaseStatement {
 		}
 
 		for (Entry<String, List<Value>> entry : insertMap.entrySet()) {
+			Attribute attribute = getEntityType().getAttribute(entry.getKey());
+
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
 			anvsu.unitId = ODSConverter.toODSLong(0);
-			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
+			anvsu.values = ODSConverter.toODSValueSeq(attribute, entry.getValue());
 			anvsuList.add(anvsu);
 		}
 
@@ -155,7 +159,7 @@ final class InsertStatement extends BaseStatement {
 		ElemId[] elemIds = getApplElemAccess()
 				.insertInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
 		for (int i = 0; i < elemIds.length; i++) {
-			cores.get(i).setID(ODSConverter.fromODSLong(elemIds[i].iid));
+			cores.get(i).setID(Long.toString(ODSConverter.fromODSLong(elemIds[i].iid)));
 		}
 		long stop = System.currentTimeMillis();
 
@@ -234,7 +238,7 @@ final class InsertStatement extends BaseStatement {
 	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for (Entity relatedEntity : relatedEntities) {
-			if (relatedEntity.getID() < 1) {
+			if (!ODSUtils.isValidID(relatedEntity.getID())) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 

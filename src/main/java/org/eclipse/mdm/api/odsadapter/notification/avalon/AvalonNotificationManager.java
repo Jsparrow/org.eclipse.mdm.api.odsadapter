@@ -93,7 +93,7 @@ public class AvalonNotificationManager implements NotificationManager {
 		try {
 			EventProcessor consumer = new EventProcessor(orb, listener, this, nameServiceURL, serviceName);
 
-			List<Long> aids = filter.getEntityTypes().stream().map(e -> e.getId()).collect(Collectors.toList());
+			List<String> aids = filter.getEntityTypes().stream().map(e -> e.getId()).collect(Collectors.toList());
 
 			Set<ModificationType> modes = filter.getTypes().stream()
 					.filter(m -> !ModificationType.MODEL_MODIFIED.equals(m)).collect(Collectors.toSet());
@@ -148,11 +148,11 @@ public class AvalonNotificationManager implements NotificationManager {
 			NotificationListener notificationListener) {
 
 		try {
-			User user = loader.load(new Key<>(User.class), ODSConverter.fromODSLong(userId));
+			User user = loader.load(new Key<>(User.class), Long.toString(ODSConverter.fromODSLong(userId)));
 			LOGGER.debug("User loaded");
 
-			EntityType entityType = modelManager.getEntityType(ODSConverter.fromODSLong(aeId));
-			List<Long> ids = Arrays.asList(ODSConverter.fromODSLong(ieId));
+			EntityType entityType = modelManager.getEntityType(Long.toString(ODSConverter.fromODSLong(aeId)));
+			List<String> ids = Arrays.asList(Long.toString(ODSConverter.fromODSLong(ieId)));
 
 			if (LOGGER.isTraceEnabled()) {
 				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);

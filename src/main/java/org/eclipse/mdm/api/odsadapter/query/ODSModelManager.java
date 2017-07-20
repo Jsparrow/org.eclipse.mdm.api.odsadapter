@@ -312,7 +312,7 @@ public class ODSModelManager implements ModelManager {
 	}
 
 	@Override
-	public EntityType getEntityType(long id) {
+	public EntityType getEntityTypeById(String id) {
 		EntityType entityType = listEntityTypes().stream().filter(et -> et.getId() == id).findFirst().get();
 		if (entityType == null) {
 			throw new IllegalArgumentException("Entity with id '" + id + "' not found.");
@@ -425,20 +425,21 @@ public class ODSModelManager implements ModelManager {
 		LOGGER.debug("Reading the application model...");
 		long start = System.currentTimeMillis();
 		// enumeration mappings (aeID -> (aaName -> enumClass))
-		Map<Long, Map<String, Class<? extends Enum<?>>>> enumClassMap = new HashMap<>();
+		Map<String, Map<String, Class<? extends Enum<?>>>> enumClassMap = new HashMap<>();
 		for (EnumerationAttributeStructure eas : aoSession.getEnumerationAttributes()) {
-			enumClassMap.computeIfAbsent(ODSConverter.fromODSLong(eas.aid), k -> new HashMap<>()).put(eas.aaName,
+			enumClassMap.computeIfAbsent(Long.toString(ODSConverter.fromODSLong(eas.aid)), k -> new HashMap<>())
+					.put(eas.aaName,
 					ODSEnumerations.getEnumClass(eas.enumName));
 		}
 
 		ApplicationStructureValue applicationStructureValue = aoSession.getApplicationStructureValue();
-		Map<Long, String> units = getUnitMapping(applicationStructureValue.applElems);
+		Map<String, String> units = getUnitMapping(applicationStructureValue.applElems);
 
 		// create entity types (incl. attributes)
-		Map<Long, ODSEntityType> entityTypesByID = new HashMap<>();
+		Map<String, ODSEntityType> entityTypesByID = new HashMap<>();
 		String sourceName = aoSession.getName();
 		for (ApplElem applElem : applicationStructureValue.applElems) {
-			Long odsID = ODSConverter.fromODSLong(applElem.aid);
+			String odsID = Long.toString(ODSConverter.fromODSLong(applElem.aid));
 			Map<String, Class<? extends Enum<?>>> entityEnumMap = enumClassMap.getOrDefault(odsID, new HashMap<>());
 
 			ODSEntityType entityType = new ODSEntityType(sourceName, applElem, units, entityEnumMap);
@@ -449,8 +450,8 @@ public class ODSModelManager implements ModelManager {
 		// create relations
 		List<Relation> relations = new ArrayList<>();
 		for (ApplRel applRel : applicationStructureValue.applRels) {
-			EntityType source = entityTypesByID.get(ODSConverter.fromODSLong(applRel.elem1));
-			EntityType target = entityTypesByID.get(ODSConverter.fromODSLong(applRel.elem2));
+			EntityType source = entityTypesByID.get(Long.toString(ODSConverter.fromODSLong(applRel.elem1)));
+			EntityType target = entityTypesByID.get(Long.toString(ODSConverter.fromODSLong(applRel.elem2)));
 			relations.add(new ODSRelation(applRel, source, target));
 		}
 
@@ -472,7 +473,7 @@ public class ODSModelManager implements ModelManager {
 	 * @throws AoException
 	 *             Thrown if unable to load the unit mappings.
 	 */
-	private Map<Long, String> getUnitMapping(ApplElem[] applElems) throws AoException {
+	private Map<String, String> getUnitMapping(ApplElem[] applElems) throws AoException {
 		ApplElem unitElem = Stream.of(applElems).filter(ae -> ae.beName.equals("AoUnit")).findAny()
 				.orElseThrow(() -> new IllegalStateException("Application element 'Unit' is not defined."));
 
@@ -485,10 +486,11 @@ public class ODSModelManager implements ModelManager {
 		qse.joinSeq = new JoinDef[0];
 		qse.orderBy = new SelOrder[0];
 
-		Map<Long, String> units = new HashMap<>();
+		Map<String, String> units = new HashMap<>();
 		ElemResultSetExt unitResultSetExt = getApplElemAccess().getInstancesExt(qse, 0)[0].firstElems[0];
 		for (int i = 0; i < unitResultSetExt.values[0].value.flag.length; i++) {
-			Long unitID = ODSConverter.fromODSLong(unitResultSetExt.values[0].value.u.longlongVal()[i]);
+			String unitID = Long
+					.toString(ODSConverter.fromODSLong(unitResultSetExt.values[0].value.u.longlongVal()[i]));
 			String unitName = unitResultSetExt.values[1].value.u.stringVal()[i];
 			units.put(unitID, unitName);
 		}
