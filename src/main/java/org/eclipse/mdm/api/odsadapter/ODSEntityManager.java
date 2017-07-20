@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -52,6 +52,7 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
 import org.eclipse.mdm.api.odsadapter.transaction.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -373,7 +374,7 @@ public class ODSEntityManager implements EntityManager {
 			Map<ContextType, ContextRoot> contextRoots = new EnumMap<>(ContextType.class);
 			for (Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
 				String instanceID = result.get().getRecord(entry.getValue()).getID();
-				if (instanceID != null && !instanceID.isEmpty()) {
+				if (ODSUtils.isValidID(instanceID)) {
 					contextRoots.put(entry.getKey(),
 							entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
 				}

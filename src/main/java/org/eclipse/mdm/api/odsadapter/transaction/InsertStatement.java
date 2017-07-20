@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -30,6 +30,7 @@ import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Aggregation;
+import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
@@ -144,10 +145,12 @@ final class InsertStatement extends BaseStatement {
 		}
 
 		for (Entry<String, List<Value>> entry : insertMap.entrySet()) {
+			Attribute attribute = getEntityType().getAttribute(entry.getKey());
+
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
 			anvsu.unitId = ODSConverter.toODSLong(0);
-			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
+			anvsu.values = ODSConverter.toODSValueSeq(attribute, entry.getValue());
 			anvsuList.add(anvsu);
 		}
 

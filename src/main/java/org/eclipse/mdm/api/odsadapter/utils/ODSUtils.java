@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -153,4 +153,7 @@ public abstract class ODSUtils {
 		JOINS.addMappings(Join.OUTER, org.asam.ods.JoinType.JTOUTER);
 	}
 
+	public static boolean isValidID(String instanceID) {
+		return instanceID != null && !instanceID.isEmpty() && !"0".equals(instanceID);
+	}
 }

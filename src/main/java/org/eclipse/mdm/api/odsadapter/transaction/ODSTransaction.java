@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -42,6 +42,7 @@ import org.eclipse.mdm.api.dflt.model.CatalogSensor;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,9 +132,7 @@ public final class ODSTransaction implements Transaction {
 	public <T extends Entity> void create(Collection<T> entities) throws DataAccessException {
 		if (entities.isEmpty()) {
 			return;
-		} else if (entities.stream()
-				.filter(e -> e.getID() == null || e.getID().isEmpty()).findAny()
-				.isPresent()) {
+		} else if (entities.stream().filter(e -> ODSUtils.isValidID(e.getID())).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is already persisted.");
 		}
 
@@ -212,9 +211,7 @@ public final class ODSTransaction implements Transaction {
 	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
 		if (entities.isEmpty()) {
 			return;
-		} else if (entities.stream()
-				.filter(e -> e.getID() == null || e.getID().isEmpty()).findAny()
-				.isPresent()) {
+		} else if (entities.stream().filter(e -> e.getID() == null || e.getID().isEmpty()).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is not yet persisted.");
 		}
 
@@ -254,8 +251,7 @@ public final class ODSTransaction implements Transaction {
 			return;
 		}
 
-		List<T> filteredEntities = entities.stream()
-				.filter(e -> e.getID() != null && !e.getID().isEmpty())
+		List<T> filteredEntities = entities.stream().filter(e -> e.getID() != null && !e.getID().isEmpty())
 				.collect(Collectors.toList());
 
 		try {

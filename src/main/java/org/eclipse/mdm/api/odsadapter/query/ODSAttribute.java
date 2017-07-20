@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,6 +15,7 @@ import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
 /**
@@ -23,7 +24,7 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
-final class ODSAttribute implements Attribute {
+public class ODSAttribute implements Attribute {
 
 	// ======================================================================
 	// Instance variables
@@ -56,7 +57,8 @@ final class ODSAttribute implements Attribute {
 		this.entityType = entityType;
 		name = applAttr.aaName;
 		this.unit = unit == null ? "" : unit;
-		if ("id".equalsIgnoreCase(applAttr.baName)) {
+
+		if (isIDAttribute(entityType, applAttr)) {
 			valueType = ValueType.STRING;
 			isIdAttribute = true;
 		} else {
@@ -72,6 +74,18 @@ final class ODSAttribute implements Attribute {
 		this.enumClass = enumClass;
 	}
 
+	private boolean isIDAttribute(EntityType entityType, ApplAttr applAttr) {
+		for (Relation r : entityType.getRelations()) {
+			if (applAttr.aaName.equalsIgnoreCase(r.getName())) {
+				return true;
+			}
+		}
+		return "id".equalsIgnoreCase(applAttr.baName);
+	}
+
+	public boolean isIdAttribute() {
+		return isIdAttribute;
+	}
 	// ======================================================================
 	// Public methods
 	// ======================================================================
@@ -179,7 +193,9 @@ final class ODSAttribute implements Attribute {
 	private Object convertInputForIdAttribute(Object input) {
 		if (isIdAttribute) {
 			if (input.getClass().isArray()) {
-				return new String[] { input.toString() };
+				// TODO anehmer || mkoller
+				// return new String[] { input.toString() };
+				return input;
 			} else {
 				return input.toString();
 			}

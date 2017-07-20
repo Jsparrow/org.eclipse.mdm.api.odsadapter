@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -261,7 +261,7 @@ public class ODSQuery implements Query {
 		sve.attr = new AIDNameUnitId();
 		sve.attr.unitId = new T_LONGLONG();
 		sve.attr.attr = createAIDName(condition.getAttribute());
-		sve.value = ODSConverter.toODSValue(condition.getValue());
+		sve.value = ODSConverter.toODSValue(condition.getAttribute(), condition.getValue());
 
 		return sve;
 	}
