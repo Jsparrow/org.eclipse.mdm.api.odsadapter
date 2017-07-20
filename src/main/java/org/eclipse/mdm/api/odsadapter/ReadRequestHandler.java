@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -155,7 +155,7 @@ final class ReadRequestHandler {
 	 */
 	private ValueMatrix getValueMatrix(ReadRequest readRequest) throws AoException {
 		Entity entity = readRequest.getChannelGroup();
-		T_LONGLONG iid = ODSConverter.toODSLong(Long.valueOf(entity.getID()));
+		T_LONGLONG iid = ODSConverter.toODSID(entity.getID());
 		T_LONGLONG aid = ((ODSEntityType) modelManager.getEntityType(entity)).getODSID();
 		return modelManager.getApplElemAccess().getValueMatrixInMode(new ElemId(aid, iid), ValueMatrixMode.CALCULATED);
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -237,7 +237,7 @@ final class CatalogManager {
 				}
 				Optional<Unit> unit = catalogAttribute.getUnit();
 				if (unit.isPresent()) {
-					applicationAttribute.setUnit(ODSConverter.toODSLong(Long.valueOf(unit.get().getID())));
+					applicationAttribute.setUnit(ODSConverter.toODSID(unit.get().getID()));
 				}
 
 				// release resources
@@ -272,7 +272,7 @@ final class CatalogManager {
 
 				Optional<Unit> unit = catalogAttribute.getUnit();
 				if (unit.isPresent()) {
-					applicationAttribute.setUnit(ODSConverter.toODSLong(Long.valueOf(unit.get().getID())));
+					applicationAttribute.setUnit(ODSConverter.toODSID(unit.get().getID()));
 				}
 
 				// release resources

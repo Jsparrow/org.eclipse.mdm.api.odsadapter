@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -436,7 +436,7 @@ public class CORBAFileService implements FileService {
 	 */
 	private ElemId toElemID(Entity entity) {
 		return new ElemId(((ODSEntityType) modelManager.getEntityType(entity)).getODSID(),
-				ODSConverter.toODSLong(Long.valueOf(entity.getID())));
+				ODSConverter.toODSID(entity.getID()));
 	}
 
 	/**

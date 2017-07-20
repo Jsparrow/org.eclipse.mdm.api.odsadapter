@@ -577,7 +577,7 @@ public final class ODSConverter {
 	 * @return The converted {@link T_LONGLONG} array.
 	 */
 	private static T_LONGLONG[] toLongLong(String[] value) {
-		return Stream.of(value).map(s -> toODSLong(Long.parseLong(s))).toArray(T_LONGLONG[]::new);
+		return Stream.of(value).map(s -> toODSID(s)).toArray(T_LONGLONG[]::new);
 	}
 
 	/**
@@ -678,14 +678,14 @@ public final class ODSConverter {
 
 		if (ValueType.STRING == type) {
 			if (((ODSAttribute) attribute).isIdAttribute()) {
-				odsValue.u.longlongVal(ODSConverter.toODSLong(Long.parseLong(value.extract())));
+				odsValue.u.longlongVal(ODSConverter.toODSID(value.extract()));
 			} else {
 				odsValue.u.stringVal(value.extract());
 			}
 		} else if (ValueType.STRING_SEQUENCE == type) {
 			if (((ODSAttribute) attribute).isIdAttribute()) {
-				odsValue.u.longlongSeq(Stream.of((String[]) value.extract())
-						.map(s -> ODSConverter.toODSLong(Long.parseLong(s))).toArray(T_LONGLONG[]::new));
+				odsValue.u.longlongSeq(
+						Stream.of((String[]) value.extract()).map(ODSConverter::toODSID).toArray(T_LONGLONG[]::new));
 			} else {
 				odsValue.u.stringSeq(value.extract());
 			}
@@ -857,6 +857,21 @@ public final class ODSConverter {
 	 */
 	public static T_LONGLONG toODSLong(long input) {
 		return new T_LONGLONG((int) (input >> 32 & 0xffffffffL), (int) (input & 0xffffffffL));
+	}
+
+	/**
+	 * Converts a given MDM ID string to {@link T_LONGLONG}.
+	 * 
+	 * @param input
+	 *            The MDM ID string.
+	 * @return The converted {@code T_LONGLONG} is returned.
+	 */
+	public static T_LONGLONG toODSID(String input) {
+		try {
+			return toODSLong(Long.valueOf(input));
+		} catch (NumberFormatException e) {
+			return new T_LONGLONG();
+		}
 	}
 
 	/**

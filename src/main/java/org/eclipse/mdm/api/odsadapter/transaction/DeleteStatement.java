@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -257,9 +257,7 @@ final class DeleteStatement extends BaseStatement {
 	 * @return The corresponding ODS {@code T_LONGLONG[]} is returned.
 	 */
 	private T_LONGLONG[] toODSIDs(Collection<String> instanceIDs) {
-		List<T_LONGLONG> odsIDs = instanceIDs.stream().map(Long::valueOf).map(ODSConverter::toODSLong)
-				.collect(Collectors.toList());
-		return odsIDs.toArray(new T_LONGLONG[odsIDs.size()]);
+		return instanceIDs.stream().map(ODSConverter::toODSID).toArray(T_LONGLONG[]::new);
 	}
 
 }

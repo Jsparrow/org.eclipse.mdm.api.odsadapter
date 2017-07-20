@@ -39,6 +39,7 @@ import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,8 +238,7 @@ final class InsertStatement extends BaseStatement {
 	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for (Entity relatedEntity : relatedEntities) {
-			if (relatedEntity.getID() != null && relatedEntity.getID().length() > 0
-					&& Long.valueOf(relatedEntity.getID()) < 1) {
+			if (ODSUtils.isValidID(relatedEntity.getID())) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 
