@@ -9,8 +9,11 @@
 package org.eclipse.mdm.api.odsadapter.query;
 
 import java.util.Objects;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import org.asam.ods.ApplAttr;
+import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -131,6 +134,38 @@ public class ODSAttribute implements Attribute {
 		}
 
 		throw new IllegalStateException("The value type of this attribute is not an enumeration type.");
+	}
+
+	@Override
+	public Value createValue(String unit, boolean valid, Object input) {
+		return Attribute.super.createValue(unit, valid, convertInputForIdAttribute(input));
+	}
+
+	@Override
+	public Value createValueSeq(String unit, Object input) {
+		return Attribute.super.createValueSeq(unit, convertInputForIdAttribute(input));
+	}
+
+	/**
+	 * Converts the input object from long/long-array/int/int-array to a
+	 * String/String-array
+	 * 
+	 * @param input
+	 *            The input to convert
+	 * @return The converted input
+	 */
+	private Object convertInputForIdAttribute(Object input) {
+		if (isIdAttribute) {
+			if (input instanceof Long || input instanceof Integer) {
+				return input.toString();
+			} else if (input instanceof long[]) {
+				return LongStream.of((long[]) input).mapToObj(Long::toString).toArray(String[]::new);
+			} else if (input instanceof int[]) {
+				return IntStream.of((int[]) input).mapToObj(Integer::toString).toArray(String[]::new);
+			}
+		}
+
+		return input;
 	}
 
 	/**
