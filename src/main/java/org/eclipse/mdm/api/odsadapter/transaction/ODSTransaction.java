@@ -211,7 +211,7 @@ public final class ODSTransaction implements Transaction {
 	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
 		if (entities.isEmpty()) {
 			return;
-		} else if (entities.stream().filter(e -> e.getID() == null || e.getID().isEmpty()).findAny().isPresent()) {
+		} else if (entities.stream().filter(e -> !ODSUtils.isValidID(e.getID())).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is not yet persisted.");
 		}
 
@@ -251,7 +251,7 @@ public final class ODSTransaction implements Transaction {
 			return;
 		}
 
-		List<T> filteredEntities = entities.stream().filter(e -> e.getID() != null && !e.getID().isEmpty())
+		List<T> filteredEntities = entities.stream().filter(e -> ODSUtils.isValidID(e.getID()))
 				.collect(Collectors.toList());
 
 		try {

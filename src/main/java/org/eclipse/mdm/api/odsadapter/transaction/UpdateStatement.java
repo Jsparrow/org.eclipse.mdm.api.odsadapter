@@ -34,6 +34,7 @@ import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,7 +218,7 @@ final class UpdateStatement extends BaseStatement {
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent()
 				.entrySet()) {
 			Map<Boolean, List<Entity>> patrition = entry.getValue().stream()
-					.collect(Collectors.partitioningBy(e -> e.getID() != null && !e.getID().isEmpty()));
+					.collect(Collectors.partitioningBy(e -> ODSUtils.isValidID(e.getID())));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
 			if (virtualEntities != null && !virtualEntities.isEmpty()) {
 				childrenToCreate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(virtualEntities);
@@ -230,7 +231,7 @@ final class UpdateStatement extends BaseStatement {
 
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getRemoved()
 				.entrySet()) {
-			List<Deletable> toDelete = entry.getValue().stream().filter(e -> e.getID() != null && !e.getID().isEmpty())
+			List<Deletable> toDelete = entry.getValue().stream().filter(e -> ODSUtils.isValidID(e.getID()))
 					.collect(Collectors.toList());
 			childrenToRemove.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(toDelete);
 		}
@@ -244,7 +245,7 @@ final class UpdateStatement extends BaseStatement {
 	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
 		for (Entity relatedEntity : relatedEntities) {
-			if (relatedEntity.getID() == null || relatedEntity.getID().isEmpty()) {
+			if (!ODSUtils.isValidID(relatedEntity.getID())) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 

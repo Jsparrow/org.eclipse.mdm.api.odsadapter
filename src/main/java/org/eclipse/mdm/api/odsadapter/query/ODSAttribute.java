@@ -11,7 +11,6 @@ package org.eclipse.mdm.api.odsadapter.query;
 import java.util.Objects;
 
 import org.asam.ods.ApplAttr;
-import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -161,46 +160,5 @@ public class ODSAttribute implements Attribute {
 	@Override
 	public String toString() {
 		return getName();
-	}
-
-	@Override
-	public Value createValue(Object input) {
-		return Attribute.super.createValue(convertInputForIdAttribute(input));
-	}
-
-	@Override
-	public Value createValue(String unit, boolean valid, Object input) {
-		return Attribute.super.createValue(unit, valid, convertInputForIdAttribute(input));
-	}
-
-	@Override
-	public Value createValue(String unit, Object input) {
-		return Attribute.super.createValue(unit, convertInputForIdAttribute(input));
-	}
-
-	@Override
-	public Value createValueSeq(String unit, Object input) {
-		return Attribute.super.createValueSeq(unit, convertInputForIdAttribute(input));
-	}
-
-	/**
-	 * Converts the input object from long/long-array to a String/String-array
-	 * 
-	 * @param input
-	 *            The input to convert
-	 * @return The converted input
-	 */
-	private Object convertInputForIdAttribute(Object input) {
-		if (isIdAttribute) {
-			if (input.getClass().isArray()) {
-				// TODO anehmer || mkoller
-				// return new String[] { input.toString() };
-				return input;
-			} else {
-				return input.toString();
-			}
-		}
-
-		return input;
 	}
 }
