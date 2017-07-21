@@ -42,8 +42,8 @@ abstract class BaseStatement {
 			GET_CORE_METHOD = BaseEntity.class.getDeclaredMethod("getCore");
 			GET_CORE_METHOD.setAccessible(true);
 		} catch (NoSuchMethodException | SecurityException e) {
-			throw new IllegalStateException("Unable to load 'getCore()' in class '" + BaseEntity.class.getSimpleName()
-					+ "'.", e);
+			throw new IllegalStateException(
+					"Unable to load 'getCore()' in class '" + BaseEntity.class.getSimpleName() + "'.", e);
 		}
 	}
 
@@ -61,8 +61,10 @@ abstract class BaseStatement {
 	/**
 	 * Constructor.
 	 *
-	 * @param transaction The owning {@link ODSTransaction}.
-	 * @param entityType The associated {@link EntityType}.
+	 * @param transaction
+	 *            The owning {@link ODSTransaction}.
+	 * @param entityType
+	 *            The associated {@link EntityType}.
 	 */
 	protected BaseStatement(ODSTransaction transaction, EntityType entityType) {
 		this.transaction = transaction;
@@ -76,10 +78,14 @@ abstract class BaseStatement {
 	/**
 	 * Executes this statement for given {@link Entity}s.
 	 *
-	 * @param entities The processed {@code Entity}s.
-	 * @throws AoException Thrown if the execution fails.
-	 * @throws DataAccessException Thrown if the execution fails.
-	 * @throws IOException Thrown if a file transfer operation fails.
+	 * @param entities
+	 *            The processed {@code Entity}s.
+	 * @throws AoException
+	 *             Thrown if the execution fails.
+	 * @throws DataAccessException
+	 *             Thrown if the execution fails.
+	 * @throws IOException
+	 *             Thrown if a file transfer operation fails.
 	 */
 	public abstract void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException;
 
@@ -90,15 +96,16 @@ abstract class BaseStatement {
 	/**
 	 * Returns the {@link Core} of given {@link Entity}.
 	 *
-	 * @param entity The {@code Entity}  whose {@code Core} will be returned.
+	 * @param entity
+	 *            The {@code Entity} whose {@code Core} will be returned.
 	 * @return The {@code Core} is returned.
 	 */
 	protected Core extract(Entity entity) {
 		try {
 			return (Core) GET_CORE_METHOD.invoke(entity);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new IllegalArgumentException("Entity of type '" + entity.getClass().getSimpleName() +
-					"' does not extend '" + BaseEntity.class.getName() + "'", e);
+			throw new IllegalArgumentException("Entity of type '" + entity.getClass().getSimpleName()
+					+ "' does not extend '" + BaseEntity.class.getName() + "'", e);
 		}
 	}
 
@@ -124,7 +131,8 @@ abstract class BaseStatement {
 	 * Returns the {@link ApplElemAccess}.
 	 *
 	 * @return The {@code ApplElemAccess} is returned.
-	 * @throws AoException Thrown in case of errors.
+	 * @throws AoException
+	 *             Thrown in case of errors.
 	 */
 	protected ApplElemAccess getApplElemAccess() throws AoException {
 		return transaction.getModelManager().getApplElemAccess();

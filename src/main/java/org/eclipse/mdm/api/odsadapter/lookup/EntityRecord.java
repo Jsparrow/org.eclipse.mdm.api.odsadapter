@@ -6,7 +6,8 @@ import org.eclipse.mdm.api.base.model.Entity;
 /**
  * Utility class to group {@link Entity} and its {@link Core}.
  *
- * @param <T> The entity type.
+ * @param <T>
+ *            The entity type.
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
@@ -26,8 +27,10 @@ public final class EntityRecord<T extends Entity> {
 	/**
 	 * Constructor.
 	 *
-	 * @param entity The {@link Entity}.
-	 * @param core The {@link Core} of the {@code Entity}.
+	 * @param entity
+	 *            The {@link Entity}.
+	 * @param core
+	 *            The {@link Core} of the {@code Entity}.
 	 */
 	EntityRecord(T entity, Core core) {
 		this.entity = entity;

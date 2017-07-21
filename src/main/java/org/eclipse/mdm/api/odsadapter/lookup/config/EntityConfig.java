@@ -17,7 +17,8 @@ import org.eclipse.mdm.api.base.query.EntityType;
  * Describes the composition of an {@link Entity} with its mandatory, optional
  * and child relations.
  *
- * @param <T> The entity type.
+ * @param <T>
+ *            The entity type.
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
@@ -49,7 +50,8 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Constructor.
 	 *
-	 * @param key The {@link Key} this entity config is bound to.
+	 * @param key
+	 *            The {@link Key} this entity config is bound to.
 	 */
 	public EntityConfig(Key<T> key) {
 		this.key = key;
@@ -173,7 +175,8 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Sets a new {@link Comparator} for this entity config.
 	 *
-	 * @param comparator The new {@code Comparator}.
+	 * @param comparator
+	 *            The new {@code Comparator}.
 	 */
 	public void setComparator(Comparator<? super T> comparator) {
 		this.comparator = comparator;
@@ -182,12 +185,13 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Sets the {@link EntityType} for this entity config.
 	 *
-	 * @param entityType The {@code EntityType}.
-	 * @throws IllegalStateException Thrown if {@link EntityType} is already
-	 * 		defined.
+	 * @param entityType
+	 *            The {@code EntityType}.
+	 * @throws IllegalStateException
+	 *             Thrown if {@link EntityType} is already defined.
 	 */
 	public void setEntityType(EntityType entityType) {
-		if(this.entityType != null) {
+		if (this.entityType != null) {
 			throw new IllegalStateException("It is not allowed to override the entity type.");
 		}
 
@@ -198,11 +202,13 @@ public class EntityConfig<T extends Entity> {
 	 * Sets the default MIME type for newly created {@link Entity}s associated
 	 * with this entity config.
 	 *
-	 * @param mimeType The default MIME type.
-	 * @throws IllegalStateException Thrown if default MIME type is already defined.
+	 * @param mimeType
+	 *            The default MIME type.
+	 * @throws IllegalStateException
+	 *             Thrown if default MIME type is already defined.
 	 */
 	public void setMimeType(String mimeType) {
-		if(this.mimeType != null && !this.mimeType.isEmpty()) {
+		if (this.mimeType != null && !this.mimeType.isEmpty()) {
 			throw new IllegalStateException("It is not allowed to override the default MIME type.");
 		}
 
@@ -212,7 +218,8 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Adds a related inherited {@link EntityConfig}.
 	 *
-	 * @param entityConfig The {@code EntityConfig}.
+	 * @param entityConfig
+	 *            The {@code EntityConfig}.
 	 */
 	public void addInherited(EntityConfig<?> entityConfig) {
 		inheritedConfigs.add(entityConfig);
@@ -221,7 +228,8 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Adds a related mandatory {@link EntityConfig}.
 	 *
-	 * @param entityConfig The {@code EntityConfig}.
+	 * @param entityConfig
+	 *            The {@code EntityConfig}.
 	 */
 	public void addMandatory(EntityConfig<?> entityConfig) {
 		mandatoryConfigs.add(entityConfig);
@@ -230,7 +238,8 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Adds a related optional {@link EntityConfig}.
 	 *
-	 * @param entityConfig The {@code EntityConfig}.
+	 * @param entityConfig
+	 *            The {@code EntityConfig}.
 	 */
 	public void addOptional(EntityConfig<?> entityConfig) {
 		optionalConfigs.add(entityConfig);
@@ -239,10 +248,11 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Adds a related child {@link EntityConfig}.
 	 *
-	 * @param childConfig The {@code EntityConfig}.
+	 * @param childConfig
+	 *            The {@code EntityConfig}.
 	 */
 	public void addChild(EntityConfig<? extends Deletable> childConfig) {
-		if(this == childConfig) {
+		if (this == childConfig) {
 			reflexive = true;
 		} else {
 			childConfigs.add(childConfig);
@@ -256,7 +266,8 @@ public class EntityConfig<T extends Entity> {
 	/**
 	 * Used as an identifier for {@link EntityConfig}s.
 	 *
-	 * @param <T> The entity type.
+	 * @param <T>
+	 *            The entity type.
 	 */
 	public static final class Key<T extends Entity> {
 
@@ -275,7 +286,8 @@ public class EntityConfig<T extends Entity> {
 		/**
 		 * Constructor.
 		 *
-		 * @param entityClass The {@link Entity} class.
+		 * @param entityClass
+		 *            The {@link Entity} class.
 		 */
 		public Key(Class<T> entityClass) {
 			this.entityClass = entityClass;
@@ -286,8 +298,10 @@ public class EntityConfig<T extends Entity> {
 		/**
 		 * Constructor.
 		 *
-		 * @param entityClass The {@link Entity} class.
-		 * @param statusAttachableClass The {@link StatusAttachable} class.
+		 * @param entityClass
+		 *            The {@link Entity} class.
+		 * @param statusAttachableClass
+		 *            The {@link StatusAttachable} class.
 		 */
 		public Key(Class<T> entityClass, Class<? extends StatusAttachable> statusAttachableClass) {
 			this.statusAttachableClass = statusAttachableClass;
@@ -298,8 +312,10 @@ public class EntityConfig<T extends Entity> {
 		/**
 		 * Constructor.
 		 *
-		 * @param entityClass The {@link Entity} class.
-		 * @param contextType The {@link ContextType}.
+		 * @param entityClass
+		 *            The {@link Entity} class.
+		 * @param contextType
+		 *            The {@link ContextType}.
 		 */
 		public Key(Class<T> entityClass, ContextType contextType) {
 			this.entityClass = entityClass;
@@ -325,11 +341,11 @@ public class EntityConfig<T extends Entity> {
 		@Override
 		public boolean equals(Object object) {
 			// reference check (this == object) omitted
-			if(object instanceof Key) {
+			if (object instanceof Key) {
 				Key<?> other = (Key<?>) object;
-				return Objects.equals(entityClass, other.entityClass) &&
-						Objects.equals(statusAttachableClass, other.statusAttachableClass) &&
-						Objects.equals(contextType, other.contextType);
+				return Objects.equals(entityClass, other.entityClass)
+						&& Objects.equals(statusAttachableClass, other.statusAttachableClass)
+						&& Objects.equals(contextType, other.contextType);
 			}
 
 			return false;
@@ -342,11 +358,11 @@ public class EntityConfig<T extends Entity> {
 		public String toString() {
 			StringBuilder sb = new StringBuilder(entityClass.getSimpleName());
 
-			if(statusAttachableClass != null) {
+			if (statusAttachableClass != null) {
 				sb.append('_').append(statusAttachableClass.getSimpleName());
 			}
 
-			if(contextType != null) {
+			if (contextType != null) {
 				sb.append('_').append(contextType);
 			}
 

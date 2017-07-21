@@ -32,10 +32,11 @@ import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 /**
- * Recursively loads entities for a given {@link EntityConfig} with all
- * resolved dependencies (optional, mandatory children).
+ * Recursively loads entities for a given {@link EntityConfig} with all resolved
+ * dependencies (optional, mandatory children).
  *
- * @param <T> The entity type.
+ * @param <T>
+ *            The entity type.
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
@@ -61,8 +62,10 @@ public class EntityRequest<T extends Entity> {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager The {@link ODSModelManager}.
-	 * @param config The {@link EntityConfig}.
+	 * @param modelManager
+	 *            The {@link ODSModelManager}.
+	 * @param config
+	 *            The {@link EntityConfig}.
 	 */
 	public EntityRequest(ModelManager modelManager, EntityConfig<T> config) {
 		this.modelManager = modelManager;
@@ -73,8 +76,10 @@ public class EntityRequest<T extends Entity> {
 	/**
 	 * Constructor.
 	 *
-	 * @param parentRequest The parent {@link EntityRequest}.
-	 * @param entityConfig The {@link EntityConfig}.
+	 * @param parentRequest
+	 *            The parent {@link EntityRequest}.
+	 * @param entityConfig
+	 *            The {@link EntityConfig}.
 	 */
 	protected EntityRequest(EntityRequest<?> parentRequest, EntityConfig<T> entityConfig) {
 		modelManager = parentRequest.modelManager;
@@ -89,11 +94,13 @@ public class EntityRequest<T extends Entity> {
 	/**
 	 * Loads all entities matching given name pattern.
 	 *
-	 * @param pattern Is always case sensitive and may contain wildcard
-	 * 		characters as follows: "?" for one matching character and "*"
-	 * 		for a sequence of matching characters.
+	 * @param pattern
+	 *            Is always case sensitive and may contain wildcard characters
+	 *            as follows: "?" for one matching character and "*" for a
+	 *            sequence of matching characters.
 	 * @return A sorted {@link List} with queried entities is returned.
-	 * @throws DataAccessException Thrown if unable to load entities.
+	 * @throws DataAccessException
+	 *             Thrown if unable to load entities.
 	 */
 	public List<T> loadAll(String pattern) throws DataAccessException {
 		return load(Filter.nameOnly(entityConfig.getEntityType(), pattern)).getSortedEntities();
@@ -102,12 +109,14 @@ public class EntityRequest<T extends Entity> {
 	/**
 	 * Loads all entities matching given instance IDs.
 	 *
-	 * @param instanceIDs The instance IDs.
+	 * @param instanceIDs
+	 *            The instance IDs.
 	 * @return A sorted {@link List} with queried entities is returned.
-	 * @throws DataAccessException Thrown if unable to load entities.
+	 * @throws DataAccessException
+	 *             Thrown if unable to load entities.
 	 */
-	public List<T> loadAll(Collection<Long> instanceIDs) throws DataAccessException {
-		if(instanceIDs.isEmpty()) {
+	public List<T> loadAll(Collection<String> instanceIDs) throws DataAccessException {
+		if (instanceIDs.isEmpty()) {
 			// just to be sure...
 			return Collections.emptyList();
 		}
@@ -123,10 +132,13 @@ public class EntityRequest<T extends Entity> {
 	 * Adds foreign key select statements to given {@link Query} for each given
 	 * {@link EntityConfig}.
 	 *
-	 * @param query The {@link Query}.
-	 * @param relatedConfigs The {@code EntityConfig}s.
-	 * @param mandatory Flag indicates whether given {@code EntityConfig}s are
-	 * 		mandatory or not.
+	 * @param query
+	 *            The {@link Query}.
+	 * @param relatedConfigs
+	 *            The {@code EntityConfig}s.
+	 * @param mandatory
+	 *            Flag indicates whether given {@code EntityConfig}s are
+	 *            mandatory or not.
 	 * @return For each {@code EntityConfig} a corresponding {@code
 	 * 		RelationConfig} is returned in a {@code List}.
 	 */
@@ -134,7 +146,7 @@ public class EntityRequest<T extends Entity> {
 			boolean mandatory) {
 		List<RelationConfig> relationConfigs = new ArrayList<>();
 		EntityType entityType = entityConfig.getEntityType();
-		for(EntityConfig<?> relatedEntityConfig : relatedConfigs) {
+		for (EntityConfig<?> relatedEntityConfig : relatedConfigs) {
 			RelationConfig relationConfig = new RelationConfig(entityType, relatedEntityConfig, mandatory);
 			query.select(relationConfig.relation.getAttribute());
 			relationConfigs.add(relationConfig);
@@ -147,7 +159,8 @@ public class EntityRequest<T extends Entity> {
 	 * Convenience method collects the queried {@link Record} from each
 	 * {@link Result}.
 	 *
-	 * @param results The {@code Result}s.
+	 * @param results
+	 *            The {@code Result}s.
 	 * @return The queried {@link Record}s are returned.
 	 */
 	protected List<Record> collectRecords(List<Result> results) {
@@ -157,24 +170,26 @@ public class EntityRequest<T extends Entity> {
 	/**
 	 * Loads and maps related entities for each given {@link RelationConfig}.
 	 *
-	 * @param relationConfigs The {@code RelationConfig}s.
-	 * @throws DataAccessException Thrown if unable to load related entities.
+	 * @param relationConfigs
+	 *            The {@code RelationConfig}s.
+	 * @throws DataAccessException
+	 *             Thrown if unable to load related entities.
 	 */
 	protected void loadRelatedEntities(List<RelationConfig> relationConfigs) throws DataAccessException {
-		for(RelationConfig relationConfig : relationConfigs) {
+		for (RelationConfig relationConfig : relationConfigs) {
 			EntityConfig<?> relatedConfig = relationConfig.entityConfig;
 
 			boolean isContextTypeDefined = entityConfig.getContextType().isPresent();
-			for(Entity relatedEntity : new EntityRequest<>(this, relatedConfig)
+			for (Entity relatedEntity : new EntityRequest<>(this, relatedConfig)
 					.loadAll(relationConfig.dependants.keySet())) {
 				boolean setByContextType = !isContextTypeDefined && relatedConfig.getContextType().isPresent();
-				for(EntityRecord<?> entityRecord : relationConfig.dependants.remove(relatedEntity.getID())) {
+				for (EntityRecord<?> entityRecord : relationConfig.dependants.remove(relatedEntity.getID())) {
 					setRelatedEntity(entityRecord, relatedEntity,
 							setByContextType ? relatedConfig.getContextType().get() : null);
 				}
 			}
 
-			if(!relationConfig.dependants.isEmpty()) {
+			if (!relationConfig.dependants.isEmpty()) {
 				// this may occur if the instance id of the related entity
 				// is defined, but the entity itself does not exist
 				throw new IllegalStateException("Unable to load related entities.");
@@ -185,25 +200,29 @@ public class EntityRequest<T extends Entity> {
 	/**
 	 * Assigns given related {@link Entity} to given {@link EntityRecord}.
 	 *
-	 * @param entityRecord The {@code EntityRecord} which references given {@code Entity}.
-	 * @param relatedEntity The related {@code Entity}.
-	 * @param contextType Used as qualifier for relation assignment.
+	 * @param entityRecord
+	 *            The {@code EntityRecord} which references given
+	 *            {@code Entity}.
+	 * @param relatedEntity
+	 *            The related {@code Entity}.
+	 * @param contextType
+	 *            Used as qualifier for relation assignment.
 	 */
 	protected void setRelatedEntity(EntityRecord<?> entityRecord, Entity relatedEntity, ContextType contextType) {
-		if(contextType == null) {
+		if (contextType == null) {
 			entityRecord.core.getMutableStore().set(relatedEntity);
 		} else {
 			entityRecord.core.getMutableStore().set(relatedEntity, contextType);
 		}
 
 		List<TemplateAttribute> templateAttributes = new ArrayList<>();
-		if(entityRecord.entity instanceof ContextComponent && relatedEntity instanceof TemplateComponent) {
+		if (entityRecord.entity instanceof ContextComponent && relatedEntity instanceof TemplateComponent) {
 			templateAttributes.addAll(((TemplateComponent) relatedEntity).getTemplateAttributes());
-		} else if(entityRecord.entity instanceof ContextSensor && relatedEntity instanceof TemplateSensor) {
+		} else if (entityRecord.entity instanceof ContextSensor && relatedEntity instanceof TemplateSensor) {
 			templateAttributes.addAll(((TemplateSensor) relatedEntity).getTemplateAttributes());
 		}
 
-		if(!templateAttributes.isEmpty()) {
+		if (!templateAttributes.isEmpty()) {
 			// hide Value containers that are missing in the template
 			Set<String> names = new HashSet<>(entityRecord.core.getValues().keySet());
 			names.remove(Entity.ATTR_NAME);
@@ -221,9 +240,11 @@ public class EntityRequest<T extends Entity> {
 	 * Loads all entities matching given {@link Filter} including all of related
 	 * entities (optional, mandatory and children).
 	 *
-	 * @param filter The {@link Filter}.
+	 * @param filter
+	 *            The {@link Filter}.
 	 * @return Returns the queried {@code EntityResult}.
-	 * @throws DataAccessException Thrown if unable to load entities.
+	 * @throws DataAccessException
+	 *             Thrown if unable to load entities.
 	 */
 	private EntityResult<T> load(Filter filter) throws DataAccessException {
 		filtered = !filter.isEmtpty() || entityConfig.isReflexive();
@@ -233,9 +254,10 @@ public class EntityRequest<T extends Entity> {
 
 		Query query = modelManager.createQuery().selectAll(entityConfig.getEntityType());
 
-		if(entityConfig.isReflexive()) {
+		if (entityConfig.isReflexive()) {
 			query.select(reflexiveRelation.getAttribute());
-			// entities with children have to be processed before their children!
+			// entities with children have to be processed before their
+			// children!
 			query.order(entityType.getIDAttribute());
 		}
 
@@ -245,10 +267,10 @@ public class EntityRequest<T extends Entity> {
 
 		// configure filter
 		Filter adjustedFilter = Filter.or();
-		if(filtered) {
+		if (filtered) {
 			// preserve current conditions
 			adjustedFilter.merge(filter);
-			if(entityConfig.isReflexive()) {
+			if (entityConfig.isReflexive()) {
 				// extend to retrieve all reflexive child candidates
 				adjustedFilter.add(Operation.IS_NOT_NULL.create(reflexiveRelation.getAttribute(), 0L));
 			}
@@ -256,16 +278,16 @@ public class EntityRequest<T extends Entity> {
 
 		// load entities and prepare mappings for required related entities
 		List<EntityRecord<?>> parentRecords = new ArrayList<>();
-		for(Record record : collectRecords(query.fetch(adjustedFilter))) {
-			Optional<Long> reflexiveParentID = Optional.empty();
-			if(entityConfig.isReflexive()) {
+		for (Record record : collectRecords(query.fetch(adjustedFilter))) {
+			Optional<String> reflexiveParentID = Optional.empty();
+			if (entityConfig.isReflexive()) {
 				reflexiveParentID = record.getID(reflexiveRelation);
 			}
 			EntityRecord<T> entityRecord;
 
-			if(entityConfig.isReflexive() && reflexiveParentID.isPresent()) {
+			if (entityConfig.isReflexive() && reflexiveParentID.isPresent()) {
 				Optional<EntityRecord<T>> parentRecord = entityResult.get(reflexiveParentID.get());
-				if(!parentRecord.isPresent()) {
+				if (!parentRecord.isPresent()) {
 					// this entity's parent was not loaded -> skip
 					continue;
 				}
@@ -278,10 +300,10 @@ public class EntityRequest<T extends Entity> {
 
 			// collect related instance IDs
 			Stream.concat(optionalRelations.stream(), mandatoryRelations.stream())
-			.forEach(rc -> rc.add(entityRecord, record));
+					.forEach(rc -> rc.add(entityRecord, record));
 		}
 
-		if(entityResult.isEmpty()) {
+		if (entityResult.isEmpty()) {
 			// no entities found -> neither related nor child entities required
 			return entityResult;
 		}
@@ -291,15 +313,16 @@ public class EntityRequest<T extends Entity> {
 		loadRelatedEntities(mandatoryRelations);
 
 		// sort children of parent
-		if(entityConfig.isReflexive()) {
-			@SuppressWarnings("unchecked") EntityConfig<Deletable> childConfig = (EntityConfig<Deletable>) entityConfig;
-			for(EntityRecord<?> entityRecord : parentRecords) {
+		if (entityConfig.isReflexive()) {
+			@SuppressWarnings("unchecked")
+			EntityConfig<Deletable> childConfig = (EntityConfig<Deletable>) entityConfig;
+			for (EntityRecord<?> entityRecord : parentRecords) {
 				entityRecord.core.getChildrenStore().sort(childConfig.getEntityClass(), childConfig.getComparator());
 			}
 		}
 
 		// load children
-		for(EntityConfig<? extends Deletable> childConfig : entityConfig.getChildConfigs()) {
+		for (EntityConfig<? extends Deletable> childConfig : entityConfig.getChildConfigs()) {
 			cache.add(new ChildRequest<>(this, childConfig).load());
 		}
 

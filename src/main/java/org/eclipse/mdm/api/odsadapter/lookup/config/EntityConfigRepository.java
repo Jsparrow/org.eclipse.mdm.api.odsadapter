@@ -34,82 +34,91 @@ public final class EntityConfigRepository {
 	// ======================================================================
 
 	/**
-	 * Returns the {@link EntityConfig} associated with given {@link Key}.
-	 * This method tries to find the associated {@code EntityConfig} in the
-	 * root configurations. If it is not found there, then it tries to find
-	 * it in the child {@code EntityConfig}s.
+	 * Returns the {@link EntityConfig} associated with given {@link Key}. This
+	 * method tries to find the associated {@code EntityConfig} in the root
+	 * configurations. If it is not found there, then it tries to find it in the
+	 * child {@code EntityConfig}s.
 	 *
-	 * @param <T> The entity type.
-	 * @param key Used as identifier.
+	 * @param <T>
+	 *            The entity type.
+	 * @param key
+	 *            Used as identifier.
 	 * @return The {@code EntityConfig} is returned.
-	 * @throws IllegalArgumentException Thrown if unable to find associated
-	 * 		{@code EntityConfig}.
+	 * @throws IllegalArgumentException
+	 *             Thrown if unable to find associated {@code EntityConfig}.
 	 */
 	public <T extends Entity> EntityConfig<T> find(Key<T> key) {
 		Optional<EntityConfig<T>> entityConfig = get(entityConfigs, key);
-		if(entityConfig.isPresent()) {
+		if (entityConfig.isPresent()) {
 			return entityConfig.get();
 		}
 
-		return get(childConfigs, key).orElseThrow(() ->new IllegalArgumentException("Entity configuration not found."));
+		return get(childConfigs, key)
+				.orElseThrow(() -> new IllegalArgumentException("Entity configuration not found."));
 	}
 
 	/**
-	 * Returns the {@link EntityConfig} associated with given {@link Key}.
-	 * This method tries to find the associated {@code EntityConfig} in the
-	 * root configurations.
+	 * Returns the {@link EntityConfig} associated with given {@link Key}. This
+	 * method tries to find the associated {@code EntityConfig} in the root
+	 * configurations.
 	 *
-	 * @param <T> The entity type.
-	 * @param key Used as identifier.
+	 * @param <T>
+	 *            The entity type.
+	 * @param key
+	 *            Used as identifier.
 	 * @return The {@code EntityConfig} is returned.
-	 * @throws IllegalArgumentException Thrown if unable to find associated
-	 * 		{@code EntityConfig}.
+	 * @throws IllegalArgumentException
+	 *             Thrown if unable to find associated {@code EntityConfig}.
 	 */
 	public <T extends Entity> EntityConfig<T> findRoot(Key<T> key) {
 		return get(entityConfigs, key)
-				.orElseThrow(() ->new IllegalArgumentException("Entity configuration not found."));
+				.orElseThrow(() -> new IllegalArgumentException("Entity configuration not found."));
 	}
 
 	/**
-	 * Returns the {@link EntityConfig} associated with given {@link Key}.
-	 * This method tries to find the associated {@code EntityConfig} in the
-	 * child configurations.
+	 * Returns the {@link EntityConfig} associated with given {@link Key}. This
+	 * method tries to find the associated {@code EntityConfig} in the child
+	 * configurations.
 	 *
-	 * @param <T> The entity type.
-	 * @param key Used as identifier.
+	 * @param <T>
+	 *            The entity type.
+	 * @param key
+	 *            Used as identifier.
 	 * @return The {@code EntityConfig} is returned.
-	 * @throws IllegalArgumentException Thrown if unable to find associated
-	 * 		{@code EntityConfig}.
+	 * @throws IllegalArgumentException
+	 *             Thrown if unable to find associated {@code EntityConfig}.
 	 */
 	public <T extends Entity> EntityConfig<T> findImplicit(Key<T> key) {
-		return get(childConfigs, key).orElseThrow(() ->new IllegalArgumentException("Entity configuration not found."));
+		return get(childConfigs, key)
+				.orElseThrow(() -> new IllegalArgumentException("Entity configuration not found."));
 	}
 
 	/**
-	 * Returns the {@link EntityConfig} associated with given {@link
-	 * EntityType}.
+	 * Returns the {@link EntityConfig} associated with given
+	 * {@link EntityType}.
 	 *
-	 * @param entityType Its name is used as identifier.
+	 * @param entityType
+	 *            Its name is used as identifier.
 	 * @return The {@code EntityConfig} is returned.
-	 * @throws IllegalArgumentException Thrown if unable to find associated
-	 * 		{@code EntityConfig}.
+	 * @throws IllegalArgumentException
+	 *             Thrown if unable to find associated {@code EntityConfig}.
 	 */
 	public EntityConfig<?> find(EntityType entityType) {
 		Optional<EntityConfig<?>> entityConfig = entityConfigs.values().stream()
 				.filter(ec -> ec.getEntityType().equals(entityType)).findFirst();
-		if(entityConfig.isPresent()) {
+		if (entityConfig.isPresent()) {
 			// entity config is a root type
 			return entityConfig.get();
 		}
 
 		entityConfig = childConfigs.values().stream().filter(ec -> ec.getEntityType().equals(entityType)).findFirst();
-		if(entityConfig.isPresent()) {
+		if (entityConfig.isPresent()) {
 			// entity config is an implicitly loaded child type
 			return entityConfig.get();
 		}
 
 		EntityConfig<?> config = contextConfigs.get(entityType.getName());
-		if(config == null) {
+		if (config == null) {
 			new IllegalArgumentException("Entity configuration for type '" + entityType + "' not found.");
 		}
 
@@ -120,15 +129,17 @@ public final class EntityConfigRepository {
 	/**
 	 * Stores given {@link EntityConfig} in this repository.
 	 *
-	 * @param entityConfig The {@code EntityConfig}.
-	 * @throws IllegalArgumentException Thrown if an attempt to overwrite an
-	 * 		existing {@code EntityConfig} is recorded.
+	 * @param entityConfig
+	 *            The {@code EntityConfig}.
+	 * @throws IllegalArgumentException
+	 *             Thrown if an attempt to overwrite an existing
+	 *             {@code EntityConfig} is recorded.
 	 */
 	public void register(EntityConfig<?> entityConfig) {
 		registerChildConfigs(entityConfig);
 
 		EntityConfig<?> currentByClass = entityConfigs.put(entityConfig.getKey(), entityConfig);
-		if(currentByClass != null) {
+		if (currentByClass != null) {
 			throw new IllegalArgumentException("It is not allowed to overwrite existing configurations.");
 		}
 	}
@@ -138,18 +149,20 @@ public final class EntityConfigRepository {
 	// ======================================================================
 
 	/**
-	 * Recursively registers all child configurations of given {@link
-	 * EntityConfig}.
+	 * Recursively registers all child configurations of given
+	 * {@link EntityConfig}.
 	 *
-	 * @param entityConfig The {@code EntityConfig}.
-	 * @throws IllegalArgumentException Thrown if an attempt to overwrite an
-	 * 		existing {@code EntityConfig} is recorded.
+	 * @param entityConfig
+	 *            The {@code EntityConfig}.
+	 * @throws IllegalArgumentException
+	 *             Thrown if an attempt to overwrite an existing
+	 *             {@code EntityConfig} is recorded.
 	 */
 	private void registerChildConfigs(EntityConfig<?> entityConfig) {
 		Class<? extends Entity> entityClass = entityConfig.getEntityClass();
-		if(ContextRoot.class.equals(entityClass) || ContextComponent.class.equals(entityClass)) {
-			for(EntityConfig<?> childConfig : entityConfig.getChildConfigs()) {
-				if(contextConfigs.put(childConfig.getEntityType().getName(), childConfig) != null) {
+		if (ContextRoot.class.equals(entityClass) || ContextComponent.class.equals(entityClass)) {
+			for (EntityConfig<?> childConfig : entityConfig.getChildConfigs()) {
+				if (contextConfigs.put(childConfig.getEntityType().getName(), childConfig) != null) {
 					throw new IllegalArgumentException("It is not allowed to overwrite existing configurations.");
 				}
 
@@ -158,8 +171,8 @@ public final class EntityConfigRepository {
 
 			return;
 		}
-		for(EntityConfig<?> childConfig : entityConfig.getChildConfigs()) {
-			if(childConfigs.put(childConfig.getKey(), childConfig) != null) {
+		for (EntityConfig<?> childConfig : entityConfig.getChildConfigs()) {
+			if (childConfigs.put(childConfig.getKey(), childConfig) != null) {
 				throw new IllegalArgumentException("It is not allowed to overwrite existing configurations.");
 			}
 
@@ -168,12 +181,15 @@ public final class EntityConfigRepository {
 	}
 
 	/**
-	 * Retrieves the {@link EntityConfig} associated with given {@link Key}
-	 * from given {@code Map}.
+	 * Retrieves the {@link EntityConfig} associated with given {@link Key} from
+	 * given {@code Map}.
 	 *
-	 * @param <T> The entity type.
-	 * @param entityConfigs Used to retrieve requested {@code EntityConfig}.
-	 * @param key Used as identifier.
+	 * @param <T>
+	 *            The entity type.
+	 * @param entityConfigs
+	 *            Used to retrieve requested {@code EntityConfig}.
+	 * @param key
+	 *            Used as identifier.
 	 * @return {@code Optional} is empty if {@code EntityConfig} not found.
 	 */
 	@SuppressWarnings("unchecked")

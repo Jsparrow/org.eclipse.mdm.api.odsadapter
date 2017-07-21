@@ -94,8 +94,8 @@ public class ODSFreeTextSearch {
 	 */
 	public Map<Class<? extends Entity>, List<Entity>> search(String inputQuery) {
 		Map<Class<? extends Entity>, List<Entity>> result = new HashMap<>();
-		
-		Map<Class<? extends Entity>, List<Long>> instances = searchIds(inputQuery);
+
+		Map<Class<? extends Entity>, List<String>> instances = searchIds(inputQuery);
 		instances.keySet().forEach(type -> convertIds2Entities(result, instances, type));
 		return result;
 	}
@@ -107,19 +107,19 @@ public class ODSFreeTextSearch {
 	 * @param inputQuery
 	 * @return never null, but maybe empty
 	 */
-	public Map<Class<? extends Entity>, List<Long>> searchIds(String inputQuery) {
-		Map<Class<? extends Entity>, List<Long>> instanceIds = new HashMap<>();
+	public Map<Class<? extends Entity>, List<String>> searchIds(String inputQuery) {
+		Map<Class<? extends Entity>, List<String>> instanceIds = new HashMap<>();
 
 		JsonElement root = queryElasticSearch(inputQuery);
 		if (root != null) {
 			JsonArray hits = root.getAsJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
 
 			hits.forEach(e -> put(e, instanceIds));
-			
+
 		}
 		return instanceIds;
 	}
-	 
+
 	/**
 	 * Converts all instances to entities
 	 * 
@@ -129,7 +129,7 @@ public class ODSFreeTextSearch {
 	 * @param type
 	 */
 	private void convertIds2Entities(Map<Class<? extends Entity>, List<Entity>> convertedMap,
-			Map<Class<? extends Entity>, List<Long>> map, Class<? extends Entity> type) {
+			Map<Class<? extends Entity>, List<String>> map, Class<? extends Entity> type) {
 		try {
 			List<Entity> list = new ArrayList<>();
 			list.addAll(loader.loadAll(new Key<>(type), map.get(type)));
@@ -149,7 +149,7 @@ public class ODSFreeTextSearch {
 	 * @param map
 	 *            the map of all ids for the class of the entity
 	 */
-	private void put(JsonElement hit, Map<Class<? extends Entity>, List<Long>> map) {
+	private void put(JsonElement hit, Map<Class<? extends Entity>, List<String>> map) {
 		JsonObject object = hit.getAsJsonObject();
 
 		String type = object.get("_type").getAsString();
@@ -157,12 +157,12 @@ public class ODSFreeTextSearch {
 
 		if (clazz != null) {
 			if (!map.containsKey(clazz)) {
-				List<Long> list = new ArrayList<>();
+				List<String> list = new ArrayList<>();
 				map.put(clazz, list);
 			}
 
-			List<Long> list = map.get(clazz);
-			list.add((long) object.get("_id").getAsInt());
+			List<String> list = map.get(clazz);
+			list.add((String) object.get("_id").getAsString());
 		}
 	}
 

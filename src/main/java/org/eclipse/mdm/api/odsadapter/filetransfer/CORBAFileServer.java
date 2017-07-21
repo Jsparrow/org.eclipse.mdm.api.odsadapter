@@ -40,8 +40,8 @@ import com.highqsoft.corbafileserver.generated.InputStreamIFPOA;
 import com.highqsoft.corbafileserver.generated.SeverityFlag;
 
 /**
- * Service provides access to the low level {@link CORBAFileServerIF}
- * file service API.
+ * Service provides access to the low level {@link CORBAFileServerIF} file
+ * service API.
  *
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
@@ -75,8 +75,10 @@ final class CORBAFileServer {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used for setup.
-	 * @param transfer The transfer type for up- and downloads.
+	 * @param modelManager
+	 *            Used for setup.
+	 * @param transfer
+	 *            The transfer type for up- and downloads.
 	 */
 	CORBAFileServer(ODSModelManager modelManager, Transfer transfer) {
 		fileServer = modelManager.getFileServer();
@@ -92,19 +94,22 @@ final class CORBAFileServer {
 	// ======================================================================
 
 	/**
-	 * Opens a consumable download {@link InputStream} for given {@link
-	 * FileLink}.
+	 * Opens a consumable download {@link InputStream} for given
+	 * {@link FileLink}.
 	 *
-	 * @param fileLink Used to access the remote path.
-	 * @param elemId Used for security checks.
+	 * @param fileLink
+	 *            Used to access the remote path.
+	 * @param elemId
+	 *            Used for security checks.
 	 * @return The consumable {@code InputStream} is returned.
-	 * @throws IOException Thrown if unable to open an the {@code InputStream}.
+	 * @throws IOException
+	 *             Thrown if unable to open an the {@code InputStream}.
 	 */
 	public InputStream openStream(FileLink fileLink, ElemId elemId) throws IOException {
 		InputStream inputStream;
-		if(transfer.isStream()) {
+		if (transfer.isStream()) {
 			inputStream = new InputStreamAdapter(openSimpleStream(fileLink, elemId));
-		} else if(transfer.isSocket()) {
+		} else if (transfer.isSocket()) {
 			inputStream = openSocketStream(fileLink, elemId);
 		} else {
 			throw new IllegalStateException("Transfer state '" + transfer + "' is not supported.");
@@ -116,16 +121,20 @@ final class CORBAFileServer {
 	/**
 	 * Uploads given {@link InputStream} for given {@link FileLink}.
 	 *
-	 * @param inputStream The {@code InputStream} to be uploaded.
-	 * @param fileLink The associated {@code FileLink}.
-	 * @param elemId Used for security checks.
-	 * @throws IOException Thrown if unable to upload given {@code InputStream}.
+	 * @param inputStream
+	 *            The {@code InputStream} to be uploaded.
+	 * @param fileLink
+	 *            The associated {@code FileLink}.
+	 * @param elemId
+	 *            Used for security checks.
+	 * @throws IOException
+	 *             Thrown if unable to upload given {@code InputStream}.
 	 */
 	public void uploadStream(InputStream inputStream, FileLink fileLink, ElemId elemId) throws IOException {
 		String remotePath;
-		if(transfer.isStream()) {
+		if (transfer.isStream()) {
 			remotePath = uploadVIAStream(inputStream, fileLink, elemId);
-		} else if(transfer.isSocket()) {
+		} else if (transfer.isSocket()) {
 			remotePath = uploadVIASocket(inputStream, fileLink, elemId);
 		} else {
 			throw new IllegalStateException("Transfer state '" + transfer + "' is not supported.");
@@ -137,10 +146,13 @@ final class CORBAFileServer {
 	/**
 	 * Loads the file size for given {@link FileLink}.
 	 *
-	 * @param fileLink The {@code FileLink} whose file size will be loaded.
-	 * @param elemId Used for security checks.
+	 * @param fileLink
+	 *            The {@code FileLink} whose file size will be loaded.
+	 * @param elemId
+	 *            Used for security checks.
 	 * @return The file size is returned.
-	 * @throws IOException Thrown if unable to load the file size.
+	 * @throws IOException
+	 *             Thrown if unable to load the file size.
 	 */
 	public long loadSize(FileLink fileLink, ElemId elemId) throws IOException {
 		try {
@@ -153,9 +165,12 @@ final class CORBAFileServer {
 	/**
 	 * Deletes the {@link FileLink} from the remote storage.
 	 *
-	 * @param fileLink Will be deleted from the remote storage.
-	 * @param elemId Used for security checks.
-	 * @throws IOException Thrown if unable to delete given {@code FileLink}.
+	 * @param fileLink
+	 *            Will be deleted from the remote storage.
+	 * @param elemId
+	 *            Used for security checks.
+	 * @throws IOException
+	 *             Thrown if unable to delete given {@code FileLink}.
 	 */
 	public void delete(FileLink fileLink, ElemId elemId) throws IOException {
 		try {
@@ -172,10 +187,13 @@ final class CORBAFileServer {
 	/**
 	 * Opens a simple {@link InputStreamIF} using the {@link CORBAFileServerIF}.
 	 *
-	 * @param fileLink Used to access the remote path.
-	 * @param elemId Used for security checks.
+	 * @param fileLink
+	 *            Used to access the remote path.
+	 * @param elemId
+	 *            Used for security checks.
 	 * @return The {@code InputStreamIF} is returned.
-	 * @throws IOException Thrown if unable to open the {@code InputStreamIF}.
+	 * @throws IOException
+	 *             Thrown if unable to open the {@code InputStreamIF}.
 	 */
 	private InputStreamIF openSimpleStream(FileLink fileLink, ElemId elemId) throws IOException {
 		try {
@@ -188,23 +206,26 @@ final class CORBAFileServer {
 	/**
 	 * Opens a socket {@link InputStream} using the {@link CORBAFileServerIF}.
 	 *
-	 * @param fileLink Used to access the remote path.
-	 * @param elemId Used for security checks.
+	 * @param fileLink
+	 *            Used to access the remote path.
+	 * @param elemId
+	 *            Used for security checks.
 	 * @return The {@code InputStream} is returned.
-	 * @throws IOException Thrown if unable to open the socket {@code
+	 * @throws IOException
+	 *             Thrown if unable to open the socket {@code
 	 * 		InputStream}.
 	 */
 	private InputStream openSocketStream(FileLink fileLink, ElemId elemId) throws IOException {
 		// auto assigned port with awaiting exactly ONE incoming connection
-		try(ServerSocket serverSocket = new ServerSocket(0, 1)) {
+		try (ServerSocket serverSocket = new ServerSocket(0, 1)) {
 			serverSocket.setSoTimeout(SOCKET_TIMEOUT * 6);
 
 			new Thread(() -> {
 				try {
 					/*
-					 * NOTE: Since a socket file transfer registration may block until
-					 * this server socket's accept method is called, the registration
-					 * is done asynchronously!
+					 * NOTE: Since a socket file transfer registration may block
+					 * until this server socket's accept method is called, the
+					 * registration is done asynchronously!
 					 */
 					fileServer.getForInstanceBySocket(aoSession, fileLink.getRemotePath(), elemId.aid, elemId.iid,
 							InetAddress.getLocalHost().getHostName(), serverSocket.getLocalPort());
@@ -223,16 +244,20 @@ final class CORBAFileServer {
 	 * Uploads given {@link InputStream} for given {@link FileLink} using the
 	 * {@link CORBAFileServerIF}.
 	 *
-	 * @param inputStream The {@code InputStream} to be uploaded.
-	 * @param fileLink The associated {@code FileLink}.
-	 * @param elemId Used for security checks.
+	 * @param inputStream
+	 *            The {@code InputStream} to be uploaded.
+	 * @param fileLink
+	 *            The associated {@code FileLink}.
+	 * @param elemId
+	 *            Used for security checks.
 	 * @return The remote path of the uploaded {@code InputStream} is returned.
-	 * @throws IOException Thrown if unable to upload given {@code InputStream}.
+	 * @throws IOException
+	 *             Thrown if unable to upload given {@code InputStream}.
 	 */
 	private String uploadVIAStream(InputStream inputStream, FileLink fileLink, ElemId elemId) throws IOException {
-		try(CORBAInputStreamAdapter stream = new CORBAInputStreamAdapter(orb, inputStream, fileLink.getSize())) {
-			return fileServer.saveForInstance(aoSession, fileLink.getFileName(), "",
-					elemId.aid, elemId.iid, stream._this());
+		try (CORBAInputStreamAdapter stream = new CORBAInputStreamAdapter(orb, inputStream, fileLink.getSize())) {
+			return fileServer.saveForInstance(aoSession, fileLink.getFileName(), "", elemId.aid, elemId.iid,
+					stream._this());
 		} catch (CORBAFileServerException e) {
 			throw new IOException("Unable to upload file via stream due to: " + e.reason, e);
 		}
@@ -242,11 +267,15 @@ final class CORBAFileServer {
 	 * Uploads given {@link InputStream} for given {@link FileLink} via socket
 	 * upload using the {@link CORBAFileServerIF}.
 	 *
-	 * @param inputStream The {@code InputStream} to be uploaded.
-	 * @param fileLink The associated {@code FileLink}.
-	 * @param elemId Used for security checks.
+	 * @param inputStream
+	 *            The {@code InputStream} to be uploaded.
+	 * @param fileLink
+	 *            The associated {@code FileLink}.
+	 * @param elemId
+	 *            Used for security checks.
 	 * @return The remote path of the uploaded {@code InputStream} is returned.
-	 * @throws IOException Thrown if unable to upload given {@code InputStream}.
+	 * @throws IOException
+	 *             Thrown if unable to upload given {@code InputStream}.
 	 */
 	private String uploadVIASocket(InputStream inputStream, FileLink fileLink, ElemId elemId) throws IOException {
 		// auto assigned port with awaiting exactly ONE incoming connection
@@ -254,14 +283,14 @@ final class CORBAFileServer {
 			serverSocket.setSoTimeout(SOCKET_TIMEOUT * 6);
 
 			new Thread(() -> {
-				try(Socket client = serverSocket.accept(); OutputStream outputStream = client.getOutputStream()) {
+				try (Socket client = serverSocket.accept(); OutputStream outputStream = client.getOutputStream()) {
 					byte[] buffer = new byte[bufferSize];
 
 					int length;
-					while((length = inputStream.read(buffer)) > -1) {
+					while ((length = inputStream.read(buffer)) > -1) {
 						outputStream.write(buffer, 0, length);
 					}
-				} catch(IOException e) {
+				} catch (IOException e) {
 					LOGGER.error("Unable to initialize socket stream, awaiting socket timeout.", e);
 				}
 			}).start();
@@ -276,15 +305,16 @@ final class CORBAFileServer {
 	}
 
 	/**
-	 * Tries to load the buffer size used by the {@link CORBAFileServerIF}
-	 * to reach best performance. In case of errors a default buffer size of
-	 * of {@value #DEFAULT_BUFFER_SIZE} is used.
+	 * Tries to load the buffer size used by the {@link CORBAFileServerIF} to
+	 * reach best performance. In case of errors a default buffer size of of
+	 * {@value #DEFAULT_BUFFER_SIZE} is used.
 	 *
 	 * @return The buffer size is returned.
 	 */
 	private int getBufferSize() {
 		try {
-			// try to use the same buffer size as the corba file server for best performance
+			// try to use the same buffer size as the corba file server for best
+			// performance
 			return Integer.parseInt(fileServer.getContext(aoSession, "CORBAFileServer.BufferSize"));
 		} catch (CORBAFileServerException e) {
 			return DEFAULT_BUFFER_SIZE;
@@ -296,8 +326,8 @@ final class CORBAFileServer {
 	// ======================================================================
 
 	/**
-	 * A simple {@link InputStream} adapter implementation for an {@link
-	 * InputStreamIF}.
+	 * A simple {@link InputStream} adapter implementation for an
+	 * {@link InputStreamIF}.
 	 */
 	private static final class InputStreamAdapter extends InputStream {
 
@@ -314,7 +344,8 @@ final class CORBAFileServer {
 		/**
 		 * Constructor.
 		 *
-		 * @param inputStream The wrapped {@link InputStreamIF}.
+		 * @param inputStream
+		 *            The wrapped {@link InputStreamIF}.
 		 */
 		private InputStreamAdapter(InputStreamIF inputStream) {
 			this.inputStream = inputStream;
@@ -341,11 +372,11 @@ final class CORBAFileServer {
 			try {
 				DS_BYTEHolder byteHolder = new DS_BYTEHolder();
 				int receivedBytes = inputStream.read(byteHolder, offset, length);
-				if(receivedBytes > 0) {
+				if (receivedBytes > 0) {
 					System.arraycopy(byteHolder.value, 0, buffer, 0, receivedBytes);
 				}
 				return receivedBytes;
-			} catch(CORBAFileServerException e) {
+			} catch (CORBAFileServerException e) {
 				throw new IOException("Failed to retrieve bytes from CORBA input stream due to: " + e.reason, e);
 			}
 		}
@@ -368,8 +399,8 @@ final class CORBAFileServer {
 
 	// remotely consumable local input stream
 	/**
-	 * A simple {@link InputStreamIF} adapter implementation for an {@link
-	 * InputStream}.
+	 * A simple {@link InputStreamIF} adapter implementation for an
+	 * {@link InputStream}.
 	 */
 	private static final class CORBAInputStreamAdapter extends InputStreamIFPOA implements AutoCloseable {
 
@@ -390,11 +421,15 @@ final class CORBAFileServer {
 		/**
 		 * Constructor.
 		 *
-		 * @param orb Used to access the root {@link POA} to activate this
-		 * 		CORBA service object.
-		 * @param inputStream The wrapped {@link InputStream}.
-		 * @param length The length of the wrapped {@code InputStream}.
-		 * @throws IOException Thrown on errors.
+		 * @param orb
+		 *            Used to access the root {@link POA} to activate this CORBA
+		 *            service object.
+		 * @param inputStream
+		 *            The wrapped {@link InputStream}.
+		 * @param length
+		 *            The length of the wrapped {@code InputStream}.
+		 * @throws IOException
+		 *             Thrown on errors.
 		 */
 		private CORBAInputStreamAdapter(ORB orb, InputStream inputStream, long length) throws IOException {
 			this.inputStream = inputStream;
@@ -423,8 +458,8 @@ final class CORBAFileServer {
 			try {
 				return inputStream.read(b.value, off, len);
 			} catch (IOException e) {
-				throw new CORBAFileServerException(ErrorCode.FILESERVER_IO_EXCEPTION,
-						SeverityFlag.ERROR, e.getMessage());
+				throw new CORBAFileServerException(ErrorCode.FILESERVER_IO_EXCEPTION, SeverityFlag.ERROR,
+						e.getMessage());
 			}
 		}
 
@@ -436,8 +471,8 @@ final class CORBAFileServer {
 			try {
 				inputStream.close();
 			} catch (IOException e) {
-				throw new CORBAFileServerException(ErrorCode.FILESERVER_IO_EXCEPTION,
-						SeverityFlag.ERROR, e.getMessage());
+				throw new CORBAFileServerException(ErrorCode.FILESERVER_IO_EXCEPTION, SeverityFlag.ERROR,
+						e.getMessage());
 			} finally {
 				try {
 					poa.deactivate_object(objectID);
@@ -453,9 +488,9 @@ final class CORBAFileServer {
 		@Override
 		public int length() throws CORBAFileServerException {
 			/*
-			 * NOTE: A file length is of type long and therefore,
-			 * for very large files (> 2.14 GB), the exact length
-			 * is lost due to narrowing conversion!
+			 * NOTE: A file length is of type long and therefore, for very large
+			 * files (> 2.14 GB), the exact length is lost due to narrowing
+			 * conversion!
 			 */
 			return (int) length;
 		}
@@ -468,8 +503,8 @@ final class CORBAFileServer {
 			try {
 				inputStream.reset();
 			} catch (IOException e) {
-				throw new CORBAFileServerException(ErrorCode.FILESERVER_IO_EXCEPTION,
-						SeverityFlag.ERROR, e.getMessage());
+				throw new CORBAFileServerException(ErrorCode.FILESERVER_IO_EXCEPTION, SeverityFlag.ERROR,
+						e.getMessage());
 			}
 		}
 

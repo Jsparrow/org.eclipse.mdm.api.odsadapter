@@ -35,8 +35,8 @@ final class JoinTree {
 	// ======================================================================
 
 	/**
-	 * Returns the tree configuration. It mapps a source entity type names
-	 * to supported target entity type names.
+	 * Returns the tree configuration. It mapps a source entity type names to
+	 * supported target entity type names.
 	 *
 	 * @return The returned {@code Map} is unmodifiable.
 	 */
@@ -57,15 +57,16 @@ final class JoinTree {
 	/**
 	 * Returns the {@link JoinNode} for given target entity type name.
 	 *
-	 * @param target The target entity type name.
+	 * @param target
+	 *            The target entity type name.
 	 * @return The {@code JoinNode} for given target entity type name is
-	 * 		returned.
-	 * @throws IllegalArgumentException Thrown if no such {@code JoinNode}
-	 * 		exists.
+	 *         returned.
+	 * @throws IllegalArgumentException
+	 *             Thrown if no such {@code JoinNode} exists.
 	 */
 	public JoinNode getJoinNode(String target) {
 		JoinNode joinNode = joinNodes.get(target);
-		if(joinNode == null) {
+		if (joinNode == null) {
 			throw new IllegalArgumentException("Relation to '" + target + "' not possible.");
 		}
 
@@ -75,24 +76,27 @@ final class JoinTree {
 	/**
 	 * Adds given dependency setup to this join tree.
 	 *
-	 * @param source The source entity type name.
-	 * @param target The target entity type name.
-	 * @param viaParent If true, then source is the considered parent of
-	 * 		the target.
-	 * @param join Either inner or outer join.
-	 * @throws IllegalArgumentException Thrown if given setup overrides an
-	 * 		existing one (a target entity type is allowed to be joined only
-	 * 		once).
+	 * @param source
+	 *            The source entity type name.
+	 * @param target
+	 *            The target entity type name.
+	 * @param viaParent
+	 *            If true, then source is the considered parent of the target.
+	 * @param join
+	 *            Either inner or outer join.
+	 * @throws IllegalArgumentException
+	 *             Thrown if given setup overrides an existing one (a target
+	 *             entity type is allowed to be joined only once).
 	 */
 	public void addNode(EntityType source, EntityType target, boolean viaParent, Join join) {
 		String sourceName = source.getName();
 		String targetName = target.getName();
 
-		if(joinNodes.put(targetName, new JoinNode(sourceName, targetName, join)) != null) {
+		if (joinNodes.put(targetName, new JoinNode(sourceName, targetName, join)) != null) {
 			throw new IllegalArgumentException("It is not allowed to override join nodes.");
 		}
 
-		if(viaParent) {
+		if (viaParent) {
 			tree.computeIfAbsent(sourceName, k -> new ArrayList<>()).add(targetName);
 		} else {
 			tree.computeIfAbsent(targetName, k -> new ArrayList<>()).add(sourceName);
@@ -126,9 +130,12 @@ final class JoinTree {
 		/**
 		 * Constructor.
 		 *
-		 * @param source The source entity type name.
-		 * @param target The target entity type name.
-		 * @param join Either inner or outer {@link Join}.
+		 * @param source
+		 *            The source entity type name.
+		 * @param target
+		 *            The target entity type name.
+		 * @param join
+		 *            Either inner or outer {@link Join}.
 		 */
 		private JoinNode(String source, String target, Join join) {
 			this.source = source;
@@ -158,10 +165,13 @@ final class JoinTree {
 		/**
 		 * Constructor.
 		 *
-		 * @param source The source entity type name.
-		 * @param target The target entity type name.
-		 * @param viaParent If true, then source is the considered parent of
-		 * 		the target.
+		 * @param source
+		 *            The source entity type name.
+		 * @param target
+		 *            The target entity type name.
+		 * @param viaParent
+		 *            If true, then source is the considered parent of the
+		 *            target.
 		 */
 		private JoinConfig(Class<? extends Entity> source, Class<? extends Entity> target, boolean viaParent) {
 			this.source = source;
@@ -174,11 +184,13 @@ final class JoinTree {
 		// ======================================================================
 
 		/**
-		 * Creates a new {@link JoinConfig} where given source is considered
-		 * as the child of given target.
+		 * Creates a new {@link JoinConfig} where given source is considered as
+		 * the child of given target.
 		 *
-		 * @param source The source entity type name.
-		 * @param target The target entity type name.
+		 * @param source
+		 *            The source entity type name.
+		 * @param target
+		 *            The target entity type name.
 		 * @return The created {@code JoinConfig} is returned.
 		 */
 		static JoinConfig up(Class<? extends Entity> source, Class<? extends Entity> target) {
@@ -186,11 +198,13 @@ final class JoinTree {
 		}
 
 		/**
-		 * Creates a new {@link JoinConfig} where given source is considered
-		 * as the parent of given target.
+		 * Creates a new {@link JoinConfig} where given source is considered as
+		 * the parent of given target.
 		 *
-		 * @param source The source entity type name.
-		 * @param target The target entity type name.
+		 * @param source
+		 *            The source entity type name.
+		 * @param target
+		 *            The target entity type name.
 		 * @return The created {@code JoinConfig} is returned.
 		 */
 		static JoinConfig down(Class<? extends Entity> source, Class<? extends Entity> target) {

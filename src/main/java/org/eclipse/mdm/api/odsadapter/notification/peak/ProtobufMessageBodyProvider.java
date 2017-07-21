@@ -29,68 +29,54 @@ import com.google.protobuf.Message;
 @Provider
 @Consumes(ProtobufMessageBodyProvider.APPLICATION_PROTOBUF)
 @Produces(ProtobufMessageBodyProvider.APPLICATION_PROTOBUF)
-public class ProtobufMessageBodyProvider implements MessageBodyReader<Message>,
-    MessageBodyWriter<Message>
-{
-  /** 
-   * application/x-protobuf
-   */
-  public final static String APPLICATION_PROTOBUF = "application/x-protobuf";
-  
-  /** 
-   * application/x-protobuf 
-   */
-  public final static MediaType APPLICATION_PROTOBUF_TYPE = new MediaType("application", "x-protobuf");
-	  
-  @Override
-  public boolean isReadable(final Class<?> type, final Type genericType,
-      final Annotation[] annotations, final MediaType mediaType)
-  {
-    return Message.class.isAssignableFrom(type);
-  }
+public class ProtobufMessageBodyProvider implements MessageBodyReader<Message>, MessageBodyWriter<Message> {
+	/**
+	 * application/x-protobuf
+	 */
+	public final static String APPLICATION_PROTOBUF = "application/x-protobuf";
 
-  @Override
-  public Message readFrom(final Class<Message> type, final Type genericType,
-      final Annotation[] annotations, final MediaType mediaType,
-      final MultivaluedMap<String, String> httpHeaders,
-      final InputStream entityStream) throws IOException
-  {
+	/**
+	 * application/x-protobuf
+	 */
+	public final static MediaType APPLICATION_PROTOBUF_TYPE = new MediaType("application", "x-protobuf");
 
-    try
-    {
-      final Method newBuilder = type.getMethod("newBuilder");
-      final GeneratedMessage.Builder<?> builder = (GeneratedMessage.Builder<?>) newBuilder.invoke(type);
-      
-      return builder.mergeFrom(entityStream).build();
-    }
-    catch (Exception e)
-    {
-      throw new WebApplicationException(e);
-    }
-  }
+	@Override
+	public boolean isReadable(final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType) {
+		return Message.class.isAssignableFrom(type);
+	}
 
-  @Override
-  public long getSize(final Message m, final Class<?> type,
-      final Type genericType, final Annotation[] annotations,
-      final MediaType mediaType)
-  {
-    return m.getSerializedSize();
-  }
+	@Override
+	public Message readFrom(final Class<Message> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType, final MultivaluedMap<String, String> httpHeaders, final InputStream entityStream)
+			throws IOException {
 
-  @Override
-  public boolean isWriteable(final Class<?> type, final Type genericType,
-      final Annotation[] annotations, final MediaType mediaType)
-  {
-    return Message.class.isAssignableFrom(type);
-  }
+		try {
+			final Method newBuilder = type.getMethod("newBuilder");
+			final GeneratedMessage.Builder<?> builder = (GeneratedMessage.Builder<?>) newBuilder.invoke(type);
 
-  @Override
-  public void writeTo(final Message m, final Class<?> type,
-      final Type genericType, final Annotation[] annotations,
-      final MediaType mediaType,
-      final MultivaluedMap<String, Object> httpHeaders,
-      final OutputStream entityStream) throws IOException
-  {
-	  m.writeTo(entityStream);
-  }
+			return builder.mergeFrom(entityStream).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(e);
+		}
+	}
+
+	@Override
+	public long getSize(final Message m, final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType) {
+		return m.getSerializedSize();
+	}
+
+	@Override
+	public boolean isWriteable(final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType) {
+		return Message.class.isAssignableFrom(type);
+	}
+
+	@Override
+	public void writeTo(final Message m, final Class<?> type, final Type genericType, final Annotation[] annotations,
+			final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
+			final OutputStream entityStream) throws IOException {
+		m.writeTo(entityStream);
+	}
 }

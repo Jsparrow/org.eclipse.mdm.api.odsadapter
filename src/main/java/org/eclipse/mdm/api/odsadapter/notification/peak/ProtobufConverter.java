@@ -16,64 +16,65 @@ import com.peaksolution.ods.notification.protobuf.NotificationProtos.Registratio
  *
  */
 public class ProtobufConverter {
-	
+
 	/**
 	 * Convert a notification filter to a registration.
-	 * @param filter notification filter.
+	 * 
+	 * @param filter
+	 *            notification filter.
 	 * @return registration corresponding to the given filter.
 	 */
-	public static Registration from(NotificationFilter filter)
-	{
-		return Registration.newBuilder()
-				.setMode(NotificationMode.PUSH)
-				.addAllAid(filter.getEntityTypes().stream().map(e -> e.getId()).collect(Collectors.toList()))
+	public static Registration from(NotificationFilter filter) {
+		return Registration.newBuilder().setMode(NotificationMode.PUSH)
+				.addAllAid(
+						filter.getEntityTypes().stream().map(e -> Long.valueOf(e.getId())).collect(Collectors.toList()))
 				.addAllType(filter.getTypes().stream().map(t -> ProtobufConverter.from(t)).collect(Collectors.toList()))
 				.build();
 	}
-	
+
 	/**
-	 * @param t mdm modification type.
+	 * @param t
+	 *            mdm modification type.
 	 * @return protobuf notification type.
 	 */
-	public static com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType from(ModificationType t)
-	{
-		switch (t)
-		{
-			case INSTANCE_CREATED:
-				return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.NEW;
-			case INSTANCE_MODIFIED:
-				return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.MODIFY;
-			case INSTANCE_DELETED:
-				return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.DELETE;
-			case MODEL_MODIFIED: 
-				return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.MODEL;
-			case SECURITY_MODIFIED: 
-				return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.SECURITY;
-			default:
-				throw new IllegalArgumentException("Invalid enum value!"); // TODO 
+	public static com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType from(
+			ModificationType t) {
+		switch (t) {
+		case INSTANCE_CREATED:
+			return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.NEW;
+		case INSTANCE_MODIFIED:
+			return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.MODIFY;
+		case INSTANCE_DELETED:
+			return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.DELETE;
+		case MODEL_MODIFIED:
+			return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.MODEL;
+		case SECURITY_MODIFIED:
+			return com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType.SECURITY;
+		default:
+			throw new IllegalArgumentException("Invalid enum value!"); // TODO
 		}
 	}
-	
+
 	/**
-	 * @param t protobuf notification type
+	 * @param t
+	 *            protobuf notification type
 	 * @return mdm notification type
 	 */
-	public static ModificationType to(com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType t)
-	{
-		switch (t)
-		{
-			case NEW:
-				return ModificationType.INSTANCE_CREATED;
-			case MODIFY:
-				return ModificationType.INSTANCE_MODIFIED;
-			case DELETE:
-				return ModificationType.INSTANCE_DELETED;
-			case MODEL: 
-				return ModificationType.MODEL_MODIFIED;
-			case SECURITY: 
-				return ModificationType.SECURITY_MODIFIED;
-			default:
-				throw new IllegalArgumentException("Invalid enum value!"); // TODO 
+	public static ModificationType to(
+			com.peaksolution.ods.notification.protobuf.NotificationProtos.ModificationType t) {
+		switch (t) {
+		case NEW:
+			return ModificationType.INSTANCE_CREATED;
+		case MODIFY:
+			return ModificationType.INSTANCE_MODIFIED;
+		case DELETE:
+			return ModificationType.INSTANCE_DELETED;
+		case MODEL:
+			return ModificationType.MODEL_MODIFIED;
+		case SECURITY:
+			return ModificationType.SECURITY_MODIFIED;
+		default:
+			throw new IllegalArgumentException("Invalid enum value!"); // TODO
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -52,6 +52,7 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
 import org.eclipse.mdm.api.odsadapter.transaction.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +87,8 @@ public class ODSEntityManager implements EntityManager {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager The {@link ODSModelManager}.
+	 * @param modelManager
+	 *            The {@link ODSModelManager}.
 	 */
 	public ODSEntityManager(ODSModelManager modelManager, String esHost) {
 		this.modelManager = modelManager;
@@ -133,7 +135,7 @@ public class ODSEntityManager implements EntityManager {
 	 */
 	@Override
 	public Optional<FileService> getFileService() {
-		if(modelManager.getFileServer() == null) {
+		if (modelManager.getFileServer() == null) {
 			return Optional.empty();
 		}
 		return Optional.of(new CORBAFileService(modelManager, transfer));
@@ -145,7 +147,7 @@ public class ODSEntityManager implements EntityManager {
 	@Override
 	public Environment loadEnvironment() throws DataAccessException {
 		List<Environment> environments = loadAll(Environment.class);
-		if(environments.size() != 1) {
+		if (environments.size() != 1) {
 			throw new DataAccessException("Unable to laod the environment entity.");
 		}
 
@@ -160,16 +162,17 @@ public class ODSEntityManager implements EntityManager {
 		InstanceElement ieUser = null;
 		try {
 			ieUser = modelManager.getAoSession().getUser();
-			return Optional.of(entityLoader.load(new Key<>(User.class), ODSConverter.fromODSLong(ieUser.getId())));
-		} catch(AoException e) {
+			return Optional.of(
+					entityLoader.load(new Key<>(User.class), Long.toString(ODSConverter.fromODSLong(ieUser.getId()))));
+		} catch (AoException e) {
 			throw new DataAccessException("Unable to load the logged in user entity due to: " + e.reason, e);
 		} finally {
 			try {
-				if(ieUser != null) {
+				if (ieUser != null) {
 					ieUser.destroy();
 					ieUser._release();
 				}
-			} catch(AoException aoe) {
+			} catch (AoException aoe) {
 				LOGGER.warn("Unable to destroy the CORBA resource due to: " + aoe.reason, aoe);
 				ieUser._release();
 			}
@@ -180,7 +183,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, Long instanceID) throws DataAccessException {
+	public <T extends Entity> T load(Class<T> entityClass, String instanceID) throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass), instanceID);
 	}
 
@@ -188,7 +191,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, Long instanceID)
+	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, String instanceID)
 			throws DataAccessException {
 		return entityLoader.load(new Key<>(entityClass, contextType), instanceID);
 	}
@@ -202,17 +205,18 @@ public class ODSEntityManager implements EntityManager {
 		EntityType childEntityType = modelManager.getEntityType(child);
 		Query query = modelManager.createQuery().selectID(parentEntityType);
 
-		if(child instanceof Channel && ChannelGroup.class.equals(entityClass)) {
-			// this covers the gap between channel and channel group via local column
+		if (child instanceof Channel && ChannelGroup.class.equals(entityClass)) {
+			// this covers the gap between channel and channel group via local
+			// column
 			EntityType localColumnEntityType = modelManager.getEntityType("LocalColumn");
 			query.join(childEntityType, localColumnEntityType).join(localColumnEntityType, parentEntityType);
 		} else {
 			query.join(childEntityType, parentEntityType);
 		}
 
-		Optional<Long> instanceID = query.fetchSingleton(Filter.idOnly(childEntityType, child.getID()))
+		Optional<String> instanceID = query.fetchSingleton(Filter.idOnly(childEntityType, child.getID()))
 				.map(r -> r.getRecord(parentEntityType)).map(Record::getID);
-		if(instanceID.isPresent()) {
+		if (instanceID.isPresent()) {
 			return Optional.of(entityLoader.load(new Key<>(entityClass), instanceID.get()));
 		}
 
@@ -227,30 +231,35 @@ public class ODSEntityManager implements EntityManager {
 		return entityLoader.loadAll(new Key<>(entityClass), pattern);
 	}
 
-	//	/**
-	//	 * {@inheritDoc}
-	//	 */
-	//	@Override
-	//	public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern)
-	//			throws DataAccessException {
-	//		EntityType entityType = modelManager.getEntityType(entityClass);
-	//		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
+	// /**
+	// * {@inheritDoc}
+	// */
+	// @Override
+	// public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass,
+	// Status status, String pattern)
+	// throws DataAccessException {
+	// EntityType entityType = modelManager.getEntityType(entityClass);
+	// EntityType statusEntityType =
+	// modelManager.getEntityType(status.getTypeName());
 	//
-	//		List<Long> instanceIDs = modelManager.createQuery()
-	//				.join(entityType, statusEntityType).selectID(entityType)
-	//				.fetch(Filter.and()
-	//						.id(statusEntityType, status.getID())
-	//						.name(entityType, pattern))
-	//				.stream().map(r -> r.getRecord(entityType)).map(Record::getID).collect(Collectors.toList());
+	// List<String> instanceIDs = modelManager.createQuery()
+	// .join(entityType, statusEntityType).selectID(entityType)
+	// .fetch(Filter.and()
+	// .id(statusEntityType, status.getID())
+	// .name(entityType, pattern))
+	// .stream().map(r ->
+	// r.getRecord(entityType)).map(Record::getID).collect(Collectors.toList());
 	//
-	//		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
-	//	}
+	// return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
+	// }
 	//
-	//	@Override
-	//	public List<Status> loadAllStatus(Class<? extends StatusAttachable> entityClass, String pattern)
-	//			throws DataAccessException {
-	//		return entityLoader.loadAll(new Key<>(Status.class, entityClass), pattern);
-	//	}
+	// @Override
+	// public List<Status> loadAllStatus(Class<? extends StatusAttachable>
+	// entityClass, String pattern)
+	// throws DataAccessException {
+	// return entityLoader.loadAll(new Key<>(Status.class, entityClass),
+	// pattern);
+	// }
 
 	/**
 	 * {@inheritDoc}
@@ -271,43 +280,45 @@ public class ODSEntityManager implements EntityManager {
 		EntityType childEntityType = modelManager.getEntityType(entityClass);
 		Query query = modelManager.createQuery();
 
-		if(parent instanceof ChannelGroup && Channel.class.equals(entityClass)) {
-			// this covers the gap between channel and channel group via local column
+		if (parent instanceof ChannelGroup && Channel.class.equals(entityClass)) {
+			// this covers the gap between channel and channel group via local
+			// column
 			EntityType localColumnEntityType = modelManager.getEntityType("LocalColumn");
 			query.join(childEntityType, localColumnEntityType).join(localColumnEntityType, parentEntityType);
 		} else {
 			query.join(childEntityType, parentEntityType);
 		}
 
-		List<Long> instanceIDs = query.selectID(childEntityType)
-				.fetch(Filter.and()
-						.id(parentEntityType, parent.getID())
-						.name(childEntityType, pattern))
-				.stream().map(r -> r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
+		List<String> instanceIDs = query.selectID(childEntityType)
+				.fetch(Filter.and().id(parentEntityType, parent.getID()).name(childEntityType, pattern)).stream()
+				.map(r -> r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
 		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
 	}
 
-	//	/**
-	//	 * {@inheritDoc}
-	//	 */
-	//	@Override
-	//	public <T extends StatusAttachable> List<T> loadChildren(Entity parent, Class<T> entityClass, Status status,
-	//			String pattern) throws DataAccessException {
-	//		EntityType parentEntityType = modelManager.getEntityType(parent);
-	//		EntityType childEntityType = modelManager.getEntityType(entityClass);
-	//		EntityType statusEntityType = modelManager.getEntityType(status.getTypeName());
+	// /**
+	// * {@inheritDoc}
+	// */
+	// @Override
+	// public <T extends StatusAttachable> List<T> loadChildren(Entity parent,
+	// Class<T> entityClass, Status status,
+	// String pattern) throws DataAccessException {
+	// EntityType parentEntityType = modelManager.getEntityType(parent);
+	// EntityType childEntityType = modelManager.getEntityType(entityClass);
+	// EntityType statusEntityType =
+	// modelManager.getEntityType(status.getTypeName());
 	//
-	//		List<Long> instanceIDs = modelManager.createQuery()
-	//				.join(childEntityType, parentEntityType, statusEntityType)
-	//				.selectID(childEntityType)
-	//				.fetch(Filter.and()
-	//						.id(parentEntityType, parent.getID())
-	//						.id(statusEntityType, status.getID())
-	//						.name(childEntityType, pattern))
-	//				.stream().map(r -> r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
+	// List<String> instanceIDs = modelManager.createQuery()
+	// .join(childEntityType, parentEntityType, statusEntityType)
+	// .selectID(childEntityType)
+	// .fetch(Filter.and()
+	// .id(parentEntityType, parent.getID())
+	// .id(statusEntityType, status.getID())
+	// .name(childEntityType, pattern))
+	// .stream().map(r ->
+	// r.getRecord(childEntityType)).map(Record::getID).collect(Collectors.toList());
 	//
-	//		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
-	//	}
+	// return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
+	// }
 
 	/**
 	 * {@inheritDoc}
@@ -318,19 +329,19 @@ public class ODSEntityManager implements EntityManager {
 		Query query = modelManager.createQuery();
 
 		Map<ContextType, EntityType> contextRootEntityTypes = new EnumMap<>(ContextType.class);
-		for(ContextType contextType : ContextType.values()) {
+		for (ContextType contextType : ContextType.values()) {
 			EntityType entityType = modelManager.getEntityType(ContextRoot.class, contextType);
 			contextRootEntityTypes.put(contextType, entityType);
 			query.join(contextDescribableEntityType.getRelation(entityType), Join.OUTER).selectID(entityType);
 		}
 
-		Optional<Result> result = query.fetchSingleton(Filter.idOnly(contextDescribableEntityType,
-				contextDescribable.getID()));
-		if(result.isPresent()) {
+		Optional<Result> result = query
+				.fetchSingleton(Filter.idOnly(contextDescribableEntityType, contextDescribable.getID()));
+		if (result.isPresent()) {
 			List<ContextType> contextTypes = new ArrayList<>();
-			for(Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
-				Optional<Long> instanceID = result.map(r -> r.getRecord(entry.getValue())).map(Record::getID);
-				if(instanceID.isPresent()) {
+			for (Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
+				Optional<String> instanceID = result.map(r -> r.getRecord(entry.getValue())).map(Record::getID);
+				if (instanceID.isPresent()) {
 					contextTypes.add(entry.getKey());
 				}
 			}
@@ -351,19 +362,19 @@ public class ODSEntityManager implements EntityManager {
 		Query query = modelManager.createQuery();
 
 		Map<ContextType, EntityType> contextRootEntityTypes = new EnumMap<>(ContextType.class);
-		for(ContextType contextType : contextTypes.length == 0 ? ContextType.values() : contextTypes) {
+		for (ContextType contextType : contextTypes.length == 0 ? ContextType.values() : contextTypes) {
 			EntityType entityType = modelManager.getEntityType(ContextRoot.class, contextType);
 			contextRootEntityTypes.put(contextType, entityType);
 			query.join(contextDescribableEntityType.getRelation(entityType), Join.OUTER).selectID(entityType);
 		}
 
-		Optional<Result> result = query.fetchSingleton(Filter.idOnly(contextDescribableEntityType,
-				contextDescribable.getID()));
-		if(result.isPresent()) {
+		Optional<Result> result = query
+				.fetchSingleton(Filter.idOnly(contextDescribableEntityType, contextDescribable.getID()));
+		if (result.isPresent()) {
 			Map<ContextType, ContextRoot> contextRoots = new EnumMap<>(ContextType.class);
-			for(Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
-				Long instanceID = result.get().getRecord(entry.getValue()).getID();
-				if(instanceID > 0) {
+			for (Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
+				String instanceID = result.get().getRecord(entry.getValue()).getID();
+				if (ODSUtils.isValidID(instanceID)) {
 					contextRoots.put(entry.getKey(),
 							entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
 				}
@@ -390,7 +401,7 @@ public class ODSEntityManager implements EntityManager {
 	public Transaction startTransaction() throws DataAccessException {
 		try {
 			return new ODSTransaction(modelManager, loadEnvironment(), transfer);
-		} catch(AoException e) {
+		} catch (AoException e) {
 			throw new DataAccessException("Unable to start transaction due to: " + e.reason, e);
 		}
 	}
@@ -402,7 +413,7 @@ public class ODSEntityManager implements EntityManager {
 	public void close() throws ConnectionException {
 		try {
 			modelManager.close();
-		} catch(AoException e) {
+		} catch (AoException e) {
 			throw new ConnectionException("Unable to close the connection to the data source due to: " + e.reason, e);
 		}
 	}

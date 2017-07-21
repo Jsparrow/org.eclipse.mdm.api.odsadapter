@@ -37,7 +37,8 @@ import com.highqsoft.avalonCorbaNotification.notification.MODE_MODIFYRIGHTS;
 import com.highqsoft.avalonCorbaNotification.notification.MODE_REPLACE;
 
 /**
- * Notification manager for handling notifications from the Avalon Notification Service
+ * Notification manager for handling notifications from the Avalon Notification
+ * Service
  * 
  * ModificationType.MODEL_MODIFIED is not supported!
  * 
@@ -49,122 +50,115 @@ public class AvalonNotificationManager implements NotificationManager {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AvalonNotificationManager.class);
 
-
 	private final Map<String, EventProcessor> eventProcessors = new HashMap<>();
-	
+
 	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-	
+
 	private final ODSModelManager modelManager;
 	private final String serviceName;
 	private final String nameServiceURL;
 	private long pollingInterval = 500L;
 	private final NotificationEntityLoader loader;
-	
-	private final ORB orb = ORB.init(new String[]{}, System.getProperties());
-	
+
+	private final ORB orb = ORB.init(new String[] {}, System.getProperties());
+
 	/**
 	 * Creates a new AvalonNotificationManager.
-	 * @param modelManager ODSModelManager used to laod entities.
-	 * @param serviceName name of the notification service.
-	 * @param nameServiceURL URL of the name service.
-	 * @param loadContextDescribable if true, notifications for {@link ContextRoot} 
-	 * and {@link ContextComponent} will load their parent {@link ContextDescribable}.
-	 * @param pollingInterval polling interval in milleseconds
+	 * 
+	 * @param modelManager
+	 *            ODSModelManager used to laod entities.
+	 * @param serviceName
+	 *            name of the notification service.
+	 * @param nameServiceURL
+	 *            URL of the name service.
+	 * @param loadContextDescribable
+	 *            if true, notifications for {@link ContextRoot} and
+	 *            {@link ContextComponent} will load their parent
+	 *            {@link ContextDescribable}.
+	 * @param pollingInterval
+	 *            polling interval in milleseconds
 	 */
-	public AvalonNotificationManager(ODSModelManager modelManager, String serviceName, 
-			String nameServiceURL, boolean loadContextDescribable, long pollingInterval)
-	{
+	public AvalonNotificationManager(ODSModelManager modelManager, String serviceName, String nameServiceURL,
+			boolean loadContextDescribable, long pollingInterval) {
 		this.modelManager = modelManager;
 		this.serviceName = serviceName;
 		this.nameServiceURL = nameServiceURL;
 		this.pollingInterval = pollingInterval;
 		loader = new NotificationEntityLoader(modelManager, loadContextDescribable);
 	}
-	
+
 	@Override
-	public void register(String registration, NotificationFilter filter, final NotificationListener listener) throws NotificationException
-	{
-		try
-		{
+	public void register(String registration, NotificationFilter filter, final NotificationListener listener)
+			throws NotificationException {
+		try {
 			EventProcessor consumer = new EventProcessor(orb, listener, this, nameServiceURL, serviceName);
-			
-			List<Long> aids = filter.getEntityTypes().stream()
-	    		.map(e -> e.getId())
-	    		.collect(Collectors.toList());
-			
+
+			List<String> aids = filter.getEntityTypes().stream().map(e -> e.getId()).collect(Collectors.toList());
+
 			Set<ModificationType> modes = filter.getTypes().stream()
-				.filter(m -> !ModificationType.MODEL_MODIFIED.equals(m))
-	    		.collect(Collectors.toSet());
-			
+					.filter(m -> !ModificationType.MODEL_MODIFIED.equals(m)).collect(Collectors.toSet());
+
 			consumer.connect();
 			consumer.setFilter(aids, modes);
-			
-		    ScheduledFuture<?> future = executor.scheduleAtFixedRate(consumer, 0, pollingInterval, TimeUnit.MILLISECONDS);
-		    consumer.setFuture(future);
-		    
-		    eventProcessors.put(registration, consumer);
-		}
-		catch (Exception e)
-		{
+
+			ScheduledFuture<?> future = executor.scheduleAtFixedRate(consumer, 0, pollingInterval,
+					TimeUnit.MILLISECONDS);
+			consumer.setFuture(future);
+
+			eventProcessors.put(registration, consumer);
+		} catch (Exception e) {
 			throw new NotificationException("Exception creating notification listener registration!", e);
 		}
 	}
 
 	@Override
-	public void deregister(String registration)
-	{
+	public void deregister(String registration) {
 		EventProcessor processor = eventProcessors.get(registration);
-		if (processor != null)
-		{
+		if (processor != null) {
 			processor.disconnect();
 			eventProcessors.remove(registration);
 		}
 	}
-	
+
 	@Override
 	public void close(boolean isDeregisterAll) throws NotificationException {
 		LOGGER.info("Closing NotificationManager...");
-		
-		for (String registration : eventProcessors.keySet())
-		{
+
+		for (String registration : eventProcessors.keySet()) {
 			LOGGER.debug("Disconnecting registration '" + registration + "'.");
 			deregister(registration);
 		}
-		
+
 		try {
 			executor.shutdown();
 			boolean terminated = executor.awaitTermination(10, TimeUnit.SECONDS);
-			if (!terminated)
-			{
+			if (!terminated) {
 				throw new NotificationException("Could not close all registrations!");
 			}
 		} catch (InterruptedException e) {
 			throw new NotificationException("Could not close all registrations!", e);
-		}		
+		}
 	}
-	
-	void processException(Exception e)
-	{
+
+	void processException(Exception e) {
 		LOGGER.error("Exception during notification processing!", e);
 	}
-	
-	void processNotification(short mode, T_LONGLONG aeId, T_LONGLONG ieId, T_LONGLONG userId,
-			String timestamp, NotificationListener notificationListener) {
-		
-		try {
-			User user = loader.load(new Key<>(User.class), ODSConverter.fromODSLong(userId));
-			LOGGER.debug("User loaded");		
-			
-			EntityType entityType = modelManager.getEntityType(ODSConverter.fromODSLong(aeId));
-			List<Long> ids = Arrays.asList(ODSConverter.fromODSLong(ieId));
 
-			if (LOGGER.isTraceEnabled())
-			{
-				LOGGER.trace("Notification event with: entityType=" + entityType +  ", user=" + user);
+	void processNotification(short mode, T_LONGLONG aeId, T_LONGLONG ieId, T_LONGLONG userId, String timestamp,
+			NotificationListener notificationListener) {
+
+		try {
+			User user = loader.load(new Key<>(User.class), Long.toString(ODSConverter.fromODSLong(userId)));
+			LOGGER.debug("User loaded");
+
+			EntityType entityType = modelManager.getEntityType(Long.toString(ODSConverter.fromODSLong(aeId)));
+			List<String> ids = Arrays.asList(Long.toString(ODSConverter.fromODSLong(ieId)));
+
+			if (LOGGER.isTraceEnabled()) {
+				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);
 			}
-			
-			switch (mode)
-			{
+
+			switch (mode) {
 			case MODE_INSERT.value:
 				notificationListener.instanceCreated(loader.loadEntities(entityType, ids), user);
 				break;

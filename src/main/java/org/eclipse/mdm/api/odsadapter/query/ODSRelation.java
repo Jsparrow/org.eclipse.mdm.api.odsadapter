@@ -47,9 +47,12 @@ final class ODSRelation implements Relation {
 	/**
 	 * Constructor.
 	 *
-	 * @param applRel The ODS meta data for this relation.
-	 * @param source The source {@link EntityType}.
-	 * @param target The target {@code EntityType}.
+	 * @param applRel
+	 *            The ODS meta data for this relation.
+	 * @param source
+	 *            The source {@link EntityType}.
+	 * @param target
+	 *            The target {@code EntityType}.
 	 */
 	ODSRelation(ApplRel applRel, EntityType source, EntityType target) {
 		this.source = source;
@@ -100,9 +103,9 @@ final class ODSRelation implements Relation {
 	 */
 	@Override
 	public Attribute getAttribute() {
-		if(attribute == null) {
-			attribute = new ODSAttribute(getSource(), new ApplAttr(getName(), "", DataType.DT_LONGLONG, 0,
-					true, false, null), null, null);
+		if (attribute == null) {
+			attribute = new ODSAttribute(getSource(),
+					new ApplAttr(getName(), "", DataType.DT_LONGLONG, 0, true, false, null), null, null);
 		}
 
 		return attribute;
@@ -121,11 +124,10 @@ final class ODSRelation implements Relation {
 	 */
 	@Override
 	public boolean equals(Object object) {
-		if(object instanceof ODSRelation) {
+		if (object instanceof ODSRelation) {
 			Relation relation = (Relation) object;
-			return getSource().equals(relation.getSource()) &&
-					getTarget().equals(relation.getTarget()) &&
-					getName().equals(relation.getName());
+			return getSource().equals(relation.getSource()) && getTarget().equals(relation.getTarget())
+					&& getName().equals(relation.getName());
 		}
 
 		return false;
@@ -148,9 +150,10 @@ final class ODSRelation implements Relation {
 	 * given one and whether the foreign key is in the table of the source
 	 * entity type.
 	 *
-	 * @param relationship The {@code Relationship}.
+	 * @param relationship
+	 *            The {@code Relationship}.
 	 * @return Returns {@code true} this relation's {@code Relationship} is
-	 * 		equal with the given one and it is is an outgoing relation.
+	 *         equal with the given one and it is is an outgoing relation.
 	 */
 	boolean isOutgoing(Relationship relationship) {
 		return relationship.equals(getRelationship()) && rangeMax == 1;
@@ -161,9 +164,10 @@ final class ODSRelation implements Relation {
 	 * given one and whether the foreign key is in the table of the target
 	 * entity type.
 	 *
-	 * @param relationship The {@code Relationship}.
+	 * @param relationship
+	 *            The {@code Relationship}.
 	 * @return Returns {@code true} this relation's {@code Relationship} is
-	 * 		equal with the given one and it is is an incoming relation.
+	 *         equal with the given one and it is is an incoming relation.
 	 */
 	boolean isIncoming(Relationship relationship) {
 		return relationship.equals(getRelationship()) && rangeMax == -1;

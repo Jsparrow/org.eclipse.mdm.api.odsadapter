@@ -39,10 +39,12 @@ final class TracedInputStream extends InputStream {
 	/**
 	 * Constructor.
 	 *
-	 * @param inputStream The traced {@link InputStream}.
-	 * @param progressListener The listener will be used to fire update
-	 * 		notifications.
-	 * @param length The length of the consumed {@code InputStream}.
+	 * @param inputStream
+	 *            The traced {@link InputStream}.
+	 * @param progressListener
+	 *            The listener will be used to fire update notifications.
+	 * @param length
+	 *            The length of the consumed {@code InputStream}.
 	 */
 	TracedInputStream(InputStream inputStream, ProgressListener progressListener, long length) {
 		this.progressListener = progressListener;
@@ -68,7 +70,7 @@ final class TracedInputStream extends InputStream {
 	@Override
 	public int read(byte[] buffer, int offset, int length) throws IOException {
 		int read = inputStream.read(buffer, offset, length);
-		if(read > -1) {
+		if (read > -1) {
 			transferred += read;
 			progressListener.progress(read, (float) (transferred / size));
 		}

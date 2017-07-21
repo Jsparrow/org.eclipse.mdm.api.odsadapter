@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -28,11 +28,13 @@ import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.FilesAttachable;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,16 +73,18 @@ final class UpdateStatement extends BaseStatement {
 	/**
 	 * Constructor.
 	 *
-	 * @param transaction The owning {@link ODSTransaction}.
-	 * @param entityType The associated {@link EntityType}.
-	 * @param ignoreChildren If {@code true}, then child entities won't be
-	 * 		processed.
+	 * @param transaction
+	 *            The owning {@link ODSTransaction}.
+	 * @param entityType
+	 *            The associated {@link EntityType}.
+	 * @param ignoreChildren
+	 *            If {@code true}, then child entities won't be processed.
 	 */
 	UpdateStatement(ODSTransaction transaction, EntityType entityType, boolean ignoreChildren) {
 		super(transaction, entityType);
 
-		nonUpdatableRelationNames = entityType.getInfoRelations().stream()
-				.map(Relation::getName).collect(Collectors.toList());
+		nonUpdatableRelationNames = entityType.getInfoRelations().stream().map(Relation::getName)
+				.collect(Collectors.toList());
 		this.ignoreChildren = ignoreChildren;
 
 		EntityConfig<?> entityConfig = getModelManager().getEntityConfig(getEntityType());
@@ -96,7 +100,7 @@ final class UpdateStatement extends BaseStatement {
 	 */
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
-		for(Entity entity : entities) {
+		for (Entity entity : entities) {
 			readEntityCore(extract(entity));
 		}
 
@@ -105,20 +109,22 @@ final class UpdateStatement extends BaseStatement {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
 
-		if(!fileLinkToUpload.isEmpty()) {
+		if (!fileLinkToUpload.isEmpty()) {
 			getTransaction().getUploadService().uploadParallel(fileLinkToUpload, null);
 		}
 
-		for(Entry<String, List<Value>> entry : updateMap.entrySet()) {
-			if(nonUpdatableRelationNames.contains(entry.getKey())) {
+		for (Entry<String, List<Value>> entry : updateMap.entrySet()) {
+			if (nonUpdatableRelationNames.contains(entry.getKey())) {
 				// skip "empty" informative relation sequence
 				continue;
 			}
 
+			Attribute attribute = getEntityType().getAttribute(entry.getKey());
+
 			AIDNameValueSeqUnitId anvsu = new AIDNameValueSeqUnitId();
 			anvsu.attr = new AIDName(aID, entry.getKey());
 			anvsu.unitId = ODSConverter.toODSLong(0);
-			anvsu.values = ODSConverter.toODSValueSeq(entry.getValue());
+			anvsu.values = ODSConverter.toODSValueSeq(attribute, entry.getValue());
 			anvsuList.add(anvsu);
 		}
 
@@ -129,13 +135,13 @@ final class UpdateStatement extends BaseStatement {
 		LOGGER.debug("{} " + getEntityType() + " instances updated in {} ms.", entities.size(), stop - start);
 
 		// delete first to make sure naming collisions do not occur!
-		for(List<Deletable> children : childrenToRemove.values()) {
+		for (List<Deletable> children : childrenToRemove.values()) {
 			getTransaction().delete(children);
 		}
-		for(List<Entity> children : childrenToCreate.values()) {
+		for (List<Entity> children : childrenToCreate.values()) {
 			getTransaction().create(children);
 		}
-		for(List<Entity> children : childrenToUpdate.values()) {
+		for (List<Entity> children : childrenToUpdate.values()) {
 			getTransaction().update(children);
 		}
 	}
@@ -148,45 +154,47 @@ final class UpdateStatement extends BaseStatement {
 	 * Reads given {@link Core} and prepares its data to be written:
 	 *
 	 * <ul>
-	 * 	<li>collect new and removed {@link FileLink}s</li>
-	 *  <li>collect property {@link Value}s</li>
-	 *  <li>collect foreign key {@code Value}s</li>
-	 *  <li>collect child entities for recursive create/update/delete</li>
+	 * <li>collect new and removed {@link FileLink}s</li>
+	 * <li>collect property {@link Value}s</li>
+	 * <li>collect foreign key {@code Value}s</li>
+	 * <li>collect child entities for recursive create/update/delete</li>
 	 * </ul>
 	 *
-	 * @param core The {@code Core}.
-	 * @throws DataAccessException Thrown in case of errors.
+	 * @param core
+	 *            The {@code Core}.
+	 * @throws DataAccessException
+	 *             Thrown in case of errors.
 	 */
 	private void readEntityCore(Core core) throws DataAccessException {
-		if(!core.getTypeName().equals(getEntityType().getName())) {
+		if (!core.getTypeName().equals(getEntityType().getName())) {
 			throw new IllegalArgumentException("Entity core '" + core.getTypeName()
-			+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");
+					+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");
 		}
 
 		// add all entity values
-		for(Value value : core.getAllValues().values()) {
+		for (Value value : core.getAllValues().values()) {
 			updateMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
 		}
 
 		// collect file links
 		fileLinkToUpload.addAll(core.getAddedFileLinks());
 		List<FileLink> fileLinksToRemove = core.getRemovedFileLinks();
-		if(isFilesAttachable && !fileLinksToRemove.isEmpty()) {
+		if (isFilesAttachable && !fileLinksToRemove.isEmpty()) {
 			getTransaction().getUploadService().addToRemove(fileLinksToRemove);
 		}
 
 		updateMap.computeIfAbsent(getEntityType().getIDAttribute().getName(), k -> new ArrayList<>())
-		.add(getEntityType().getIDAttribute().createValue(core.getID()));
+				.add(getEntityType().getIDAttribute().createValue(core.getID()));
 
 		// define "empty" values for ALL informative relations
-		for(Relation relation : getEntityType().getInfoRelations()) {
+		for (Relation relation : getEntityType().getInfoRelations()) {
 			updateMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
 		}
 
 		// preserve "empty" relation values for removed related entities
 		EntityStore mutableStore = core.getMutableStore();
 		mutableStore.getRemoved().stream().map(e -> getModelManager().getEntityType(e))
-		.map(getEntityType()::getRelation).map(Relation::getName).forEach(nonUpdatableRelationNames::remove);
+				.map(getEntityType()::getRelation).map(Relation::getName).forEach(nonUpdatableRelationNames::remove);
 
 		// replace "empty" relation values with corresponding instance IDs
 		setRelationIDs(mutableStore.getCurrent());
@@ -199,31 +207,32 @@ final class UpdateStatement extends BaseStatement {
 	/**
 	 * Collects child entities for recursive processing.
 	 *
-	 * @param core The {@link Core}.
+	 * @param core
+	 *            The {@link Core}.
 	 */
 	private void collectChildEntities(Core core) {
-		if(ignoreChildren) {
+		if (ignoreChildren) {
 			return;
 		}
 
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry :
-			core.getChildrenStore().getCurrent().entrySet()) {
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent()
+				.entrySet()) {
 			Map<Boolean, List<Entity>> patrition = entry.getValue().stream()
-					.collect(Collectors.partitioningBy(e -> e.getID() < 1));
+					.collect(Collectors.partitioningBy(e -> ODSUtils.isValidID(e.getID())));
 			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
-			if(virtualEntities != null && !virtualEntities.isEmpty()) {
+			if (virtualEntities != null && !virtualEntities.isEmpty()) {
 				childrenToCreate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(virtualEntities);
 			}
 			List<Entity> existingEntities = patrition.get(Boolean.FALSE);
-			if(existingEntities != null && !existingEntities.isEmpty()) {
+			if (existingEntities != null && !existingEntities.isEmpty()) {
 				childrenToUpdate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(existingEntities);
 			}
 		}
 
-		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry :
-			core.getChildrenStore().getRemoved().entrySet()) {
-			List<Deletable> toDelete = entry.getValue().stream()
-					.filter(e -> e.getID() > 0).collect(Collectors.toList());
+		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getRemoved()
+				.entrySet()) {
+			List<Deletable> toDelete = entry.getValue().stream().filter(e -> ODSUtils.isValidID(e.getID()))
+					.collect(Collectors.toList());
 			childrenToRemove.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(toDelete);
 		}
 	}
@@ -231,17 +240,18 @@ final class UpdateStatement extends BaseStatement {
 	/**
 	 * Overwrites empty foreign key {@link Value} containers.
 	 *
-	 * @param relatedEntities The related {@link Entity}s.
+	 * @param relatedEntities
+	 *            The related {@link Entity}s.
 	 */
 	private void setRelationIDs(Collection<Entity> relatedEntities) {
-		for(Entity relatedEntity : relatedEntities) {
-			if(relatedEntity.getID() < 1) {
+		for (Entity relatedEntity : relatedEntities) {
+			if (!ODSUtils.isValidID(relatedEntity.getID())) {
 				throw new IllegalArgumentException("Related entity must be a persited entity.");
 			}
 
 			Relation relation = getEntityType().getRelation(getModelManager().getEntityType(relatedEntity));
 			List<Value> relationValues = updateMap.get(relation.getName());
-			if(relationValues == null) {
+			if (relationValues == null) {
 				throw new IllegalStateException("Relation '" + relation
 						+ "' is incompatible with update statement for entity type '" + getEntityType() + "'");
 			}

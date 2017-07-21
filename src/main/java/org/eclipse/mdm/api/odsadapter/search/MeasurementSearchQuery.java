@@ -32,8 +32,10 @@ final class MeasurementSearchQuery extends BaseEntitySearchQuery {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used to load {@link EntityType}s.
-	 * @param contextState The {@link ContextState}.
+	 * @param modelManager
+	 *            Used to load {@link EntityType}s.
+	 * @param contextState
+	 *            The {@link ContextState}.
 	 */
 	MeasurementSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, Measurement.class, Project.class);
@@ -45,7 +47,7 @@ final class MeasurementSearchQuery extends BaseEntitySearchQuery {
 		addJoinConfig(JoinConfig.up(Measurement.class, TestStep.class));
 		addJoinConfig(JoinConfig.down(Measurement.class, Channel.class));
 		addJoinConfig(JoinConfig.down(Measurement.class, ChannelGroup.class));
-		
+
 		// context
 		addJoinConfig(contextState);
 	}

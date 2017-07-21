@@ -31,7 +31,8 @@ import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 /**
  * Container for entities by executing an {@link EntityRequest}.
  *
- * @param <T> The entity type.
+ * @param <T>
+ *            The entity type.
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
@@ -41,7 +42,7 @@ final class EntityResult<T extends Entity> {
 	// Instance variables
 	// ======================================================================
 
-	private final Map<Long, EntityRecord<T>> entityRecords = new HashMap<>();
+	private final Map<String, EntityRecord<T>> entityRecords = new HashMap<>();
 	private final List<T> entities = new ArrayList<>();
 
 	final EntityRequest<T> request;
@@ -53,7 +54,8 @@ final class EntityResult<T extends Entity> {
 	/**
 	 * Constructor.
 	 *
-	 * @param request The associated {@link EntityRequest}.
+	 * @param request
+	 *            The associated {@link EntityRequest}.
 	 */
 	EntityResult(EntityRequest<T> request) {
 		this.request = request;
@@ -66,10 +68,11 @@ final class EntityResult<T extends Entity> {
 	/**
 	 * Returns the {@link EntityRecord} identified by given instance ID.
 	 *
-	 * @param id The instance ID.
+	 * @param id
+	 *            The instance ID.
 	 * @return {@code Optional} is empty if {@code EntityRecord} not found.
 	 */
-	public Optional<EntityRecord<T>> get(Long id) {
+	public Optional<EntityRecord<T>> get(String id) {
 		return Optional.ofNullable(entityRecords.get(id));
 	}
 
@@ -77,7 +80,8 @@ final class EntityResult<T extends Entity> {
 	 * Creates an {@link EntityRecord} for given {@link Record} and mapps it
 	 * internally by its instance ID.
 	 *
-	 * @param record The {@code Record}.
+	 * @param record
+	 *            The {@code Record}.
 	 * @return The created {@code EntityRecord} is returned.
 	 */
 	public EntityRecord<T> add(Record record) {
@@ -88,15 +92,17 @@ final class EntityResult<T extends Entity> {
 	 * Creates an {@link EntityRecord} for given {@link Record} using given
 	 * parent {@code EntityRecord} and mapps it internally by its instance ID.
 	 *
-	 * @param parentRecord The created {@code EntityRecord} will be related as
-	 * 		a child with this one.
-	 * @param record The {@code Record}.
+	 * @param parentRecord
+	 *            The created {@code EntityRecord} will be related as a child
+	 *            with this one.
+	 * @param record
+	 *            The {@code Record}.
 	 * @return The created {@code EntityRecord} is returned.
 	 */
 	public EntityRecord<T> add(EntityRecord<?> parentRecord, Record record) {
 		Core core = new DefaultCore(record);
 
-		if(CatalogAttribute.class.equals(request.entityConfig.getEntityClass())) {
+		if (CatalogAttribute.class.equals(request.entityConfig.getEntityClass())) {
 			// add read only properties from application model
 			adjustCatalogAttributeCore(parentRecord.entity, core);
 		}
@@ -122,8 +128,8 @@ final class EntityResult<T extends Entity> {
 	 * @return Returned {@code Collection} is unmodifiable.
 	 */
 	public List<T> getSortedEntities() {
-		return Collections.unmodifiableList(entities.stream()
-				.sorted(request.entityConfig.getComparator()).collect(Collectors.toList()));
+		return Collections.unmodifiableList(
+				entities.stream().sorted(request.entityConfig.getComparator()).collect(Collectors.toList()));
 	}
 
 	/**
@@ -131,7 +137,7 @@ final class EntityResult<T extends Entity> {
 	 *
 	 * @return Returned {@code Collection} is unmodifiable.
 	 */
-	public Collection<Long> getIDs() {
+	public Collection<String> getIDs() {
 		return Collections.unmodifiableCollection(entityRecords.keySet());
 	}
 
@@ -149,11 +155,13 @@ final class EntityResult<T extends Entity> {
 	// ======================================================================
 
 	/**
-	 * Adds further meta data to the given {@link CatalogAttribute} {@link
-	 * Core}.
+	 * Adds further meta data to the given {@link CatalogAttribute}
+	 * {@link Core}.
 	 *
-	 * @param catalogComponent The parent {@link CatalogComponent}.
-	 * @param catalogAttributeCore The {@code CatalogAttribute} {@code Core}.
+	 * @param catalogComponent
+	 *            The parent {@link CatalogComponent}.
+	 * @param catalogAttributeCore
+	 *            The {@code CatalogAttribute} {@code Core}.
 	 */
 	private void adjustCatalogAttributeCore(Entity catalogComponent, Core catalogAttributeCore) {
 		EntityType entityType = request.modelManager.getEntityType(catalogComponent.getName());
@@ -162,7 +170,7 @@ final class EntityResult<T extends Entity> {
 		Map<String, Value> values = catalogAttributeCore.getValues();
 		Value enumerationClass = ValueType.STRING.create(VATTR_ENUMERATION_CLASS);
 		values.put(VATTR_ENUMERATION_CLASS, enumerationClass);
-		if(attribute.getValueType().isEnumerationType()) {
+		if (attribute.getValueType().isEnumerationType()) {
 			enumerationClass.set(attribute.getEnumClass().getName());
 		}
 
@@ -174,10 +182,11 @@ final class EntityResult<T extends Entity> {
 	}
 
 	/**
-	 * Creates a new {@link EntityRecord} instance for given {@link Core}.
-	 * The {@link EntityRecord} is internally mapped the its instance ID.
+	 * Creates a new {@link EntityRecord} instance for given {@link Core}. The
+	 * {@link EntityRecord} is internally mapped the its instance ID.
 	 *
-	 * @param core The {@code Core}.
+	 * @param core
+	 *            The {@code Core}.
 	 * @return The created {@link EntityRecord} is returned.
 	 */
 	private EntityRecord<T> create(Core core) {
@@ -191,11 +200,11 @@ final class EntityResult<T extends Entity> {
 			entityRecords.put(core.getID(), entityRecord);
 			entities.add(entityRecord.entity);
 			return entityRecord;
-		} catch (InstantiationException | IllegalAccessException |
-				NoSuchMethodException | InvocationTargetException e) {
+		} catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+				| InvocationTargetException e) {
 			throw new IllegalStateException(e.getMessage(), e);
 		} finally {
-			if(constructor != null) {
+			if (constructor != null) {
 				constructor.setAccessible(isAccessible);
 			}
 		}

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -30,7 +31,8 @@ import com.google.common.base.Strings;
 import com.peaksolution.ods.notification.protobuf.NotificationProtos.Notification;
 
 /**
- * Notification manager for handling notifications from the Peak ODS Server Notification Plugin
+ * Notification manager for handling notifications from the Peak ODS Server
+ * Notification Plugin
  * 
  * @since 1.0.0
  * @author Matthias Koller, Peak Solution GmbH
@@ -42,195 +44,185 @@ public class PeakNotificationManager implements NotificationManager {
 
 	private final Client client;
 	private final WebTarget endpoint;
-	
+
 	private final Map<String, EventProcessor> processors = new HashMap<>();
-	
+
 	private final ExecutorService executor = Executors.newCachedThreadPool();
-	
+
 	private final MediaType eventMediaType;
 	private final ODSModelManager modelManager;
 
 	private final NotificationEntityLoader loader;
-	
+
 	/**
 	 * @param modelManager
-	 * @param url URL of the notification plugin
-	 * @param eventMediaType MediaType to use.
-	 * @param loadContextDescribable if true, the corresponding context describable is loaded if a notification for a context root or context component is received. 
-	 * @throws NotificationException Thrown if the manager cannot connect to the notification server.
+	 * @param url
+	 *            URL of the notification plugin
+	 * @param eventMediaType
+	 *            MediaType to use.
+	 * @param loadContextDescribable
+	 *            if true, the corresponding context describable is loaded if a
+	 *            notification for a context root or context component is
+	 *            received.
+	 * @throws NotificationException
+	 *             Thrown if the manager cannot connect to the notification
+	 *             server.
 	 */
-	public PeakNotificationManager(ODSModelManager modelManager, String url, String eventMediaType, boolean loadContextDescribable) throws NotificationException {
+	public PeakNotificationManager(ODSModelManager modelManager, String url, String eventMediaType,
+			boolean loadContextDescribable) throws NotificationException {
 		this.modelManager = modelManager;
 		loader = new NotificationEntityLoader(modelManager, loadContextDescribable);
-		
-		try
-		{
-			if (Strings.isNullOrEmpty(eventMediaType) || MediaType.APPLICATION_JSON.equalsIgnoreCase(eventMediaType))
-			{
+
+		try {
+			if (Strings.isNullOrEmpty(eventMediaType) || MediaType.APPLICATION_JSON.equalsIgnoreCase(eventMediaType)) {
 				this.eventMediaType = MediaType.APPLICATION_JSON_TYPE;
-			}
-			else
-			{
+			} else {
 				this.eventMediaType = ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE;
 			}
-			
-			client = ClientBuilder.newBuilder()
-		    		.register(SseFeature.class)
-		    		.register(ProtobufMessageBodyProvider.class)
-		    		.register(JsonMessageBodyProvider.class)
-		    		.build();
-		    
-		    endpoint = client.target(url)
-					.path("events");
-		}
-		catch (Exception e)
-		{
+
+			client = ClientBuilder.newBuilder().register(SseFeature.class).register(ProtobufMessageBodyProvider.class)
+					.register(JsonMessageBodyProvider.class).build();
+
+			endpoint = client.target(url).path("events");
+		} catch (Exception e) {
 			throw new NotificationException("Could not create " + PeakNotificationManager.class.getName() + "!", e);
 		}
 	}
-	
-	/* (non-Javadoc)
-	 * @see org.eclipse.mdm.api.base.notification.NotificationManager#register(java.lang.String, org.eclipse.mdm.api.base.notification.NotificationFilter, org.eclipse.mdm.api.base.notification.NotificationListener)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.eclipse.mdm.api.base.notification.NotificationManager#register(java.
+	 * lang.String, org.eclipse.mdm.api.base.notification.NotificationFilter,
+	 * org.eclipse.mdm.api.base.notification.NotificationListener)
 	 */
 	@Override
-	public void register(String registration, NotificationFilter filter, NotificationListener listener) throws NotificationException
-	{
-		Response response = endpoint.path(registration)
-			.request()
-			.post(javax.ws.rs.client.Entity.entity(ProtobufConverter.from(filter), ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE));
+	public void register(String registration, NotificationFilter filter, NotificationListener listener)
+			throws NotificationException {
+		Response response = endpoint.path(registration).request().post(javax.ws.rs.client.Entity
+				.entity(ProtobufConverter.from(filter), ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE));
 
-		if (response.getStatusInfo().getStatusCode() == Status.CONFLICT.getStatusCode())
-		{
+		if (response.getStatusInfo().getStatusCode() == Status.CONFLICT.getStatusCode()) {
 			LOGGER.info("A registration with the name already exists: " + response.readEntity(String.class));
 			LOGGER.info("Trying to reregister...");
 			deregister(registration);
 			register(registration, filter, listener);
 			return;
 		}
-		
-		if (response.getStatusInfo().getStatusCode() != Status.OK.getStatusCode())
-		{
-			throw new NotificationException("Could not create registration at notification service: " + response.readEntity(String.class));
+
+		if (response.getStatusInfo().getStatusCode() != Status.OK.getStatusCode()) {
+			throw new NotificationException(
+					"Could not create registration at notification service: " + response.readEntity(String.class));
 		}
 
-		try
-		{
-			EventInput eventInput = endpoint.path(registration)
-					.request()
-					.get(EventInput.class);
-			
+		try {
+			EventInput eventInput = endpoint.path(registration).request().get(EventInput.class);
+
 			EventProcessor processor = new EventProcessor(eventInput, listener, this, eventMediaType);
-	
+
 			executor.submit(processor);
-	
+
 			processors.put(registration, processor);
-		}
-		catch (Exception e)
-		{
-			try
-			{
+		} catch (Exception e) {
+			try {
 				deregister(registration);
-			}
-			catch (Exception ex)
-			{
+			} catch (Exception ex) {
 				LOGGER.error("Exception upon deregistering!");
 			}
 			throw new NotificationException("Could not create event input stream!", e);
 		}
-			
+
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.mdm.api.base.notification.NotificationManager#deregister(java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.eclipse.mdm.api.base.notification.NotificationManager#deregister(java
+	 * .lang.String)
 	 */
 	@Override
-	public void deregister(String registration)
-	{
-		if (processors.containsKey(registration))
-		{
+	public void deregister(String registration) {
+		if (processors.containsKey(registration)) {
 			close(registration);
-		}	
-		
-		endpoint.path(registration)
-			.request()
-			.delete();
+		}
+
+		endpoint.path(registration).request().delete();
 	}
-	
+
 	@Override
 	public void close(boolean isDeregisterAll) throws NotificationException {
 		LOGGER.info("Closing NotificationManager...");
-		
-		for (String registration : processors.keySet())
-		{
-			if (isDeregisterAll)
-			{
+
+		for (String registration : processors.keySet()) {
+			if (isDeregisterAll) {
 				LOGGER.debug("Deregistering '" + registration + "'.");
 				deregister(registration);
-			}
-			else
-			{
+			} else {
 				LOGGER.debug("Disconnecting '" + registration + "'.");
 				close(registration);
 			}
 		}
 	}
-	
-	private void close(String registration)
-	{
-		if (processors.containsKey(registration))
-		{
+
+	private void close(String registration) {
+		if (processors.containsKey(registration)) {
 			EventProcessor processor = processors.get(registration);
 			processor.stop();
 			processors.remove(registration);
 		}
 	}
-	
+
 	/**
 	 * Handler for Exceptions during event processing.
-	 * @param e Exception which occured during event processing.
+	 * 
+	 * @param e
+	 *            Exception which occured during event processing.
 	 */
-	void processException(Exception e)
-	{
+	void processException(Exception e) {
 		LOGGER.error("Exception during notification processing!", e);
 	}
-	
+
 	/**
 	 * Handler for notifications.
-	 * @param n notification to process.
-	 * @param notificationListener notification listener for handling the notification.
+	 * 
+	 * @param n
+	 *            notification to process.
+	 * @param notificationListener
+	 *            notification listener for handling the notification.
 	 */
 	void processNotification(Notification n, NotificationListener notificationListener) {
-		if (LOGGER.isDebugEnabled())
-		{
+		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("Processing notification event: " + n);
 		}
-		
+
 		try {
-			User user = loader.load(new Key<>(User.class), n.getUserId());
+			User user = loader.load(new Key<>(User.class), Long.toString(n.getUserId()));
 
-			EntityType entityType = modelManager.getEntityType(n.getAid());
+			EntityType entityType = modelManager.getEntityType(Long.toString(n.getAid()));
 
-			if (LOGGER.isTraceEnabled())
-			{
+			if (LOGGER.isTraceEnabled()) {
 				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);
 			}
-			
-			switch (n.getType())
-			{
+
+			switch (n.getType()) {
 			case NEW:
-				notificationListener.instanceCreated(loader.loadEntities(entityType, n.getIidList()), user);
+				notificationListener.instanceCreated(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList())), user);
 				break;
 			case MODIFY:
-				notificationListener.instanceModified(loader.loadEntities(entityType, n.getIidList()), user);
+				notificationListener.instanceModified(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList())), user);
 				break;
 			case DELETE:
-				notificationListener.instanceDeleted(entityType, n.getIidList(), user);
+				notificationListener.instanceDeleted(entityType,
+						n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList()), user);
 				break;
 			case MODEL:
 				notificationListener.modelModified(entityType, user);
 				break;
 			case SECURITY:
-				notificationListener.securityModified(entityType, n.getIidList(), user);
+				notificationListener.securityModified(entityType,
+						n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList()), user);
 				break;
 			default:
 				processException(new NotificationException("Invalid notification type!"));
@@ -240,6 +232,4 @@ public class PeakNotificationManager implements NotificationManager {
 		}
 	}
 
-
-	
 }

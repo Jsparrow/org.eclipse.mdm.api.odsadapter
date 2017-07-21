@@ -31,8 +31,10 @@ final class PoolSearchQuery extends BaseEntitySearchQuery {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager Used to load {@link EntityType}s.
-	 * @param contextState The {@link ContextState}.
+	 * @param modelManager
+	 *            Used to load {@link EntityType}s.
+	 * @param contextState
+	 *            The {@link ContextState}.
 	 */
 	PoolSearchQuery(ODSModelManager modelManager, ContextState contextState) {
 		super(modelManager, Pool.class, Project.class);

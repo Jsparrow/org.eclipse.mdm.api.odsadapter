@@ -27,24 +27,27 @@ final class Cache {
 	/**
 	 * Caches given {@link EntityResult}.
 	 *
-	 * @param entityResult The {@link EntityResult}.
+	 * @param entityResult
+	 *            The {@link EntityResult}.
 	 */
 	public void add(EntityResult<?> entityResult) {
 		cache.put(entityResult.request.entityConfig, entityResult);
 	}
 
 	/**
-	 * Returns the cached {@link EntityResult} associated with given {@link
-	 * EntityConfig}.
+	 * Returns the cached {@link EntityResult} associated with given
+	 * {@link EntityConfig}.
 	 *
-	 * @param entityConfig Used as identifier.
+	 * @param entityConfig
+	 *            Used as identifier.
 	 * @return The {@code EntityResult} is returned.
-	 * @throws IllegalArgumentException Thrown if requested {@code
+	 * @throws IllegalArgumentException
+	 *             Thrown if requested {@code
 	 * 		EntityResult} not found.
 	 */
 	public EntityResult<?> get(EntityConfig<?> entityConfig) {
 		EntityResult<?> entityResult = cache.get(entityConfig);
-		if(entityResult == null) {
+		if (entityResult == null) {
 			throw new IllegalArgumentException("Entity result not found");
 		}
 

@@ -114,8 +114,10 @@ final class MergedSearchQuery implements SearchQuery {
 	 * Merges given {@link Result}s to one using the root entity type of this
 	 * search query.
 	 *
-	 * @param results1 The first {@code Result}.
-	 * @param results2 The second {@code Result}.
+	 * @param results1
+	 *            The first {@code Result}.
+	 * @param results2
+	 *            The second {@code Result}.
 	 * @return The merged {@link Result} is returned.
 	 */
 	private List<Result> mergeResults(List<Result> results1, List<Result> results2) {

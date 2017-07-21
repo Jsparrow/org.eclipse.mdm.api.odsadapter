@@ -63,7 +63,8 @@ public final class WriteRequestHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param transaction The owning {@link ODSTransaction}.
+	 * @param transaction
+	 *            The owning {@link ODSTransaction}.
 	 */
 	public WriteRequestHandler(ODSTransaction transaction) {
 		localColumnEntityType = transaction.getModelManager().getEntityType("LocalColumn");
@@ -77,7 +78,8 @@ public final class WriteRequestHandler {
 	/**
 	 * Adds given {@link WriteRequest} to be processed.
 	 *
-	 * @param writeRequest The {@code WriteRequest}.
+	 * @param writeRequest
+	 *            The {@code WriteRequest}.
 	 */
 	public void addRequest(WriteRequest writeRequest) {
 		cores.add(createCore(writeRequest));
@@ -86,9 +88,12 @@ public final class WriteRequestHandler {
 	/**
 	 * Imports given mass data configurations.
 	 *
-	 * @throws AoException Thrown if the execution fails.
-	 * @throws DataAccessException Thrown if the execution fails.
-	 * @throws IOException Thrown if a file transfer operation fails.
+	 * @throws AoException
+	 *             Thrown if the execution fails.
+	 * @throws DataAccessException
+	 *             Thrown if the execution fails.
+	 * @throws IOException
+	 *             Thrown if a file transfer operation fails.
 	 */
 	public void execute() throws AoException, DataAccessException, IOException {
 		insertStatement.executeWithCores(cores);
@@ -99,10 +104,11 @@ public final class WriteRequestHandler {
 	// ======================================================================
 
 	/**
-	 * Reads given {@link WriteRequest} and prepares a corresponding {@link
-	 * Core} for import.
+	 * Reads given {@link WriteRequest} and prepares a corresponding
+	 * {@link Core} for import.
 	 *
-	 * @param writeRequest The mass data configuration.
+	 * @param writeRequest
+	 *            The mass data configuration.
 	 * @return The created {@code Core} is returned.
 	 */
 	private Core createCore(WriteRequest writeRequest) {
@@ -120,25 +126,27 @@ public final class WriteRequestHandler {
 		values.get(AE_LC_ATTR_AXISTYPE).set(writeRequest.getAxisType());
 		values.get(AE_LC_ATTR_PARAMETERS).set(writeRequest.getGenerationParameters());
 
-		if(writeRequest.hasValues()) {
+		if (writeRequest.hasValues()) {
 			ValueType valueType = writeRequest.getRawScalarType().toValueType();
 			String unitName = writeRequest.getChannel().getUnit().getName();
-			values.put(AE_LC_ATTR_VALUES, valueType.create(AE_LC_ATTR_VALUES, unitName, true,
-					writeRequest.getValues()));
+			values.put(AE_LC_ATTR_VALUES,
+					valueType.create(AE_LC_ATTR_VALUES, unitName, true, writeRequest.getValues()));
 
-			if(writeRequest.getSequenceRepresentation().isImplicit()) {
-				// PEAK ODS server: expects values written as generation parameters
+			if (writeRequest.getSequenceRepresentation().isImplicit()) {
+				// PEAK ODS server: expects values written as generation
+				// parameters
 				Object genParamValues = writeRequest.getValues();
 				double[] genParamD = new double[Array.getLength(genParamValues)];
 				IntStream.range(0, genParamD.length)
-				.forEach(i -> genParamD[i] = ((Number)Array.get(genParamValues, i)).doubleValue());
+						.forEach(i -> genParamD[i] = ((Number) Array.get(genParamValues, i)).doubleValue());
 				values.get(AE_LC_ATTR_PARAMETERS).set(genParamD);
 			}
 
-			//flags
-			if(writeRequest.areAllValid()) {
+			// flags
+			if (writeRequest.areAllValid()) {
 				values.get(AE_LC_ATTR_GLOBAL_FLAG).set((short) 15);
-				// PEAK ODS server issue: though global flag is true a flags array is expected
+				// PEAK ODS server issue: though global flag is true a flags
+				// array is expected
 				short[] flags = new short[Array.getLength(writeRequest.getValues())];
 				Arrays.fill(flags, (short) 15);
 				values.get(AE_LC_ATTR_FLAGS).set(flags);
@@ -146,7 +154,7 @@ public final class WriteRequestHandler {
 				short[] flags = ODSConverter.toODSValidFlagSeq(writeRequest.getFlags());
 				values.get(AE_LC_ATTR_FLAGS).set(flags);
 			}
-		} else if(writeRequest.hasExternalComponents()) {
+		} else if (writeRequest.hasExternalComponents()) {
 			// TODO
 			throw new UnsupportedOperationException("NOT YET IMPLEMENTED.");
 		} else {
@@ -157,5 +165,3 @@ public final class WriteRequestHandler {
 	}
 
 }
-
-
