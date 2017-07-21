@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
@@ -313,12 +314,12 @@ public class ODSModelManager implements ModelManager {
 
 	@Override
 	public EntityType getEntityTypeById(String id) {
-		EntityType entityType = listEntityTypes().stream().filter(et -> et.getId() == id).findFirst().get();
-		if (entityType == null) {
+		Optional<EntityType> entityType = listEntityTypes().stream().filter(et -> et.getId().equals(id)).findFirst();
+		if (!entityType.isPresent()) {
 			throw new IllegalArgumentException("Entity with id '" + id + "' not found.");
 		}
 
-		return entityType;
+		return entityType.get();
 	}
 
 	/**
