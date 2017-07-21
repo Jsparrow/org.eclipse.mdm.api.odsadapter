@@ -22,6 +22,7 @@ import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.notification.NotificationEntityLoader;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
+import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.glassfish.jersey.media.sse.EventInput;
 import org.glassfish.jersey.media.sse.SseFeature;
 import org.slf4j.Logger;
@@ -100,6 +101,8 @@ public class PeakNotificationManager implements NotificationManager {
 	@Override
 	public void register(String registration, NotificationFilter filter, NotificationListener listener)
 			throws NotificationException {
+		LOGGER.info("Starting registration for with name: " + registration);
+		
 		Response response = endpoint.path(registration).request().post(javax.ws.rs.client.Entity
 				.entity(ProtobufConverter.from(filter), ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE));
 
@@ -107,6 +110,7 @@ public class PeakNotificationManager implements NotificationManager {
 			LOGGER.info("A registration with the name already exists: " + response.readEntity(String.class));
 			LOGGER.info("Trying to reregister...");
 			deregister(registration);
+			LOGGER.info("Deregisteration successful.");
 			register(registration, filter, listener);
 			return;
 		}
@@ -117,13 +121,16 @@ public class PeakNotificationManager implements NotificationManager {
 		}
 
 		try {
+			LOGGER.info("Requesting event input for " + registration);
 			EventInput eventInput = endpoint.path(registration).request().get(EventInput.class);
 
+			LOGGER.info("Received event input, starting event processor.");
 			EventProcessor processor = new EventProcessor(eventInput, listener, this, eventMediaType);
 
 			executor.submit(processor);
 
 			processors.put(registration, processor);
+			LOGGER.info("Event processor started.");
 		} catch (Exception e) {
 			try {
 				deregister(registration);
@@ -200,29 +207,28 @@ public class PeakNotificationManager implements NotificationManager {
 		try {
 			User user = loader.load(new Key<>(User.class), Long.toString(n.getUserId()));
 
-			EntityType entityType = modelManager.getEntityType(Long.toString(n.getAid()));
+			EntityType entityType = modelManager.getEntityTypeById(Long.toString(n.getAid()));
 
 			if (LOGGER.isTraceEnabled()) {
 				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);
 			}
-
 			switch (n.getType()) {
 			case NEW:
-				notificationListener.instanceCreated(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList())), user);
+				notificationListener.instanceCreated(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).filter(ODSUtils::isValidID).collect(Collectors.toList())), user);
 				break;
 			case MODIFY:
-				notificationListener.instanceModified(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList())), user);
+				notificationListener.instanceModified(loader.loadEntities(entityType, n.getIidList().stream().map(id -> id.toString()).filter(ODSUtils::isValidID).collect(Collectors.toList())), user);
 				break;
 			case DELETE:
 				notificationListener.instanceDeleted(entityType,
-						n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList()), user);
+						n.getIidList().stream().map(id -> id.toString()).filter(ODSUtils::isValidID).collect(Collectors.toList()), user);
 				break;
 			case MODEL:
 				notificationListener.modelModified(entityType, user);
 				break;
 			case SECURITY:
 				notificationListener.securityModified(entityType,
-						n.getIidList().stream().map(id -> id.toString()).collect(Collectors.toList()), user);
+						n.getIidList().stream().map(id -> id.toString()).filter(ODSUtils::isValidID).collect(Collectors.toList()), user);
 				break;
 			default:
 				processException(new NotificationException("Invalid notification type!"));
