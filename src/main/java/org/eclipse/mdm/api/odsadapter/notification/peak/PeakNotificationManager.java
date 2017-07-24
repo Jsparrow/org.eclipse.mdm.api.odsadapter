@@ -122,7 +122,9 @@ public class PeakNotificationManager implements NotificationManager {
 
 		try {
 			LOGGER.info("Requesting event input for " + registration);
-			EventInput eventInput = endpoint.path(registration).request().get(EventInput.class);
+			EventInput eventInput = endpoint.path(registration)
+					.request(SseFeature.SERVER_SENT_EVENTS_TYPE)
+					.get(EventInput.class);
 
 			LOGGER.info("Received event input, starting event processor.");
 			EventProcessor processor = new EventProcessor(eventInput, listener, this, eventMediaType);
