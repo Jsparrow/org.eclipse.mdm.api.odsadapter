@@ -31,10 +31,10 @@ repositories {
 }
 
 sourceSets {
+
     generated {
         java {
-            srcDir 'src/gen/java'
-            srcDir 'build/generated/source/proto/main/java'
+            srcDirs = ['src/gen/java']
         }
     }
     
@@ -121,6 +121,12 @@ task compileIDL(type: JavaExec) {
     
  	// add 'fallTIE' if <Type>POA & <Type>POATie have to be generated   
     args '-td', 'src/gen/java/', 'src/main/idl/ods530.idl'
+
+	outputs.dir("src/gen/java")
+}
+
+compileGeneratedJava {
+	inputs.dir("src/gen/java")
 }
 
 // generate classes from idl and compile them
@@ -133,7 +139,8 @@ jar {
 }
 
 task deleteGenerated(type: Delete) {
-    delete 'src/gen/java/org'
+    delete 'src/gen'
+    delete 'build'
 }
 
 clean.dependsOn deleteGenerated
