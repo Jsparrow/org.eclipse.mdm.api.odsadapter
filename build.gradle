@@ -16,37 +16,38 @@ apply plugin: 'eclipse'
 apply plugin: 'com.google.protobuf'
 
 buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.1'
-    }
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.1'
+	}
 }
 
 repositories {
 	jcenter()
 	mavenLocal()
-    mavenCentral()
+	mavenCentral()
 }
 
 sourceSets {
 
-    generated {
-        java {
-            srcDirs = ['src/gen/java']
-        }
-    }
-    
-    main {
-        compileClasspath += generated.output
-        runtimeClasspath += generated.output
-    }
-    
-    test {
-        compileClasspath += generated.output
-        runtimeClasspath += generated.output
-    }
+	generated {
+		java {
+			srcDir 'src/gen/java'
+			srcDir 'build/generated/source/proto/main/java'
+		}
+	}
+
+	main {
+		compileClasspath += generated.output
+		runtimeClasspath += generated.output
+	}
+
+	test {
+		compileClasspath += generated.output
+		runtimeClasspath += generated.output
+	}
 }
 
 dependencies {
@@ -60,72 +61,74 @@ dependencies {
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.default:1.0.0'
 	
 	// compile CORBA idl using JDK tools
-    generatedCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
-    
-    	// Peak notification service
- 	compile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
- 	compile 'com.google.protobuf:protobuf-java-util:3.0.0-beta-3'
+	generatedCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
+
+	// Peak notification service
+	compile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
+	compile 'com.google.protobuf:protobuf-java-util:3.0.0-beta-3'
 	compile 'com.google.guava:guava:18.0'
- 	compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
- 	compile 'org.glassfish.jersey.media:jersey-media-sse:2.23.1'
-    
-     	// Avalon notification service
- 	compile 'org.jacorb:jacorb-services:3.8'
-    
-    // querying es
+	compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
+	compile 'org.glassfish.jersey.media:jersey-media-sse:2.23.1'
+	generatedCompile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
+
+	// Avalon notification service
+	compile 'org.jacorb:jacorb-services:3.8'
+
+	// querying es
 	compile 'commons-httpclient:commons-httpclient:3.1'
 	compile 'org.apache.commons:commons-lang3:3.4'
-    
-    // testing
-    testCompile 'junit:junit:4.12'
+
+	// testing
+	testCompile 'junit:junit:4.12'
 	testRuntime 'org.slf4j:slf4j-simple:1.7.19'
 	testCompile 'org.mockito:mockito-core:1.+'
-	  testCompile 'org.assertj:assertj-core:3.6.2'
-  	testCompile(group: 'org.elasticsearch', name: 'elasticsearch', version: '2.3.4')
+	testCompile 'org.assertj:assertj-core:3.6.2'
+	testCompile(group: 'org.elasticsearch', name: 'elasticsearch', version: '2.3.4')
 	testCompile(group: 'org.elasticsearch', name: 'elasticsearch', version: '2.3.4', classifier: 'tests')
 }
 
 test {
-    if(project.hasProperty('host')) {
-        systemProperty 'host', project.property('host')
-    } else {
-        systemProperty 'host', '<host>'
-    }
-    
-    if(project.hasProperty('port')) {
-        systemProperty 'port', project.property('port')
-    } else {
-        systemProperty 'port', '2809'
-    }
-    
-    if(project.hasProperty('service')) {
-        systemProperty 'service', project.property('service')
-    } else {
-        systemProperty 'service', '<service>'
-    }
-    
+	if(project.hasProperty('host')) {
+		systemProperty 'host', project.property('host')
+	} else {
+		systemProperty 'host', '<host>'
+	}
+
+	if(project.hasProperty('port')) {
+		systemProperty 'port', project.property('port')
+	} else {
+		systemProperty 'port', '2809'
+	}
+	
+	if(project.hasProperty('service')) {
+		systemProperty 'service', project.property('service')
+	} else {
+		systemProperty 'service', '<service>'
+	}
+
 	jvmArgs '-Dorg.slf4j.simpleLogger.defaultLogLevel=debug'
 }
 
 protobuf {
-  protoc {
-    artifact = 'com.google.protobuf:protoc:3.0.0-beta-3'
-  }
+	protoc {
+		artifact = 'com.google.protobuf:protoc:3.0.0-beta-3'
+	}
 }
 
 
 task compileIDL(type: JavaExec) {
-    classpath = configurations.generatedCompile
+	classpath = configurations.generatedCompile
 
-    main = 'com.sun.tools.corba.se.idl.toJavaPortable.Compile'
-    
- 	// add 'fallTIE' if <Type>POA & <Type>POATie have to be generated   
-    args '-td', 'src/gen/java/', 'src/main/idl/ods530.idl'
+	main = 'com.sun.tools.corba.se.idl.toJavaPortable.Compile'
+
+	// add 'fallTIE' if <Type>POA & <Type>POATie have to be generated   
+	args '-td', 'src/gen/java/', 'src/main/idl/ods530.idl'
 
 	outputs.dir("src/gen/java")
 }
 
 compileGeneratedJava {
+	inputs.dir("build/generated/source")
 	inputs.dir("src/gen/java")
 }
 
@@ -134,13 +137,13 @@ compileGeneratedJava.dependsOn compileIDL
 compileJava.dependsOn compileGeneratedJava
 
 jar {
-    from sourceSets.generated.output
-    dependsOn generatedClasses
+	from sourceSets.generated.output
+	dependsOn generatedClasses
 }
 
 task deleteGenerated(type: Delete) {
-    delete 'src/gen'
-    delete 'build'
+	delete 'src/gen'
+	delete 'build'
 }
 
 clean.dependsOn deleteGenerated
