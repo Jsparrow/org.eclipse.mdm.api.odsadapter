@@ -9,6 +9,7 @@
 package org.eclipse.mdm.api.odsadapter;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -183,17 +184,17 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, String instanceID) throws DataAccessException {
-		return entityLoader.load(new Key<>(entityClass), instanceID);
+	public <T extends Entity> List<T> load(Class<T> entityClass, Collection<String> instanceIDs) throws DataAccessException {
+		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, String instanceID)
+	public <T extends Entity> List<T> load(Class<T> entityClass, ContextType contextType, Collection<String> instanceIDs)
 			throws DataAccessException {
-		return entityLoader.load(new Key<>(entityClass, contextType), instanceID);
+		return entityLoader.loadAll(new Key<>(entityClass, contextType), instanceIDs);
 	}
 
 	/**

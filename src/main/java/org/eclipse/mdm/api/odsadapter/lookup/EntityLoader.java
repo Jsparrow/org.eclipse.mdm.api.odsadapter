@@ -58,7 +58,7 @@ public class EntityLoader {
 	public <T extends Entity> T load(Key<T> key, String instanceID) throws DataAccessException {
 		List<T> entities = loadAll(key, Collections.singletonList(instanceID));
 		if (entities.size() != 1) {
-			throw new DataAccessException("Faild to load entity by instance ID.");
+			throw new DataAccessException("Failed to load entity by instance ID.");
 		}
 		return entities.get(0);
 	}
