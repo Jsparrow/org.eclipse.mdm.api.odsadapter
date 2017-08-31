@@ -31,7 +31,7 @@ import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.FilterItem;
-import org.eclipse.mdm.api.base.query.Join;
+import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
@@ -85,11 +85,11 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		EntityType source = entityConfig.getEntityType();
 
 		entityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(source, entityType, true, Join.OUTER);
+			joinTree.addNode(source, entityType, true, JoinType.OUTER);
 		});
 
 		entityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(source, entityType, true, Join.INNER);
+			joinTree.addNode(source, entityType, true, JoinType.INNER);
 		});
 	}
 
@@ -188,16 +188,16 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		EntityType target = targetEntityConfig.getEntityType();
 
 		// add dependency source to target
-		joinTree.addNode(modelManager.getEntityType(joinConfig.source), target, joinConfig.viaParent, Join.INNER);
+		joinTree.addNode(modelManager.getEntityType(joinConfig.source), target, joinConfig.viaParent, JoinType.INNER);
 
 		// add target's optional dependencies
 		targetEntityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(target, entityType, true, Join.OUTER);
+			joinTree.addNode(target, entityType, true, JoinType.OUTER);
 		});
 
 		// add target's mandatory dependencies
 		targetEntityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(target, entityType, true, Join.INNER);
+			joinTree.addNode(target, entityType, true, JoinType.INNER);
 		});
 	}
 
@@ -217,14 +217,14 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		for (ContextType contextType : ContextType.values()) {
 			EntityType rootEntityType = modelManager.getEntityType(ContextRoot.class, contextType);
 			for (Relation componentRelation : rootEntityType.getChildRelations()) {
-				joinTree.addNode(componentRelation.getSource(), componentRelation.getTarget(), true, Join.OUTER);
+				joinTree.addNode(componentRelation.getSource(), componentRelation.getTarget(), true, JoinType.OUTER);
 
 				for (Relation sensorRelation : componentRelation.getTarget().getChildRelations()) {
-					joinTree.addNode(sensorRelation.getSource(), sensorRelation.getTarget(), true, Join.OUTER);
+					joinTree.addNode(sensorRelation.getSource(), sensorRelation.getTarget(), true, JoinType.OUTER);
 				}
 			}
 
-			joinTree.addNode(modelManager.getEntityType(source), rootEntityType, true, Join.OUTER);
+			joinTree.addNode(modelManager.getEntityType(source), rootEntityType, true, JoinType.OUTER);
 		}
 	}
 
@@ -273,7 +273,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		JoinNode joinNode = joinTree.getJoinNode(entityType.getName());
 		EntityType sourceEntityType = modelManager.getEntityType(joinNode.source);
 		addJoins(query, sourceEntityType);
-		query.join(sourceEntityType.getRelation(entityType), joinNode.join);
+		query.join(sourceEntityType.getRelation(entityType), joinNode.joinType);
 	}
 
 }

@@ -32,7 +32,7 @@ import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.Operation;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
@@ -539,7 +539,7 @@ final class CatalogManager {
 			Query query = transaction.getModelManager().createQuery().selectID(target).join(source, target);
 
 			List<Result> results = query.fetch(Filter.and()
-					.add(Operation.IN_SET.create(source.getIDAttribute(), collectInstanceIDs(entry.getValue()))));
+					.add(ComparisonOperator.IN_SET.create(source.getIDAttribute(), collectInstanceIDs(entry.getValue()))));
 			if (results.size() > 0) {
 				return true;
 			}

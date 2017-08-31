@@ -42,7 +42,7 @@ import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.FilterItem;
-import org.eclipse.mdm.api.base.query.Join;
+import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
@@ -125,7 +125,7 @@ public class ODSQuery implements Query {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Query join(Relation relation, Join join) {
+	public Query join(Relation relation, JoinType join) {
 		queriedEntityTypes.add(relation.getSource());
 		queriedEntityTypes.add(relation.getTarget());
 		joinSeq.add(createJoin(relation, join));
@@ -257,7 +257,7 @@ public class ODSQuery implements Query {
 	private SelValueExt createCondition(Condition condition) throws DataAccessException {
 		SelValueExt sve = new SelValueExt();
 
-		sve.oper = ODSUtils.OPERATIONS.convert(condition.getOperation());
+		sve.oper = ODSUtils.OPERATIONS.convert(condition.getComparisonOperator());
 		sve.attr = new AIDNameUnitId();
 		sve.attr.unitId = new T_LONGLONG();
 		sve.attr.attr = createAIDName(condition.getAttribute());
@@ -267,16 +267,16 @@ public class ODSQuery implements Query {
 	}
 
 	/**
-	 * Converts given {@link Relation} and {@link Join} to an ODS
+	 * Converts given {@link Relation} and {@link JoinType} to an ODS
 	 * {@link JoinDef}.
 	 *
 	 * @param relation
 	 *            The {@code Relation}.
-	 * @param join
-	 *            The {@code Join}.
+	 * @param joinType
+	 *            The {@code JoinType}.
 	 * @return The corresponding {@code JoinDef} is returned.
 	 */
-	private JoinDef createJoin(Relation relation, Join join) {
+	private JoinDef createJoin(Relation relation, JoinType join) {
 		JoinDef joinDef = new JoinDef();
 
 		joinDef.fromAID = ((ODSEntityType) relation.getSource()).getODSID();

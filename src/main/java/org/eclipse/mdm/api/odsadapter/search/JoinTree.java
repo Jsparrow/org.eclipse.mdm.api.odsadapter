@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.Join;
+import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.SearchQuery;
 
 /**
@@ -82,17 +82,17 @@ final class JoinTree {
 	 *            The target entity type name.
 	 * @param viaParent
 	 *            If true, then source is the considered parent of the target.
-	 * @param join
-	 *            Either inner or outer join.
+	 * @param joinType
+	 *            Either inner or outer joinType.
 	 * @throws IllegalArgumentException
 	 *             Thrown if given setup overrides an existing one (a target
 	 *             entity type is allowed to be joined only once).
 	 */
-	public void addNode(EntityType source, EntityType target, boolean viaParent, Join join) {
+	public void addNode(EntityType source, EntityType target, boolean viaParent, JoinType joinType) {
 		String sourceName = source.getName();
 		String targetName = target.getName();
 
-		if (joinNodes.put(targetName, new JoinNode(sourceName, targetName, join)) != null) {
+		if (joinNodes.put(targetName, new JoinNode(sourceName, targetName, joinType)) != null) {
 			throw new IllegalArgumentException("It is not allowed to override join nodes.");
 		}
 
@@ -111,7 +111,7 @@ final class JoinTree {
 	// ======================================================================
 
 	/**
-	 * A simple join node setup.
+	 * A simple joinType node setup.
 	 */
 	static final class JoinNode {
 
@@ -121,7 +121,7 @@ final class JoinTree {
 
 		final String source;
 		final String target;
-		final Join join;
+		final JoinType joinType;
 
 		// ======================================================================
 		// Constructors
@@ -134,19 +134,19 @@ final class JoinTree {
 		 *            The source entity type name.
 		 * @param target
 		 *            The target entity type name.
-		 * @param join
-		 *            Either inner or outer {@link Join}.
+		 * @param joinType
+		 *            Either inner or outer {@link JoinType}.
 		 */
-		private JoinNode(String source, String target, Join join) {
+		private JoinNode(String source, String target, JoinType joinType) {
 			this.source = source;
 			this.target = target;
-			this.join = join;
+			this.joinType = joinType;
 		}
 
 	}
 
 	/**
-	 * A simple join configuration setup.
+	 * A simple joinType configuration setup.
 	 */
 	static final class JoinConfig {
 

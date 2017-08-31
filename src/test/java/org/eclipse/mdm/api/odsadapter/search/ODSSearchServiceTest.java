@@ -20,7 +20,7 @@ import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.FilterItem;
 import org.eclipse.mdm.api.base.query.ModelManager;
-import org.eclipse.mdm.api.base.query.Operation;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Operator;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory;
@@ -96,7 +96,7 @@ public class ODSSearchServiceTest {
 		public Tuple extract(FilterItem f) {
 			return tuple(f.isOperator() ? f.getOperator() : null,
 					f.isCondition() ? f.getCondition().getAttribute().getName() : null,
-					f.isCondition() ? f.getCondition().getOperation() : null,
+					f.isCondition() ? f.getCondition().getComparisonOperator() : null,
 					f.isCondition() ? f.getCondition().getValue().extract() : null);
 		}
 	};
@@ -114,9 +114,10 @@ public class ODSSearchServiceTest {
 
 		assertThat(service.getMergedFilter(Filter.idOnly(testStep, "11"), "query")).hasSize(7)
 				.extracting(filterExtractors).containsExactly(tuple(Operator.OPEN, null, null, null),
-						tuple(null, "Id", Operation.EQUAL, "10"), tuple(Operator.CLOSE, null, null, null),
-						tuple(Operator.AND, null, null, null), tuple(Operator.OPEN, null, null, null),
-						tuple(null, "Id", Operation.IN_SET, new String[] { "10" }),
+						tuple(null, "Id", ComparisonOperator.EQUAL, "10"), tuple(Operator.CLOSE, null, null, null),
+						tuple(Operator.AND, null, null, null),
+						tuple(Operator.OPEN, null, null, null),
+						tuple(null, "Id", ComparisonOperator.IN_SET, new String[] { "10" }),
 						tuple(Operator.CLOSE, null, null, null));
 	}
 
@@ -128,7 +129,7 @@ public class ODSSearchServiceTest {
 				.fetchIds(Mockito.anyString());
 
 		assertThat(service.getMergedFilter(Filter.and(), "query")).extracting(filterExtractors)
-				.containsExactly(tuple(null, "Id", Operation.IN_SET, new String[] { "10" }));
+				.containsExactly(tuple(null, "Id", ComparisonOperator.IN_SET, new String[] { "10" }));
 	}
 
 	@Test
@@ -140,7 +141,7 @@ public class ODSSearchServiceTest {
 		EntityType testStep = modelManager.getEntityType(TestStep.class);
 
 		assertThat(service.getMergedFilter(Filter.idOnly(testStep, "11"), "")).extracting(filterExtractors)
-				.containsExactly(tuple(null, "Id", Operation.EQUAL, "11"));
+				.containsExactly(tuple(null, "Id", ComparisonOperator.EQUAL, "11"));
 	}
 
 	@Test

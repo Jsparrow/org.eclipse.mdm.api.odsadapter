@@ -14,8 +14,8 @@ import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.Join;
-import org.eclipse.mdm.api.base.query.Operation;
+import org.eclipse.mdm.api.base.query.JoinType;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
@@ -102,13 +102,13 @@ public class NotificationEntityLoader {
 		final EntityType measurement = modelManager.getEntityType(Measurement.class);
 
 		List<String> testStepIDs = modelManager.createQuery().selectID(testStep)
-				.join(testStep.getRelation(contextRoot), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), ids)))
+				.join(testStep.getRelation(contextRoot), JoinType.OUTER)
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
 		List<String> measurementIDs = modelManager.createQuery().selectID(measurement)
-				.join(measurement.getRelation(contextRoot), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextRoot.getIDAttribute(), ids)))
+				.join(measurement.getRelation(contextRoot), JoinType.OUTER)
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
 
 		List<ContextDescribable> list = new ArrayList<>();
@@ -139,15 +139,15 @@ public class NotificationEntityLoader {
 		final EntityType measurement = modelManager.getEntityType(Measurement.class);
 
 		List<String> testStepIDs = modelManager.createQuery().selectID(testStep)
-				.join(testStep.getRelation(contextRoot), Join.OUTER)
-				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), ids)))
+				.join(testStep.getRelation(contextRoot), JoinType.OUTER)
+				.join(contextRoot.getRelation(contextComponent), JoinType.OUTER)
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
 		List<String> measurementIDs = modelManager.createQuery().selectID(measurement)
-				.join(measurement.getRelation(contextRoot), Join.OUTER)
-				.join(contextRoot.getRelation(contextComponent), Join.OUTER)
-				.fetch(Filter.and().add(Operation.IN_SET.create(contextComponent.getIDAttribute(), ids)))
+				.join(measurement.getRelation(contextRoot), JoinType.OUTER)
+				.join(contextRoot.getRelation(contextComponent), JoinType.OUTER)
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
 
 		List<ContextDescribable> list = new ArrayList<>();
