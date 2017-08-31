@@ -66,7 +66,6 @@ public final class ODSEnumerations {
 	 * @throws IllegalArgumentException
 	 *             Thrown if ODS enumeration name is unknown.
 	 */
-	@SuppressWarnings("unchecked")
 	// FIXME (Florian Schmitt): can we do this simpler?
 	public static Enumeration<? extends EnumerationValue> getEnumObj(String name) {
 		EnumRegistry er=EnumRegistry.getInstance();

@@ -37,7 +37,7 @@ public class ODSAttribute implements Attribute {
 	private final String name;
 	private final String unit;
 	private final EntityType entityType;
-	private final ValueType valueType;
+	private final ValueType<?> valueType;
 	private final boolean isIdAttribute;
 
 	// ======================================================================
@@ -121,7 +121,7 @@ public class ODSAttribute implements Attribute {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ValueType getValueType() {
+	public ValueType<?> getValueType() {
 		return valueType;
 	}
 

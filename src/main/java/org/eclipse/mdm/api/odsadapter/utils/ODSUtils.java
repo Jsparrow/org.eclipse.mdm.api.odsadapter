@@ -62,7 +62,7 @@ public abstract class ODSUtils {
 	/**
 	 * Maps {@link ValueType} to the corresponding ODS {@link DataType}.
 	 */
-	public static final BiDiMapper<ValueType, DataType> VALUETYPES = new BiDiMapper<>();
+	public static final BiDiMapper<ValueType<?>, DataType> VALUETYPES = new BiDiMapper<>();
 
 	/**
 	 * Maps {@link Join} to the corresponding ODS {@link JoinType}.

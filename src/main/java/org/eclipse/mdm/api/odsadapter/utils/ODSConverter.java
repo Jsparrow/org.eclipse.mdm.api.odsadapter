@@ -307,7 +307,7 @@ public final class ODSConverter {
 			return odsValueSeq;
 		}
 
-		ValueType type = values.get(0).getValueType();
+		ValueType<?> type = values.get(0).getValueType();
 		if (ValueType.STRING == type) {
 			String[] odsValues = new String[size];
 			for (int i = 0; i < size; i++) {
@@ -674,7 +674,7 @@ public final class ODSConverter {
 	 */
 	public static TS_Value toODSValue(Attribute attribute, Value value) throws DataAccessException {
 		TS_Value odsValue = new TS_Value(new TS_Union(), toODSValidFlag(value.isValid()));
-		ValueType type = value.getValueType();
+		ValueType<?> type = value.getValueType();
 
 		if (ValueType.STRING == type) {
 			if (((ODSAttribute) attribute).isIdAttribute()) {
