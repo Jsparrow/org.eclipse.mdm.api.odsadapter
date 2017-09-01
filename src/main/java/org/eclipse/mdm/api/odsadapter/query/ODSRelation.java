@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -141,35 +141,20 @@ final class ODSRelation implements Relation {
 		return getName();
 	}
 
-	// ======================================================================
-	// Package methods
-	// ======================================================================
-
+	
 	/**
-	 * Checks whether this relation is of the same {@link RelationType} as the
-	 * given one and whether the foreign key is in the table of the source
-	 * entity type.
-	 *
-	 * @param relationType
-	 *            The {@code RelationType}.
-	 * @return Returns {@code true} this relation's {@code RelationType} is
-	 *         equal with the given one and it is is an outgoing relation.
+	 * {@inheritDoc}
 	 */
-	boolean isOutgoing(RelationType relationType) {
+	@Override
+	public boolean isOutgoing(RelationType relationType) {
 		return relationType.equals(getRelationType()) && rangeMax == 1;
 	}
 
 	/**
-	 * Checks whether this relation is of the same {@link RelationType} as the
-	 * given one and whether the foreign key is in the table of the target
-	 * entity type.
-	 *
-	 * @param relationType
-	 *            The {@code RelationType}.
-	 * @return Returns {@code true} this relation's {@code RelationType} is
-	 *         equal with the given one and it is is an incoming relation.
+	 * {@inheritDoc}
 	 */
-	boolean isIncoming(RelationType relationType) {
+	@Override
+	public boolean isIncoming(RelationType relationType) {
 		return relationType.equals(getRelationType()) && rangeMax == -1;
 	}
 
