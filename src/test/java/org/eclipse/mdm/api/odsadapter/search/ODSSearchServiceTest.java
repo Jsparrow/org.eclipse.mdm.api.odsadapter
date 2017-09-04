@@ -20,8 +20,9 @@ import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.FilterItem;
 import org.eclipse.mdm.api.base.query.ModelManager;
+import org.eclipse.mdm.api.base.query.BracketOperator;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
-import org.eclipse.mdm.api.base.query.Operator;
+import org.eclipse.mdm.api.base.query.BooleanOperator;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory;
 import org.junit.AfterClass;
@@ -94,10 +95,11 @@ public class ODSSearchServiceTest {
 
 		@Override
 		public Tuple extract(FilterItem f) {
-			return tuple(f.isOperator() ? f.getOperator() : null,
+			return tuple(f.isBooleanOperator() ? f.getBooleanOperator() : null,
 					f.isCondition() ? f.getCondition().getAttribute().getName() : null,
 					f.isCondition() ? f.getCondition().getComparisonOperator() : null,
-					f.isCondition() ? f.getCondition().getValue().extract() : null);
+					f.isCondition() ? f.getCondition().getValue().extract() : null,
+					f.isBracketOperator() ?f.getBracketOperator() : null);
 		}
 	};
 
@@ -113,12 +115,13 @@ public class ODSSearchServiceTest {
 		EntityType testStep = modelManager.getEntityType(TestStep.class);
 
 		assertThat(service.getMergedFilter(Filter.idOnly(testStep, "11"), "query")).hasSize(7)
-				.extracting(filterExtractors).containsExactly(tuple(Operator.OPEN, null, null, null),
-						tuple(null, "Id", ComparisonOperator.EQUAL, "10"), tuple(Operator.CLOSE, null, null, null),
-						tuple(Operator.AND, null, null, null),
-						tuple(Operator.OPEN, null, null, null),
-						tuple(null, "Id", ComparisonOperator.IN_SET, new String[] { "10" }),
-						tuple(Operator.CLOSE, null, null, null));
+				.extracting(filterExtractors).containsExactly(tuple(null, null, null, null, BracketOperator.OPEN),
+						tuple(null, "Id", ComparisonOperator.EQUAL, "10"),
+						tuple(null, null, null, null, BracketOperator.CLOSE),
+						tuple(BooleanOperator.AND, null, null, null, null),
+						tuple(null, null, null, null, BracketOperator.OPEN),
+						tuple(null, "Id", ComparisonOperator.IN_SET, new String[] { "10" }, null),
+						tuple(null, null, null, null, BracketOperator.CLOSE));
 	}
 
 	@Test

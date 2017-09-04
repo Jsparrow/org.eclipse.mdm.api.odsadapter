@@ -189,8 +189,10 @@ public class ODSQuery implements Query {
 				SelItem selItem = new SelItem();
 				if (conditionItem.isCondition()) {
 					selItem.value(createCondition(conditionItem.getCondition()));
-				} else if (conditionItem.isOperator()) {
-					selItem._operator(ODSUtils.OPERATORS.convert(conditionItem.getOperator()));
+				} else if (conditionItem.isBracketOperator()){
+					selItem._operator(ODSUtils.BRACKETOPERATORS.convert(conditionItem.getBracketOperator()));
+				} else if (conditionItem.isBooleanOperator()) {
+					selItem._operator(ODSUtils.OPERATORS.convert(conditionItem.getBooleanOperator()));
 					condCount++;
 				} else {
 					throw new IllegalArgumentException("Passed filter item is neither an operator nor a condition.");

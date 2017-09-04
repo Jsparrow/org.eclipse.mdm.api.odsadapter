@@ -15,9 +15,10 @@ import org.asam.ods.SelOperator;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Aggregation;
+import org.eclipse.mdm.api.base.query.BracketOperator;
 import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
-import org.eclipse.mdm.api.base.query.Operator;
+import org.eclipse.mdm.api.base.query.BooleanOperator;
 import org.eclipse.mdm.api.base.query.RelationType;
 
 /**
@@ -53,9 +54,14 @@ public abstract class ODSUtils {
 	public static final BiDiMapper<ComparisonOperator, SelOpcode> OPERATIONS = new BiDiMapper<>();
 
 	/**
-	 * Maps {@link Operator} to the corresponding ODS {@link SelOperator}.
+	 * Maps {@link BooleanOperator} to the corresponding ODS {@link SelOperator}.
 	 */
-	public static final BiDiMapper<Operator, SelOperator> OPERATORS = new BiDiMapper<>();
+	public static final BiDiMapper<BooleanOperator, SelOperator> OPERATORS = new BiDiMapper<>();
+	
+	/**
+	 * Maps {@link BracketOperator} to the corresponding ODS {@link SelOperator}.
+	 */
+	public static final BiDiMapper<BracketOperator, SelOperator> BRACKETOPERATORS = new BiDiMapper<>();
 
 	/**
 	 * Maps {@link ValueType} to the corresponding ODS {@link DataType}.
@@ -110,11 +116,12 @@ public abstract class ODSUtils {
 		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_NOT_IN_SET, SelOpcode.CI_NOTINSET);
 		OPERATIONS.addMappings(ComparisonOperator.BETWEEN, SelOpcode.BETWEEN);
 
-		OPERATORS.addMappings(Operator.AND, SelOperator.AND);
-		OPERATORS.addMappings(Operator.OR, SelOperator.OR);
-		OPERATORS.addMappings(Operator.NOT, SelOperator.NOT);
-		OPERATORS.addMappings(Operator.OPEN, SelOperator.OPEN);
-		OPERATORS.addMappings(Operator.CLOSE, SelOperator.CLOSE);
+		OPERATORS.addMappings(BooleanOperator.AND, SelOperator.AND);
+		OPERATORS.addMappings(BooleanOperator.OR, SelOperator.OR);
+		OPERATORS.addMappings(BooleanOperator.NOT, SelOperator.NOT);
+		
+		BRACKETOPERATORS.addMappings(BracketOperator.OPEN, SelOperator.OPEN);
+		BRACKETOPERATORS.addMappings(BracketOperator.CLOSE, SelOperator.CLOSE);
 
 		VALUETYPES.addMappings(ValueType.UNKNOWN, DataType.DT_UNKNOWN);
 		VALUETYPES.addMappings(ValueType.STRING, DataType.DT_STRING);
