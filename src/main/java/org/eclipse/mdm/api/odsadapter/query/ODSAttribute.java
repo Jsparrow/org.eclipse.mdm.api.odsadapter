@@ -14,6 +14,7 @@ import java.util.stream.LongStream;
 
 import org.asam.ods.ApplAttr;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
@@ -32,11 +33,11 @@ public class ODSAttribute implements Attribute {
 	// Instance variables
 	// ======================================================================
 
-	private final Class<? extends Enum<?>> enumClass;
+	private final Enumeration<?> enumObj;
 	private final String name;
 	private final String unit;
 	private final EntityType entityType;
-	private final ValueType valueType;
+	private final ValueType<?> valueType;
 	private final boolean isIdAttribute;
 
 	// ======================================================================
@@ -55,7 +56,7 @@ public class ODSAttribute implements Attribute {
 	 * @param enumClass
 	 *            The enumeration class, may be null.
 	 */
-	ODSAttribute(EntityType entityType, ApplAttr applAttr, String unit, Class<? extends Enum<?>> enumClass) {
+	ODSAttribute(EntityType entityType, ApplAttr applAttr, String unit, Enumeration<?> enumObj) {
 		this.entityType = entityType;
 		name = applAttr.aaName;
 		this.unit = unit == null ? "" : unit;
@@ -68,12 +69,12 @@ public class ODSAttribute implements Attribute {
 			isIdAttribute = false;
 		}
 
-		if (valueType.isEnumerationType() && enumClass == null) {
+		if (valueType.isEnumerationType() && enumObj == null) {
 			throw new IllegalStateException(
-					"A modeled attribute with an enumeration vaue type must have an " + "enumeration definition.");
+					"A modeled attribute with an enumeration value type must have an " + "enumeration definition.");
 		}
 
-		this.enumClass = enumClass;
+		this.enumObj = enumObj;
 	}
 
 	private boolean isIDAttribute(EntityType entityType, ApplAttr applAttr) {
@@ -120,7 +121,7 @@ public class ODSAttribute implements Attribute {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ValueType getValueType() {
+	public ValueType<?> getValueType() {
 		return valueType;
 	}
 
@@ -128,9 +129,9 @@ public class ODSAttribute implements Attribute {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Class<? extends Enum<?>> getEnumClass() {
+	public Enumeration<?> getEnumObj() {
 		if (getValueType().isEnumerationType()) {
-			return enumClass;
+			return enumObj;
 		}
 
 		throw new IllegalStateException("The value type of this attribute is not an enumeration type.");

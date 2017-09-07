@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -28,9 +28,11 @@ import org.asam.ods.AoSession;
 import org.asam.ods.ApplElem;
 import org.asam.ods.ApplElemAccess;
 import org.asam.ods.ApplRel;
+import org.asam.ods.ApplicationStructure;
 import org.asam.ods.ApplicationStructureValue;
 import org.asam.ods.ElemResultSetExt;
 import org.asam.ods.EnumerationAttributeStructure;
+import org.asam.ods.EnumerationDefinition;
 import org.asam.ods.JoinDef;
 import org.asam.ods.QueryStructureExt;
 import org.asam.ods.SelAIDNameUnitId;
@@ -44,6 +46,8 @@ import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextSensor;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Parameter;
@@ -78,6 +82,7 @@ import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfigRepository;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
+import org.eclipse.mdm.api.odsadapter.utils.ODSEnum;
 import org.eclipse.mdm.api.odsadapter.utils.ODSEnumerations;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.omg.CORBA.ORB;
@@ -426,11 +431,25 @@ public class ODSModelManager implements ModelManager {
 		LOGGER.debug("Reading the application model...");
 		long start = System.currentTimeMillis();
 		// enumeration mappings (aeID -> (aaName -> enumClass))
-		Map<String, Map<String, Class<? extends Enum<?>>>> enumClassMap = new HashMap<>();
+		Map<String, Map<String, Enumeration<?>>> enumClassMap = new HashMap<>();
+		EnumRegistry er = EnumRegistry.getInstance();
+		ApplicationStructure applicationStructure = aoSession.getApplicationStructure();
 		for (EnumerationAttributeStructure eas : aoSession.getEnumerationAttributes()) {
+			// make sure the enumeration is found
+			if (ODSEnumerations.getEnumObj(eas.enumName) == null) {
+				Enumeration<ODSEnum> enumdyn = new Enumeration<>(ODSEnum.class, eas.enumName);
+				EnumerationDefinition enumdef = applicationStructure.getEnumerationDefinition(eas.enumName);
+				String[] listItemNames = enumdef.listItemNames();
+				int ordinal = 0;
+				for (String item : listItemNames) {
+					enumdyn.addValue(new ODSEnum(item, ordinal));
+					ordinal++;
+				}
+				er.add(eas.enumName, enumdyn);
+			}
+
 			enumClassMap.computeIfAbsent(Long.toString(ODSConverter.fromODSLong(eas.aid)), k -> new HashMap<>())
-					.put(eas.aaName,
-					ODSEnumerations.getEnumClass(eas.enumName));
+					.put(eas.aaName, ODSEnumerations.getEnumObj(eas.enumName));
 		}
 
 		ApplicationStructureValue applicationStructureValue = aoSession.getApplicationStructureValue();
@@ -441,7 +460,7 @@ public class ODSModelManager implements ModelManager {
 		String sourceName = aoSession.getName();
 		for (ApplElem applElem : applicationStructureValue.applElems) {
 			String odsID = Long.toString(ODSConverter.fromODSLong(applElem.aid));
-			Map<String, Class<? extends Enum<?>>> entityEnumMap = enumClassMap.getOrDefault(odsID, new HashMap<>());
+			Map<String, Enumeration<?>> entityEnumMap = enumClassMap.getOrDefault(odsID, new HashMap<>());
 
 			ODSEntityType entityType = new ODSEntityType(sourceName, applElem, units, entityEnumMap);
 			entityTypesByName.put(applElem.aeName, entityType);

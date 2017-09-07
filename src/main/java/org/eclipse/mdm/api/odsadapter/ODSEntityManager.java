@@ -9,6 +9,7 @@
 package org.eclipse.mdm.api.odsadapter;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -35,7 +36,7 @@ import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.Join;
+import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.ModelManager;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Record;
@@ -183,17 +184,17 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, String instanceID) throws DataAccessException {
-		return entityLoader.load(new Key<>(entityClass), instanceID);
+	public <T extends Entity> List<T> load(Class<T> entityClass, Collection<String> instanceIDs) throws DataAccessException {
+		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> T load(Class<T> entityClass, ContextType contextType, String instanceID)
+	public <T extends Entity> List<T> load(Class<T> entityClass, ContextType contextType, Collection<String> instanceIDs)
 			throws DataAccessException {
-		return entityLoader.load(new Key<>(entityClass, contextType), instanceID);
+		return entityLoader.loadAll(new Key<>(entityClass, contextType), instanceIDs);
 	}
 
 	/**
@@ -332,7 +333,7 @@ public class ODSEntityManager implements EntityManager {
 		for (ContextType contextType : ContextType.values()) {
 			EntityType entityType = modelManager.getEntityType(ContextRoot.class, contextType);
 			contextRootEntityTypes.put(contextType, entityType);
-			query.join(contextDescribableEntityType.getRelation(entityType), Join.OUTER).selectID(entityType);
+			query.join(contextDescribableEntityType.getRelation(entityType), JoinType.OUTER).selectID(entityType);
 		}
 
 		Optional<Result> result = query
@@ -365,7 +366,7 @@ public class ODSEntityManager implements EntityManager {
 		for (ContextType contextType : contextTypes.length == 0 ? ContextType.values() : contextTypes) {
 			EntityType entityType = modelManager.getEntityType(ContextRoot.class, contextType);
 			contextRootEntityTypes.put(contextType, entityType);
-			query.join(contextDescribableEntityType.getRelation(entityType), Join.OUTER).selectID(entityType);
+			query.join(contextDescribableEntityType.getRelation(entityType), JoinType.OUTER).selectID(entityType);
 		}
 
 		Optional<Result> result = query

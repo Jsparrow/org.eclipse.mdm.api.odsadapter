@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Join test
+ * JoinType test
  *
  * @since 1.0.0
  * @author jst, Peak Solution GmbH

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -16,7 +16,7 @@ import org.asam.ods.DataType;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
-import org.eclipse.mdm.api.base.query.Relationship;
+import org.eclipse.mdm.api.base.query.RelationType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
 /**
@@ -31,7 +31,7 @@ final class ODSRelation implements Relation {
 	// Instance variables
 	// ======================================================================
 
-	private final Relationship relationship;
+	private final RelationType relationType;
 	private final EntityType source;
 	private final EntityType target;
 	private final String name;
@@ -58,7 +58,7 @@ final class ODSRelation implements Relation {
 		this.source = source;
 		this.target = target;
 		name = applRel.arName;
-		relationship = ODSUtils.RELATIONSHIPS.revert(applRel.arRelationType);
+		relationType = ODSUtils.RELATIONSHIPS.revert(applRel.arRelationType);
 		rangeMax = applRel.arRelationRange.max;
 	}
 
@@ -94,8 +94,8 @@ final class ODSRelation implements Relation {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Relationship getRelationship() {
-		return relationship;
+	public RelationType getRelationType() {
+		return relationType;
 	}
 
 	/**
@@ -141,36 +141,21 @@ final class ODSRelation implements Relation {
 		return getName();
 	}
 
-	// ======================================================================
-	// Package methods
-	// ======================================================================
-
+	
 	/**
-	 * Checks whether this relation is of the same {@link Relationship} as the
-	 * given one and whether the foreign key is in the table of the source
-	 * entity type.
-	 *
-	 * @param relationship
-	 *            The {@code Relationship}.
-	 * @return Returns {@code true} this relation's {@code Relationship} is
-	 *         equal with the given one and it is is an outgoing relation.
+	 * {@inheritDoc}
 	 */
-	boolean isOutgoing(Relationship relationship) {
-		return relationship.equals(getRelationship()) && rangeMax == 1;
+	@Override
+	public boolean isOutgoing(RelationType relationType) {
+		return relationType.equals(getRelationType()) && rangeMax == 1;
 	}
 
 	/**
-	 * Checks whether this relation is of the same {@link Relationship} as the
-	 * given one and whether the foreign key is in the table of the target
-	 * entity type.
-	 *
-	 * @param relationship
-	 *            The {@code Relationship}.
-	 * @return Returns {@code true} this relation's {@code Relationship} is
-	 *         equal with the given one and it is is an incoming relation.
+	 * {@inheritDoc}
 	 */
-	boolean isIncoming(Relationship relationship) {
-		return relationship.equals(getRelationship()) && rangeMax == -1;
+	@Override
+	public boolean isIncoming(RelationType relationType) {
+		return relationType.equals(getRelationType()) && rangeMax == -1;
 	}
 
 }

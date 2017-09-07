@@ -250,13 +250,13 @@ public final class ODSConverter {
 			int[] odsValues = odsValueSeq.u.enumVal();
 			for (int i = 0; i < flags.length; i++) {
 				values.add(attribute.createValue(unit, flags[i] == 15,
-						ODSEnumerations.fromODSEnum(attribute.getEnumClass(), odsValues[i])));
+						ODSEnumerations.fromODSEnum(attribute.getEnumObj(), odsValues[i])));
 			}
 		} else if (DataType.DS_ENUM == dataType) {
 			int[][] odsValues = odsValueSeq.u.enumSeq();
 			for (int i = 0; i < flags.length; i++) {
 				values.add(attribute.createValue(unit, flags[i] == 15,
-						ODSEnumerations.fromODSEnumSeq(attribute.getEnumClass(), odsValues[i])));
+						ODSEnumerations.fromODSEnumSeq(attribute.getEnumObj(), odsValues[i])));
 			}
 		} else if (DataType.DT_EXTERNALREFERENCE == dataType) {
 			T_ExternalReference[] odsValues = odsValueSeq.u.extRefVal();
@@ -307,7 +307,7 @@ public final class ODSConverter {
 			return odsValueSeq;
 		}
 
-		ValueType type = values.get(0).getValueType();
+		ValueType<?> type = values.get(0).getValueType();
 		if (ValueType.STRING == type) {
 			String[] odsValues = new String[size];
 			for (int i = 0; i < size; i++) {
@@ -674,7 +674,7 @@ public final class ODSConverter {
 	 */
 	public static TS_Value toODSValue(Attribute attribute, Value value) throws DataAccessException {
 		TS_Value odsValue = new TS_Value(new TS_Union(), toODSValidFlag(value.isValid()));
-		ValueType type = value.getValueType();
+		ValueType<?> type = value.getValueType();
 
 		if (ValueType.STRING == type) {
 			if (((ODSAttribute) attribute).isIdAttribute()) {

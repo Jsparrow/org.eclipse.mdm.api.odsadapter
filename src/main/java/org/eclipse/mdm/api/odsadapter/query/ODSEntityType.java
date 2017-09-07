@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -26,10 +26,11 @@ import java.util.stream.Collectors;
 
 import org.asam.ods.ApplElem;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Relation;
-import org.eclipse.mdm.api.base.query.Relationship;
+import org.eclipse.mdm.api.base.query.RelationType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 
 /**
@@ -47,7 +48,7 @@ public final class ODSEntityType implements EntityType {
 	private final Map<EntityType, Map<String, Relation>> relationsByEntityName = new HashMap<>();
 	private final Map<EntityType, Relation> relationsByEntity = new HashMap<>();
 
-	private final Map<Relationship, List<Relation>> relationsByType = new EnumMap<>(Relationship.class);
+	private final Map<RelationType, List<Relation>> relationsByType = new EnumMap<>(RelationType.class);
 	private final List<Relation> relations = new ArrayList<>();
 
 	private final Map<String, Attribute> attributeByName;
@@ -74,8 +75,9 @@ public final class ODSEntityType implements EntityType {
 	 *            The enumeration class {@code Map} for enum mapping of
 	 *            attributes.
 	 */
+
 	ODSEntityType(String sourceName, ApplElem applElem, Map<String, String> units,
-			Map<String, Class<? extends Enum<?>>> enumClasses) {
+			Map<String, Enumeration<?>> enumObjs) {
 		this.sourceName = sourceName;
 		baseName = applElem.beName;
 		name = applElem.aeName;
@@ -83,8 +85,7 @@ public final class ODSEntityType implements EntityType {
 
 		attributeByName = Arrays
 				.stream(applElem.attributes).map(a -> new ODSAttribute(this, a,
-						units.get(Long.toString(ODSConverter.fromODSLong(a.unitId))),
-						enumClasses.get(a.aaName)))
+						units.get(Long.toString(ODSConverter.fromODSLong(a.unitId))), enumObjs.get(a.aaName)))
 				.collect(toMap(Attribute::getName, Function.identity()));
 	}
 
@@ -166,8 +167,8 @@ public final class ODSEntityType implements EntityType {
 	 */
 	@Override
 	public List<Relation> getParentRelations() {
-		return getRelations(Relationship.FATHER_CHILD).stream()
-				.filter(r -> ((ODSRelation) r).isOutgoing(Relationship.FATHER_CHILD)).collect(Collectors.toList());
+		return getRelations(RelationType.FATHER_CHILD).stream()
+				.filter(r -> ((ODSRelation) r).isOutgoing(RelationType.FATHER_CHILD)).collect(Collectors.toList());
 	}
 
 	/**
@@ -175,8 +176,8 @@ public final class ODSEntityType implements EntityType {
 	 */
 	@Override
 	public List<Relation> getChildRelations() {
-		return getRelations(Relationship.FATHER_CHILD).stream()
-				.filter(r -> ((ODSRelation) r).isIncoming(Relationship.FATHER_CHILD)).collect(Collectors.toList());
+		return getRelations(RelationType.FATHER_CHILD).stream()
+				.filter(r -> ((ODSRelation) r).isIncoming(RelationType.FATHER_CHILD)).collect(Collectors.toList());
 	}
 
 	/**
@@ -184,7 +185,7 @@ public final class ODSEntityType implements EntityType {
 	 */
 	@Override
 	public List<Relation> getInfoRelations() {
-		return getRelations(Relationship.INFO).stream().filter(r -> ((ODSRelation) r).isOutgoing(Relationship.INFO))
+		return getRelations(RelationType.INFO).stream().filter(r -> ((ODSRelation) r).isOutgoing(RelationType.INFO))
 				.collect(Collectors.toList());
 	}
 
@@ -192,8 +193,8 @@ public final class ODSEntityType implements EntityType {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<Relation> getRelations(Relationship relationship) {
-		List<Relation> result = relationsByType.get(relationship);
+	public List<Relation> getRelations(RelationType relationType) {
+		List<Relation> result = relationsByType.get(relationType);
 		return result == null ? Collections.emptyList() : Collections.unmodifiableList(result);
 	}
 
@@ -315,7 +316,7 @@ public final class ODSEntityType implements EntityType {
 	 *            {@code Relation} which will be added.
 	 */
 	private void addRelation(Relation relation) {
-		relationsByType.computeIfAbsent(relation.getRelationship(), k -> new ArrayList<>()).add(relation);
+		relationsByType.computeIfAbsent(relation.getRelationType(), k -> new ArrayList<>()).add(relation);
 		relations.add(relation);
 	}
 

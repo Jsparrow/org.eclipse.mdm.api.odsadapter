@@ -11,7 +11,7 @@ import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.Operation;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Relation;
@@ -94,7 +94,7 @@ final class ChildRequest<T extends Deletable> extends EntityRequest<T> {
 			adjustedFilter.ids(parentRelation, parent.entityResult.getIDs());
 			if (entityConfig.isReflexive()) {
 				// extend to retrieve all reflexive child candidates
-				adjustedFilter.add(Operation.IS_NOT_NULL.create(reflexiveRelation.getAttribute(), 0L));
+				adjustedFilter.add(ComparisonOperator.IS_NOT_NULL.create(reflexiveRelation.getAttribute(), 0L));
 			}
 		}
 

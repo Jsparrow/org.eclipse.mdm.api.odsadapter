@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Gigatronik Ingolstadt GmbH
+ * Copyright (c) 2016 Gigatronik Ingolstadt GmbH and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,6 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.mdm.api.base.model.AxisType;
+import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.EnumerationValue;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.model.Interpolation;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.SequenceRepresentation;
@@ -63,23 +66,24 @@ public final class ODSEnumerations {
 	 * @throws IllegalArgumentException
 	 *             Thrown if ODS enumeration name is unknown.
 	 */
-	@SuppressWarnings("unchecked")
-	public static <E extends Enum<?>> Class<E> getEnumClass(String name) {
+	// FIXME (Florian Schmitt): can we do this simpler?
+	public static Enumeration<? extends EnumerationValue> getEnumObj(String name) {
+		EnumRegistry er=EnumRegistry.getInstance();
 		if (SCALAR_TYPE_NAME.equals(name)) {
-			return (Class<E>) ScalarType.class;
+			return (er.get(EnumRegistry.SCALAR_TYPE));
 		} else if (STATE_NAME.equals(name)) {
-			return (Class<E>) VersionState.class;
+			return (er.get(EnumRegistry.VERSION_STATE));
 		} else if (INTERPOLATION_NAME.equals(name)) {
-			return (Class<E>) Interpolation.class;
+			return (er.get(EnumRegistry.INTERPOLATION));
 		} else if (AXIS_TYPE_NAME.equals(name)) {
-			return (Class<E>) AxisType.class;
+			return (er.get(EnumRegistry.AXIS_TYPE));
 		} else if (TYPE_SPECIFICATION_NAME.equals(name)) {
-			return (Class<E>) TypeSpecification.class;
+			return (er.get(EnumRegistry.TYPE_SPECIFICATION));
 		} else if (SEQUENCE_REPRESENTATION_NAME.equals(name)) {
-			return (Class<E>) SequenceRepresentation.class;
+			return (er.get(EnumRegistry.SEQUENCE_REPRESENTATION));
+		} else {
+		   return er.get(name);
 		}
-
-		throw new IllegalArgumentException("Enumeration mapping for name '" + name + "' does not exist.");
 	}
 
 	/**
@@ -91,25 +95,24 @@ public final class ODSEnumerations {
 	 * @throws IllegalArgumentException
 	 *             Thrown if enumeration class is unknown.
 	 */
-	public static String getEnumName(Class<? extends Enum<?>> enumClass) {
-		if (enumClass == null) {
-			throw new IllegalArgumentException("Enumeration class is not allowed to be null.");
-		} else if (ScalarType.class == enumClass) {
+	public static String getEnumName(Enumeration<?> enumObj) {
+		if (enumObj == null) {
+			throw new IllegalArgumentException("EnumerationValue class is not allowed to be null.");
+		} else if (EnumRegistry.SCALAR_TYPE.equals(enumObj.getName())) {
 			return SCALAR_TYPE_NAME;
-		} else if (VersionState.class == enumClass) {
+		} else if (EnumRegistry.VERSION_STATE.equals(enumObj.getName())) {
 			return STATE_NAME;
-		} else if (Interpolation.class == enumClass) {
+		} else if (EnumRegistry.INTERPOLATION.equals(enumObj.getName())) {
 			return INTERPOLATION_NAME;
-		} else if (AxisType.class == enumClass) {
+		} else if (EnumRegistry.AXIS_TYPE.equals(enumObj.getName())) {
 			return AXIS_TYPE_NAME;
-		} else if (TypeSpecification.class == enumClass) {
+		} else if (EnumRegistry.TYPE_SPECIFICATION.equals(enumObj.getName())) {
 			return TYPE_SPECIFICATION_NAME;
-		} else if (SequenceRepresentation.class == enumClass) {
+		} else if (EnumRegistry.SEQUENCE_REPRESENTATION.equals(enumObj.getName())) {
 			return SEQUENCE_REPRESENTATION_NAME;
+		} else {
+			return enumObj.getName();
 		}
-
-		throw new IllegalArgumentException(
-				"Enumeration mapping for enumeration class '" + enumClass.getSimpleName() + "' does not exist.");
 	}
 
 	// ======================================================================
@@ -131,25 +134,17 @@ public final class ODSEnumerations {
 	 *             Thrown if conversion not possible.
 	 */
 	@SuppressWarnings("unchecked")
-	static <E extends Enum<?>> E fromODSEnum(Class<E> enumClass, int value) {
-		if (enumClass == null) {
-			throw new IllegalArgumentException("Enumeration class is not allowed to be null.");
-		} else if (ScalarType.class == enumClass) {
+	//FIXME: cant we have this easier?
+	static <E extends EnumerationValue> E fromODSEnum(Enumeration<E> enumObj, int value) {
+		if (enumObj == null) {
+			throw new IllegalArgumentException("EnumerationValue class is not allowed to be null.");
+		} else if (EnumRegistry.SCALAR_TYPE.equals(enumObj.getName())) {
 			return (E) fromODSScalarType(value);
-		} else if (VersionState.class == enumClass) {
-			return (E) fromODSEnumByOrdinal(VersionState.class, value);
-		} else if (Interpolation.class == enumClass) {
-			return (E) fromODSEnumByOrdinal(Interpolation.class, value);
-		} else if (AxisType.class == enumClass) {
-			return (E) fromODSEnumByOrdinal(AxisType.class, value);
-		} else if (TypeSpecification.class == enumClass) {
-			return (E) fromODSEnumByOrdinal(TypeSpecification.class, value);
-		} else if (SequenceRepresentation.class == enumClass) {
+		} else if (EnumRegistry.SEQUENCE_REPRESENTATION.equals(enumObj.getName())) {
 			return (E) fromODSSequenceRepresentation(value);
+		} else {
+			return (E) fromODSEnumByOrdinal(enumObj, value);
 		}
-
-		throw new IllegalArgumentException(
-				"Enumeration mapping for type '" + enumClass.getSimpleName() + "' does not exist.");
 	}
 
 	/**
@@ -167,33 +162,24 @@ public final class ODSEnumerations {
 	 *             Thrown if conversion not possible.
 	 */
 	@SuppressWarnings("unchecked")
-	static <E extends Enum<?>> E[] fromODSEnumSeq(Class<E> enumClass, int[] values) {
-		if (enumClass == null) {
-			throw new IllegalArgumentException("Enumeration class is not allowed to be null.");
-		} else if (ScalarType.class == enumClass) {
+	static <E extends EnumerationValue> E[] fromODSEnumSeq(Enumeration<?> enumObj, int[] values) {
+		if (enumObj == null) {
+			throw new IllegalArgumentException("EnumerationValue class is not allowed to be null.");
+		} else if (EnumRegistry.SCALAR_TYPE.equals(enumObj.getName())) {
 			List<E> scalarTypes = new ArrayList<>(values.length);
 			for (int value : values) {
 				scalarTypes.add((E) fromODSScalarType(value));
 			}
 			return (E[]) scalarTypes.toArray(new ScalarType[values.length]);
-		} else if (VersionState.class == enumClass) {
-			return (E[]) fromODSEnumSeqByOrdinal(VersionState.class, values);
-		} else if (Interpolation.class == enumClass) {
-			return (E[]) fromODSEnumSeqByOrdinal(Interpolation.class, values);
-		} else if (AxisType.class == enumClass) {
-			return (E[]) fromODSEnumSeqByOrdinal(AxisType.class, values);
-		} else if (TypeSpecification.class == enumClass) {
-			return (E[]) fromODSEnumSeqByOrdinal(TypeSpecification.class, values);
-		} else if (SequenceRepresentation.class == enumClass) {
+		} else if (EnumRegistry.SEQUENCE_REPRESENTATION.equals(enumObj.getName())) {
 			List<E> sequenceRepresentations = new ArrayList<>(values.length);
 			for (int value : values) {
 				sequenceRepresentations.add((E) fromODSSequenceRepresentation(value));
 			}
 			return (E[]) sequenceRepresentations.toArray(new SequenceRepresentation[values.length]);
+		} else {
+			return (E[]) fromODSEnumSeqByOrdinal(enumObj, values);
 		}
-
-		throw new IllegalArgumentException(
-				"Enumeration mapping for type '" + enumClass.getSimpleName() + "' does not exist.");
 	}
 
 	/**
@@ -208,7 +194,7 @@ public final class ODSEnumerations {
 	 * @throws IllegalArgumentException
 	 *             Thrown if conversion not possible.
 	 */
-	static <E extends Enum<?>> int toODSEnum(E constant) {
+	static <E extends EnumerationValue> int toODSEnum(E constant) {
 		if (constant == null) {
 			return 0;
 		} else if (constant instanceof ScalarType) {
@@ -217,13 +203,13 @@ public final class ODSEnumerations {
 				|| constant instanceof TypeSpecification) {
 			// NOTE: Ordinal numbers map directly to the corresponding ODS
 			// enumeration constant value.
-			return ((Enum<?>) constant).ordinal();
+			return constant.ordinal();
 		} else if (constant instanceof SequenceRepresentation) {
 			return toODSSequenceRepresentation((SequenceRepresentation) constant);
 		}
 
 		throw new IllegalArgumentException(
-				"Enumeration mapping for type '" + constant.getClass().getSimpleName() + "' does not exist.");
+				"EnumerationValue mapping for type '" + constant.getClass().getSimpleName() + "' does not exist.");
 	}
 
 	/**
@@ -238,7 +224,7 @@ public final class ODSEnumerations {
 	 * @throws IllegalArgumentException
 	 *             Thrown if conversion not possible.
 	 */
-	static <E extends Enum<?>> int[] toODSEnumSeq(E[] constants) {
+	static <E extends EnumerationValue> int[] toODSEnumSeq(E[] constants) {
 		if (constants == null) {
 			return new int[0];
 		}
@@ -253,14 +239,15 @@ public final class ODSEnumerations {
 			for (int i = 0; i < values.length; i++) {
 				// NOTE: Ordinal numbers directly map to the corresponding ODS
 				// enumeration constant value.
-				values[i] = ((Enum<?>) constants[i]).ordinal();
+				// FIXME: do we really want this?
+				values[i] = ((EnumerationValue) constants[i]).ordinal();
 			}
 		} else if (constants instanceof SequenceRepresentation[]) {
 			for (int i = 0; i < values.length; i++) {
 				values[i] = toODSSequenceRepresentation((SequenceRepresentation) constants[i]);
 			}
 		} else {
-			throw new IllegalArgumentException("Enumeration mapping for type '"
+			throw new IllegalArgumentException("EnumerationValue mapping for type '"
 					+ constants.getClass().getComponentType().getSimpleName() + "' does not exist.");
 		}
 
@@ -463,16 +450,14 @@ public final class ODSEnumerations {
 	 * @throws IllegalArgumentException
 	 *             Thrown if conversion not possible.
 	 */
-	private static <E extends Enum<?>> E fromODSEnumByOrdinal(Class<E> enumClass, int value) {
-		E[] constants = enumClass.getEnumConstants();
-		if (value < 0 || value > constants.length) {
-			throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value
-					+ "' to constant of type '" + enumClass.getSimpleName() + "'.");
-		}
-
+	private static <E extends EnumerationValue> E fromODSEnumByOrdinal(Enumeration<E> enumObj, int value) {
 		// NOTE: Ordinal numbers directly map to the corresponding ODS
 		// enumeration constant value.
-		return constants[value];
+		E enumvalue = enumObj.valueOf(value);
+		if (enumvalue==null) {
+			throw new IllegalArgumentException();
+		}
+		return enumvalue;
 	}
 
 	/**
@@ -491,22 +476,20 @@ public final class ODSEnumerations {
 	 *             Thrown if conversion not possible.
 	 */
 	@SuppressWarnings("unchecked")
-	private static <E extends Enum<?>> E[] fromODSEnumSeqByOrdinal(Class<E> enumClass, int[] values) {
+	private static <E extends EnumerationValue> E[] fromODSEnumSeqByOrdinal(Enumeration<E> enumObj, int[] values) {
 		List<E> enumValues = new ArrayList<>(values.length);
-		E[] constants = enumClass.getEnumConstants();
 
 		for (int value : values) {
-			if (value < 0 || value > constants.length) {
-				throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value
-						+ "' to constant of type '" + enumClass.getSimpleName() + "'.");
-			}
-
 			// NOTE: Ordinal numbers directly map to the corresponding ODS
 			// enumeration constant value.
-			enumValues.add(constants[value]);
+			E enumvalue = enumObj.valueOf(value);
+			if (enumvalue==null) {
+				throw new IllegalArgumentException();
+			}
+			enumValues.add(enumvalue);
 		}
 
-		return enumValues.toArray((E[]) Array.newInstance(enumClass, values.length));
+		return enumValues.toArray((E[]) Array.newInstance(enumObj.getClass(), values.length));
 	}
 
 }

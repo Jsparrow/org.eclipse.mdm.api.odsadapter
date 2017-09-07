@@ -35,7 +35,7 @@ import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.Join;
+import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
@@ -135,7 +135,7 @@ final class DeleteStatement extends BaseStatement {
 			}
 
 			if (!relation.getTarget().equals(relation.getSource())) {
-				query.join(relation, Join.OUTER).selectID(relation.getTarget());
+				query.join(relation, JoinType.OUTER).selectID(relation.getTarget());
 			}
 		}
 
@@ -161,16 +161,16 @@ final class DeleteStatement extends BaseStatement {
 
 		// join context roots
 		if (measurement.equals(entityType) || testStep.equals(entityType)) {
-			query.join(entityType.getRelation(unitUnderTest), Join.OUTER).selectID(unitUnderTest);
-			query.join(entityType.getRelation(testSequence), Join.OUTER).selectID(testSequence);
-			query.join(entityType.getRelation(testEquipment), Join.OUTER).selectID(testEquipment);
+			query.join(entityType.getRelation(unitUnderTest), JoinType.OUTER).selectID(unitUnderTest);
+			query.join(entityType.getRelation(testSequence), JoinType.OUTER).selectID(testSequence);
+			query.join(entityType.getRelation(testEquipment), JoinType.OUTER).selectID(testEquipment);
 			delayedDelete.addAll(Arrays.asList(unitUnderTest, testSequence, testEquipment));
 		}
 
 		// join parameter sets
 		if (measurement.equals(entityType) || channel.equals(entityType)) {
 			EntityType parameterSet = getModelManager().getEntityType(ParameterSet.class);
-			query.join(entityType.getRelation(parameterSet), Join.OUTER).selectID(parameterSet);
+			query.join(entityType.getRelation(parameterSet), JoinType.OUTER).selectID(parameterSet);
 		}
 
 		Filter filter = Filter.or().ids(entityType, instanceIDs);

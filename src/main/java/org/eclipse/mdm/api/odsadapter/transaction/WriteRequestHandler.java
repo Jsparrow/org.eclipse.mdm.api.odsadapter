@@ -127,7 +127,7 @@ public final class WriteRequestHandler {
 		values.get(AE_LC_ATTR_PARAMETERS).set(writeRequest.getGenerationParameters());
 
 		if (writeRequest.hasValues()) {
-			ValueType valueType = writeRequest.getRawScalarType().toValueType();
+			ValueType<?> valueType = writeRequest.getRawScalarType().toValueType();
 			String unitName = writeRequest.getChannel().getUnit().getName();
 			values.put(AE_LC_ATTR_VALUES,
 					valueType.create(AE_LC_ATTR_VALUES, unitName, true, writeRequest.getValues()));

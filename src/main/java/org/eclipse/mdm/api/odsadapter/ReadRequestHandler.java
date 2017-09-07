@@ -131,7 +131,7 @@ final class ReadRequestHandler {
 					throw new DataAccessException("Column with name '" + channel.getName() + "' not found.");
 				}
 				Column column = columns[0];
-				if (!unit.nameMatches(channel.getUnit().getName())) {
+				if (!unit.nameEquals(channel.getUnit().getName())) {
 					column.setUnit(unit.getName());
 				}
 				columnList.add(column);

@@ -10,17 +10,16 @@ package org.eclipse.mdm.api.odsadapter.utils;
 
 import org.asam.ods.AggrFunc;
 import org.asam.ods.DataType;
-import org.asam.ods.JoinType;
-import org.asam.ods.RelationType;
 import org.asam.ods.SelOpcode;
 import org.asam.ods.SelOperator;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Aggregation;
-import org.eclipse.mdm.api.base.query.Join;
-import org.eclipse.mdm.api.base.query.Operation;
-import org.eclipse.mdm.api.base.query.Operator;
-import org.eclipse.mdm.api.base.query.Relationship;
+import org.eclipse.mdm.api.base.query.BracketOperator;
+import org.eclipse.mdm.api.base.query.JoinType;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
+import org.eclipse.mdm.api.base.query.BooleanOperator;
+import org.eclipse.mdm.api.base.query.RelationType;
 
 /**
  * Utility class provides bidirectional mappings for ODS types
@@ -35,9 +34,9 @@ public abstract class ODSUtils {
 	// ======================================================================
 
 	/**
-	 * Maps {@link Relationship} to the corresponding ODS {@link RelationType}.
+	 * Maps {@link RelationType} to the corresponding ODS {@link RelationType}.
 	 */
-	public static final BiDiMapper<Relationship, RelationType> RELATIONSHIPS = new BiDiMapper<>();
+	public static final BiDiMapper<RelationType, org.asam.ods.RelationType> RELATIONSHIPS = new BiDiMapper<>();
 
 	/**
 	 * Maps {@link Aggregation} to the corresponding ODS {@link AggrFunc}.
@@ -50,29 +49,34 @@ public abstract class ODSUtils {
 	public static final BiDiMapper<ContextType, String> CONTEXTTYPES = new BiDiMapper<>();
 
 	/**
-	 * Maps {@link Operation} to the corresponding ODS {@link SelOpcode}.
+	 * Maps {@link ComparisonOperator} to the corresponding ODS {@link SelOpcode}.
 	 */
-	public static final BiDiMapper<Operation, SelOpcode> OPERATIONS = new BiDiMapper<>();
+	public static final BiDiMapper<ComparisonOperator, SelOpcode> OPERATIONS = new BiDiMapper<>();
 
 	/**
-	 * Maps {@link Operator} to the corresponding ODS {@link SelOperator}.
+	 * Maps {@link BooleanOperator} to the corresponding ODS {@link SelOperator}.
 	 */
-	public static final BiDiMapper<Operator, SelOperator> OPERATORS = new BiDiMapper<>();
+	public static final BiDiMapper<BooleanOperator, SelOperator> OPERATORS = new BiDiMapper<>();
+	
+	/**
+	 * Maps {@link BracketOperator} to the corresponding ODS {@link SelOperator}.
+	 */
+	public static final BiDiMapper<BracketOperator, SelOperator> BRACKETOPERATORS = new BiDiMapper<>();
 
 	/**
 	 * Maps {@link ValueType} to the corresponding ODS {@link DataType}.
 	 */
-	public static final BiDiMapper<ValueType, DataType> VALUETYPES = new BiDiMapper<>();
+	public static final BiDiMapper<ValueType<?>, DataType> VALUETYPES = new BiDiMapper<>();
 
 	/**
-	 * Maps {@link Join} to the corresponding ODS {@link JoinType}.
+	 * Maps {@link JoinType} to the corresponding ODS {@link org.asam.ods.JoinType}.
 	 */
-	public static final BiDiMapper<Join, JoinType> JOINS = new BiDiMapper<>();
+	public static final BiDiMapper<JoinType, org.asam.ods.JoinType> JOINS = new BiDiMapper<>();
 
 	static {
-		RELATIONSHIPS.addMappings(Relationship.FATHER_CHILD, RelationType.FATHER_CHILD);
-		RELATIONSHIPS.addMappings(Relationship.INFO, RelationType.INFO);
-		RELATIONSHIPS.addMappings(Relationship.INHERITANCE, RelationType.INHERITANCE);
+		RELATIONSHIPS.addMappings(RelationType.FATHER_CHILD, org.asam.ods.RelationType.FATHER_CHILD);
+		RELATIONSHIPS.addMappings(RelationType.INFO, org.asam.ods.RelationType.INFO);
+		RELATIONSHIPS.addMappings(RelationType.INHERITANCE, org.asam.ods.RelationType.INHERITANCE);
 
 		AGGREGATIONS.addMappings(Aggregation.NONE, AggrFunc.NONE);
 		AGGREGATIONS.addMappings(Aggregation.COUNT, AggrFunc.COUNT);
@@ -88,35 +92,36 @@ public abstract class ODSUtils {
 		CONTEXTTYPES.addMappings(ContextType.TESTSEQUENCE, "TestSequence");
 		CONTEXTTYPES.addMappings(ContextType.TESTEQUIPMENT, "TestEquipment");
 
-		OPERATIONS.addMappings(Operation.LIKE, SelOpcode.LIKE);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_LIKE, SelOpcode.CI_LIKE);
-		OPERATIONS.addMappings(Operation.NOT_LIKE, SelOpcode.NOTLIKE);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_NOT_LIKE, SelOpcode.CI_NOTLIKE);
-		OPERATIONS.addMappings(Operation.EQUAL, SelOpcode.EQ);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_EQUAL, SelOpcode.CI_EQ);
-		OPERATIONS.addMappings(Operation.NOT_EQUAL, SelOpcode.NEQ);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_NOT_EQUAL, SelOpcode.CI_NEQ);
-		OPERATIONS.addMappings(Operation.GREATER_THAN, SelOpcode.GT);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_GREATER_THAN, SelOpcode.CI_GT);
-		OPERATIONS.addMappings(Operation.GREATER_THAN_OR_EQUAL, SelOpcode.GTE);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_GREATER_THAN_OR_EQUAL, SelOpcode.CI_GTE);
-		OPERATIONS.addMappings(Operation.LESS_THAN, SelOpcode.LT);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_LESS_THAN, SelOpcode.CI_LT);
-		OPERATIONS.addMappings(Operation.LESS_THAN_OR_EQUAL, SelOpcode.LTE);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_LESS_THAN_OR_EQUAL, SelOpcode.CI_LTE);
-		OPERATIONS.addMappings(Operation.IS_NULL, SelOpcode.IS_NULL);
-		OPERATIONS.addMappings(Operation.IS_NOT_NULL, SelOpcode.IS_NOT_NULL);
-		OPERATIONS.addMappings(Operation.IN_SET, SelOpcode.INSET);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_IN_SET, SelOpcode.CI_INSET);
-		OPERATIONS.addMappings(Operation.NOT_IN_SET, SelOpcode.NOTINSET);
-		OPERATIONS.addMappings(Operation.CASE_INSENSITIVE_NOT_IN_SET, SelOpcode.CI_NOTINSET);
-		OPERATIONS.addMappings(Operation.BETWEEN, SelOpcode.BETWEEN);
+		OPERATIONS.addMappings(ComparisonOperator.LIKE, SelOpcode.LIKE);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_LIKE, SelOpcode.CI_LIKE);
+		OPERATIONS.addMappings(ComparisonOperator.NOT_LIKE, SelOpcode.NOTLIKE);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_NOT_LIKE, SelOpcode.CI_NOTLIKE);
+		OPERATIONS.addMappings(ComparisonOperator.EQUAL, SelOpcode.EQ);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_EQUAL, SelOpcode.CI_EQ);
+		OPERATIONS.addMappings(ComparisonOperator.NOT_EQUAL, SelOpcode.NEQ);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_NOT_EQUAL, SelOpcode.CI_NEQ);
+		OPERATIONS.addMappings(ComparisonOperator.GREATER_THAN, SelOpcode.GT);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_GREATER_THAN, SelOpcode.CI_GT);
+		OPERATIONS.addMappings(ComparisonOperator.GREATER_THAN_OR_EQUAL, SelOpcode.GTE);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_GREATER_THAN_OR_EQUAL, SelOpcode.CI_GTE);
+		OPERATIONS.addMappings(ComparisonOperator.LESS_THAN, SelOpcode.LT);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_LESS_THAN, SelOpcode.CI_LT);
+		OPERATIONS.addMappings(ComparisonOperator.LESS_THAN_OR_EQUAL, SelOpcode.LTE);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_LESS_THAN_OR_EQUAL, SelOpcode.CI_LTE);
+		OPERATIONS.addMappings(ComparisonOperator.IS_NULL, SelOpcode.IS_NULL);
+		OPERATIONS.addMappings(ComparisonOperator.IS_NOT_NULL, SelOpcode.IS_NOT_NULL);
+		OPERATIONS.addMappings(ComparisonOperator.IN_SET, SelOpcode.INSET);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_IN_SET, SelOpcode.CI_INSET);
+		OPERATIONS.addMappings(ComparisonOperator.NOT_IN_SET, SelOpcode.NOTINSET);
+		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_NOT_IN_SET, SelOpcode.CI_NOTINSET);
+		OPERATIONS.addMappings(ComparisonOperator.BETWEEN, SelOpcode.BETWEEN);
 
-		OPERATORS.addMappings(Operator.AND, SelOperator.AND);
-		OPERATORS.addMappings(Operator.OR, SelOperator.OR);
-		OPERATORS.addMappings(Operator.NOT, SelOperator.NOT);
-		OPERATORS.addMappings(Operator.OPEN, SelOperator.OPEN);
-		OPERATORS.addMappings(Operator.CLOSE, SelOperator.CLOSE);
+		OPERATORS.addMappings(BooleanOperator.AND, SelOperator.AND);
+		OPERATORS.addMappings(BooleanOperator.OR, SelOperator.OR);
+		OPERATORS.addMappings(BooleanOperator.NOT, SelOperator.NOT);
+		
+		BRACKETOPERATORS.addMappings(BracketOperator.OPEN, SelOperator.OPEN);
+		BRACKETOPERATORS.addMappings(BracketOperator.CLOSE, SelOperator.CLOSE);
 
 		VALUETYPES.addMappings(ValueType.UNKNOWN, DataType.DT_UNKNOWN);
 		VALUETYPES.addMappings(ValueType.STRING, DataType.DT_STRING);
@@ -149,8 +154,8 @@ public abstract class ODSUtils {
 		VALUETYPES.addMappings(ValueType.FILE_LINK_SEQUENCE, DataType.DS_EXTERNALREFERENCE);
 		VALUETYPES.addMappings(ValueType.BLOB, DataType.DT_BLOB);
 
-		JOINS.addMappings(Join.INNER, org.asam.ods.JoinType.JTDEFAULT);
-		JOINS.addMappings(Join.OUTER, org.asam.ods.JoinType.JTOUTER);
+		JOINS.addMappings(JoinType.INNER, org.asam.ods.JoinType.JTDEFAULT);
+		JOINS.addMappings(JoinType.OUTER, org.asam.ods.JoinType.JTOUTER);
 	}
 
 	public static boolean isValidID(String instanceID) {

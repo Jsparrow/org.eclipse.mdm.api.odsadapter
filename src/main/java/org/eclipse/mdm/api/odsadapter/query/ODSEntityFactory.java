@@ -20,6 +20,8 @@ import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.EnumerationValue;
 import org.eclipse.mdm.api.base.model.Interpolation;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.SequenceRepresentation;
@@ -45,7 +47,7 @@ public final class ODSEntityFactory extends EntityFactory {
 	// Class variables
 	// ======================================================================
 
-	private static final Set<Class<? extends Enum<?>>> ENUM_CLASSES = new HashSet<>();
+	private static final Set<Class<? extends EnumerationValue>> ENUM_CLASSES = new HashSet<>();
 
 	static {
 		ENUM_CLASSES.add(ScalarType.class);
@@ -128,7 +130,7 @@ public final class ODSEntityFactory extends EntityFactory {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void validateEnum(Class<? extends Enum<?>> enumClass) {
+	protected void validateEnum(Class<? extends EnumerationValue> enumClass) {
 		if (ENUM_CLASSES.contains(enumClass)) {
 			// given enumeration class is a default one, which is always
 			// supported
@@ -160,7 +162,7 @@ public final class ODSEntityFactory extends EntityFactory {
 
 		if (CatalogAttribute.class.equals(entityConfig.getEntityClass())) {
 			core.getValues().put(VATTR_ENUMERATION_CLASS, ValueType.STRING.create(VATTR_ENUMERATION_CLASS));
-			core.getValues().put(VATTR_SCALAR_TYPE, ValueType.ENUMERATION.create(ScalarType.class, VATTR_SCALAR_TYPE));
+			core.getValues().put(VATTR_SCALAR_TYPE, ValueType.ENUMERATION.create(EnumRegistry.getInstance().get("ScalarType"), VATTR_SCALAR_TYPE));
 			core.getValues().put(VATTR_SEQUENCE, ValueType.BOOLEAN.create(VATTR_SEQUENCE));
 		}
 
