@@ -218,13 +218,14 @@ final class UpdateStatement extends BaseStatement {
 
 		for (Entry<Class<? extends Deletable>, List<? extends Deletable>> entry : core.getChildrenStore().getCurrent()
 				.entrySet()) {
-			Map<Boolean, List<Entity>> patrition = entry.getValue().stream()
+			Map<Boolean, List<Entity>> partition = entry.getValue()
+					.stream()
 					.collect(Collectors.partitioningBy(e -> ODSUtils.isValidID(e.getID())));
-			List<Entity> virtualEntities = patrition.get(Boolean.TRUE);
+			List<Entity> virtualEntities = partition.get(Boolean.FALSE);
 			if (virtualEntities != null && !virtualEntities.isEmpty()) {
 				childrenToCreate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(virtualEntities);
 			}
-			List<Entity> existingEntities = patrition.get(Boolean.FALSE);
+			List<Entity> existingEntities = partition.get(Boolean.TRUE);
 			if (existingEntities != null && !existingEntities.isEmpty()) {
 				childrenToUpdate.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll(existingEntities);
 			}
