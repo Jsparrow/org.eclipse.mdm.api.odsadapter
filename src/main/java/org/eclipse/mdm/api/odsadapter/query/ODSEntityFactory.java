@@ -8,7 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.query;
 
-import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_CLASS;
+import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_NAME;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
@@ -21,6 +21,7 @@ import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.model.EnumerationValue;
 import org.eclipse.mdm.api.base.model.Interpolation;
 import org.eclipse.mdm.api.base.model.ScalarType;
@@ -130,16 +131,12 @@ public final class ODSEntityFactory extends EntityFactory {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void validateEnum(Class<? extends EnumerationValue> enumClass) {
-		if (ENUM_CLASSES.contains(enumClass)) {
-			// given enumeration class is a default one, which is always
-			// supported
-			return;
-		}
-
-		// TODO check here for other enumeration classes introduced by modules
-
-		throw new IllegalArgumentException("Given enum class '" + enumClass.getSimpleName() + "' is not supported.");
+	protected void validateEnum(Enumeration<?> enumerationObj) {
+		EnumRegistry er = EnumRegistry.getInstance();
+		// check if enum is properly registered
+        if (er.get(enumerationObj.getName())==null) {
+		  throw new IllegalArgumentException("Given enum class '" + enumerationObj.getName() + "' is not supported.");
+        }
 	}
 
 	// ======================================================================
@@ -161,7 +158,7 @@ public final class ODSEntityFactory extends EntityFactory {
 		core.getValues().get(Entity.ATTR_MIMETYPE).set(entityConfig.getMimeType());
 
 		if (CatalogAttribute.class.equals(entityConfig.getEntityClass())) {
-			core.getValues().put(VATTR_ENUMERATION_CLASS, ValueType.STRING.create(VATTR_ENUMERATION_CLASS));
+			core.getValues().put(VATTR_ENUMERATION_NAME, ValueType.STRING.create(VATTR_ENUMERATION_NAME));
 			core.getValues().put(VATTR_SCALAR_TYPE, ValueType.ENUMERATION.create(EnumRegistry.getInstance().get("ScalarType"), VATTR_SCALAR_TYPE));
 			core.getValues().put(VATTR_SEQUENCE, ValueType.BOOLEAN.create(VATTR_SEQUENCE));
 		}

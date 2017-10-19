@@ -1,6 +1,6 @@
 package org.eclipse.mdm.api.odsadapter.lookup;
 
-import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_CLASS;
+import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_NAME;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
@@ -169,10 +169,10 @@ final class EntityResult<T extends Entity> {
 		Attribute attribute = entityType.getAttribute(catalogAttributeCore.getValues().get(Entity.ATTR_NAME).extract());
 
 		Map<String, Value> values = catalogAttributeCore.getValues();
-		Value enumerationClass = ValueType.STRING.create(VATTR_ENUMERATION_CLASS);
-		values.put(VATTR_ENUMERATION_CLASS, enumerationClass);
+		Value enumerationName = ValueType.STRING.create(VATTR_ENUMERATION_NAME);
+		values.put(VATTR_ENUMERATION_NAME, enumerationName);
 		if (attribute.getValueType().isEnumerationType()) {
-			enumerationClass.set(attribute.getEnumObj().getName());
+			enumerationName.set(attribute.getEnumObj().getName());
 		}
 
 		Enumeration<?> scalarTypeObj=EnumRegistry.getInstance().get("ScalarType");

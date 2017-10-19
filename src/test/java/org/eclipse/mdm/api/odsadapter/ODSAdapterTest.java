@@ -31,6 +31,7 @@ import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EnumRegistry;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
@@ -138,6 +139,7 @@ public class ODSAdapterTest {
 			transaction.commit();
 		} catch (RuntimeException e) {
 			transaction.abort();
+			e.printStackTrace();
 			fail("Unable to create test data due to: " + e.getMessage());
 		}
 
@@ -358,7 +360,8 @@ public class ODSAdapterTest {
 		entityFactory.createCatalogAttribute("long", ValueType.LONG, catalogComponent);
 		entityFactory.createCatalogAttribute("file_link", ValueType.FILE_LINK, catalogComponent);
 		entityFactory.createCatalogAttribute("file_link_array", ValueType.FILE_LINK_SEQUENCE, catalogComponent);
-		entityFactory.createCatalogAttribute("scalar_type", ScalarType.class, catalogComponent);
+		EnumRegistry er = EnumRegistry.getInstance();
+		entityFactory.createCatalogAttribute("scalar_type", er.get(EnumRegistry.SCALAR_TYPE), catalogComponent);
 
 		return catalogComponent;
 	}
