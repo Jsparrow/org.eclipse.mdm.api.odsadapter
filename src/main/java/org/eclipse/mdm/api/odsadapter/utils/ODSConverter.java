@@ -1114,7 +1114,8 @@ public final class ODSConverter {
 		if (input == null) {
 			return new T_ExternalReference("", "", "");
 		}
-		return new T_ExternalReference(input.getDescription(), input.getMimeType().toString(), input.getRemotePath());
+		String remotePath=input.isRemote() ? input.getRemotePath() : "";
+		return new T_ExternalReference(input.getDescription(), input.getMimeType().toString(), remotePath);
 	}
 
 	/**

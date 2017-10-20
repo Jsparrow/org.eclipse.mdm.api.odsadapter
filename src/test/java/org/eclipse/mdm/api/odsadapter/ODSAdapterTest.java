@@ -4,6 +4,7 @@ import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMES
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_SERVICENAME;
 import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_USER;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.time.LocalDateTime;
@@ -25,22 +26,31 @@ import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.massdata.WriteRequestBuilder;
 import org.eclipse.mdm.api.base.model.AxisType;
+import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
+import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.Measurement;
+import org.eclipse.mdm.api.base.model.MimeType;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Unit;
+import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.Filter;
+import org.eclipse.mdm.api.base.query.ModelManager;
+import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
@@ -113,6 +123,44 @@ public class ODSAdapterTest {
 	public static void tearDownAfterClass() throws ConnectionException {
 		if (entityManager != null) {
 			entityManager.close();
+		}
+	}
+	
+	/* FIXME this test requires that there is a teststep with id 2, that has a unitundertest component called "filetest",
+	 * that has an empty filelink attribute "myextref" and a string attrinute "attr1".
+	 * remove the comment at org.junit.Test if you fulfill these requirements  
+	 */
+	//@org.junit.Test
+	public void changeFile() throws Exception {
+		String idteststep = "2";
+		ModelManager modelManager = entityManager.getModelManager().get();
+		SearchService searchService = entityManager.getSearchService().get();
+
+		EntityType etteststep = modelManager.getEntityType(TestStep.class);
+		Transaction transaction;
+
+		transaction = entityManager.startTransaction();
+		
+		try {
+			List<TestStep> mealist;
+			mealist = searchService.fetch(TestStep.class, Filter.idOnly(etteststep, idteststep));
+			assertEquals(1, mealist.size());
+			TestStep ts = mealist.get(0);
+			Map<ContextType, ContextRoot> loadContexts = ts.loadContexts(entityManager, ContextType.UNITUNDERTEST);
+			ContextRoot contextRoot = loadContexts.get(ContextType.UNITUNDERTEST);
+			Optional<ContextComponent> contextComponent = contextRoot.getContextComponent("filetest");
+			Value value = contextComponent.get().getValue("myextref");
+			contextComponent.get().getValue("attr1").set("val4711");
+			FileLink fl=FileLink.newRemote("", new MimeType(""), "");
+			FileLink fl2 = (FileLink)value.extract();
+			assertEquals(fl2,fl);
+			List<BaseEntity> toUpdate=new ArrayList<>();
+			toUpdate.add(contextComponent.get());
+            transaction.update(toUpdate);
+            transaction.commit();
+		} catch (RuntimeException | DataAccessException e) {
+			transaction.abort();
+			throw e;
 		}
 	}
 
