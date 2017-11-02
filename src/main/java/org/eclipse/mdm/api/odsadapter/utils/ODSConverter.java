@@ -32,6 +32,7 @@ import org.asam.ods.T_COMPLEX;
 import org.asam.ods.T_DCOMPLEX;
 import org.asam.ods.T_ExternalReference;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.adapter.Attribute;
 import org.eclipse.mdm.api.base.model.DoubleComplex;
 import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.FloatComplex;
@@ -40,7 +41,6 @@ import org.eclipse.mdm.api.base.model.MimeType;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
-import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.odsadapter.query.ODSAttribute;
 

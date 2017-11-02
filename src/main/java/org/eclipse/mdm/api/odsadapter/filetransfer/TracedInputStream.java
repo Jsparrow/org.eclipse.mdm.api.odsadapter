@@ -11,7 +11,7 @@ package org.eclipse.mdm.api.odsadapter.filetransfer;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.eclipse.mdm.api.base.FileService.ProgressListener;
+import org.eclipse.mdm.api.base.file.FileService.ProgressListener;
 
 /**
  * This is an {@link InputStream} wrapper implementation to trace the progress

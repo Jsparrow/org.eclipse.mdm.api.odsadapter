@@ -13,10 +13,10 @@ import java.util.Objects;
 import org.asam.ods.ApplAttr;
 import org.asam.ods.ApplRel;
 import org.asam.ods.DataType;
-import org.eclipse.mdm.api.base.query.Attribute;
-import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.Relation;
-import org.eclipse.mdm.api.base.query.RelationType;
+import org.eclipse.mdm.api.base.adapter.Attribute;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
+import org.eclipse.mdm.api.base.adapter.RelationType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
 /**
@@ -25,7 +25,7 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
  * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
-final class ODSRelation implements Relation {
+public final class ODSRelation implements Relation {
 
 	// ======================================================================
 	// Instance variables

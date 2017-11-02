@@ -13,12 +13,13 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.notification.NotificationException;
 import org.eclipse.mdm.api.base.notification.NotificationFilter;
 import org.eclipse.mdm.api.base.notification.NotificationListener;
-import org.eclipse.mdm.api.base.notification.NotificationManager;
-import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.notification.NotificationService;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.notification.NotificationEntityLoader;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -39,7 +40,7 @@ import com.peaksolution.ods.notification.protobuf.NotificationProtos.Notificatio
  * @author Matthias Koller, Peak Solution GmbH
  *
  */
-public class PeakNotificationManager implements NotificationManager {
+public class PeakNotificationManager implements NotificationService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PeakNotificationManager.class);
 
@@ -69,10 +70,10 @@ public class PeakNotificationManager implements NotificationManager {
 	 *             Thrown if the manager cannot connect to the notification
 	 *             server.
 	 */
-	public PeakNotificationManager(ODSModelManager modelManager, String url, String eventMediaType,
+	public PeakNotificationManager(ODSModelManager modelManager, QueryService queryService, String url, String eventMediaType,
 			boolean loadContextDescribable) throws NotificationException {
 		this.modelManager = modelManager;
-		loader = new NotificationEntityLoader(modelManager, loadContextDescribable);
+		loader = new NotificationEntityLoader(modelManager, queryService, loadContextDescribable);
 
 		try {
 			if (Strings.isNullOrEmpty(eventMediaType) || MediaType.APPLICATION_JSON.equalsIgnoreCase(eventMediaType)) {

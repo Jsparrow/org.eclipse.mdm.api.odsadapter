@@ -13,14 +13,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.asam.ods.AoException;
-import org.eclipse.mdm.api.base.FileService.ProgressListener;
+import org.eclipse.mdm.api.base.file.FileService.ProgressListener;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
+import org.eclipse.mdm.api.odsadapter.ODSContext;
 import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
 import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
-import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 /**
  * Manages new or removed externally linked files.
@@ -51,20 +51,20 @@ final class UploadService {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager
+	 * @param context
 	 *            Used for setup.
 	 * @param entity
 	 *            Used for security checks.
 	 * @param transfer
 	 *            The transfer type.
 	 */
-	UploadService(ODSModelManager modelManager, Entity entity, Transfer transfer) {
-		fileService = new CORBAFileService(modelManager, transfer);
+	UploadService(ODSContext context, Entity entity, Transfer transfer) {
+		fileService = new CORBAFileService(context, transfer);
 		this.entity = entity;
 
 		scheduler.scheduleAtFixedRate(() -> {
 			try {
-				modelManager.getAoSession().getName();
+				context.getAoSession().getName();
 			} catch (AoException e) {
 				/*
 				 * NOTE: This is done to keep the parent transaction's session

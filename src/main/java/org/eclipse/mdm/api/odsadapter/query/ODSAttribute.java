@@ -14,11 +14,11 @@ import java.util.stream.LongStream;
 
 import org.asam.ods.ApplAttr;
 import org.eclipse.mdm.api.base.model.Value;
+import org.eclipse.mdm.api.base.adapter.Attribute;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.model.ValueType;
-import org.eclipse.mdm.api.base.query.Attribute;
-import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
 /**

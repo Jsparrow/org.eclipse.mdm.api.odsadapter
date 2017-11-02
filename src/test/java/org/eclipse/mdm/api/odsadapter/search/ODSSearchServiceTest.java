@@ -2,10 +2,10 @@ package org.eclipse.mdm.api.odsadapter.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMESERVICE;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_SERVICENAME;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_USER;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_NAMESERVICE;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_PASSWORD;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_SERVICENAME;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_USER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -21,31 +21,33 @@ import java.util.Map;
 import org.assertj.core.api.iterable.Extractor;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Core;
+import org.eclipse.mdm.api.base.model.Core.EntityStore;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.ParameterSet;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
-import org.eclipse.mdm.api.base.model.Core.EntityStore;
-import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.FilterItem;
-import org.eclipse.mdm.api.base.query.ModelManager;
-import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Result;
-import org.eclipse.mdm.api.base.query.SearchService;
+import org.eclipse.mdm.api.base.query.BooleanOperator;
 import org.eclipse.mdm.api.base.query.BracketOperator;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
-import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.BooleanOperator;
+import org.eclipse.mdm.api.base.query.Filter;
+import org.eclipse.mdm.api.base.query.FilterItem;
+import org.eclipse.mdm.api.base.query.QueryService;
+import org.eclipse.mdm.api.base.query.Record;
+import org.eclipse.mdm.api.base.query.Result;
+import org.eclipse.mdm.api.base.search.SearchService;
+import org.eclipse.mdm.api.dflt.ApplicationContext;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.Pool;
 import org.eclipse.mdm.api.dflt.model.Project;
-import org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory;
+import org.eclipse.mdm.api.odsadapter.ODSContextFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 import org.junit.AfterClass;
@@ -73,9 +75,12 @@ public class ODSSearchServiceTest {
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
 
+	private static ApplicationContext context;
 	private static EntityManager entityManager;
 	private static ModelManager modelManager;
-
+	private static QueryService queryService;
+	private static SearchService searchService;
+	
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
 		String nameServiceHost = System.getProperty("host");
@@ -101,9 +106,15 @@ public class ODSSearchServiceTest {
 		connectionParameters.put(PARAM_USER, USER);
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
-		entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
-		modelManager = entityManager.getModelManager()
-				.orElseThrow(() -> new IllegalStateException("No ModelManager available!"));
+		context  = new ODSContextFactory().connect(connectionParameters);
+		entityManager = context.getEntityManager()
+				.orElseThrow(() -> new ServiceNotProvidedException(EntityManager.class));
+		modelManager = context.getModelManager()
+				.orElseThrow(() -> new ServiceNotProvidedException(ModelManager.class));
+		queryService = context.getQueryService()
+				.orElseThrow(() -> new ServiceNotProvidedException(QueryService.class));
+		searchService = context.getSearchService()
+				.orElseThrow(() -> new IllegalStateException("Search service not available."));
 	}
 
 	@AfterClass
@@ -123,8 +134,8 @@ public class ODSSearchServiceTest {
 		 * @param contextState
 		 *            The {@link ContextState}.
 		 */
-		MeasurementSearchQuery(ODSModelManager modelManager, ContextState contextState) {
-			super(modelManager, ParameterSet.class, Project.class);
+		MeasurementSearchQuery(ODSModelManager modelManager, QueryService queryService, ContextState contextState) {
+			super(modelManager, queryService, ParameterSet.class, Project.class);
 
 			// layers
 			addJoinConfig(JoinConfig.up(Pool.class, Project.class));
@@ -151,8 +162,6 @@ public class ODSSearchServiceTest {
 	public void changeRelation() throws Exception {
 		String idmea = "1101";
 		String idparamset = "1002";
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
 
 		EntityType etmeasurement = modelManager.getEntityType(Measurement.class);
 		EntityType etparamset = modelManager.getEntityType(ParameterSet.class);
@@ -196,6 +205,7 @@ public class ODSSearchServiceTest {
 			// first we need to build our own SearchQuery, because the
 			// predefined ones don't include ParameterSet
 			MeasurementSearchQuery mq = new MeasurementSearchQuery((ODSModelManager) modelManager,
+					queryService,
 					ContextState.MEASURED);
 			List<EntityType> fetchList = new ArrayList<>();
 			fetchList.add(etmeasurement);
@@ -205,7 +215,7 @@ public class ODSSearchServiceTest {
 			assertNotNull(record);
 			assertEquals(record.getID(), idmea);
 
-		} catch (RuntimeException | IllegalAccessException | InvocationTargetException | DataAccessException e) {
+		} catch (RuntimeException | IllegalAccessException | InvocationTargetException e) {
 			transaction.abort();
 			throw e;
 		}
@@ -227,8 +237,7 @@ public class ODSSearchServiceTest {
 	@org.junit.Test
 	public void testGetMergedFilter() throws Exception {
 
-		ODSSearchService service = Mockito.spy((ODSSearchService) entityManager.getSearchService()
-				.orElseThrow(() -> new IllegalStateException("No SearchService available!")));
+		ODSSearchService service = Mockito.spy((ODSSearchService) searchService);
 
 		Mockito.doReturn(ImmutableMap.of(TestStep.class, Arrays.asList("10"))).when(service)
 				.fetchIds(Mockito.anyString());
@@ -247,7 +256,7 @@ public class ODSSearchServiceTest {
 
 	@org.junit.Test
 	public void testGetMergedFilterNoAttributeFilter() throws Exception {
-		ODSSearchService service = Mockito.spy((ODSSearchService) entityManager.getSearchService().get());
+		ODSSearchService service = Mockito.spy((ODSSearchService) searchService);
 
 		Mockito.doReturn(ImmutableMap.of(TestStep.class, Arrays.asList("10"))).when(service)
 				.fetchIds(Mockito.anyString());
@@ -258,7 +267,7 @@ public class ODSSearchServiceTest {
 
 	@org.junit.Test
 	public void testGetMergedFilterNoFreetextResult() throws Exception {
-		ODSSearchService service = Mockito.spy((ODSSearchService) entityManager.getSearchService().get());
+		ODSSearchService service = Mockito.spy((ODSSearchService) searchService);
 
 		Mockito.doReturn(Collections.emptyMap()).when(service).fetchIds(Mockito.anyString());
 
@@ -270,7 +279,7 @@ public class ODSSearchServiceTest {
 
 	@org.junit.Test
 	public void testGetMergedFilterNoAttributeFilterAndNoFreetextResult() throws Exception {
-		ODSSearchService service = Mockito.spy((ODSSearchService) entityManager.getSearchService().get());
+		ODSSearchService service = Mockito.spy((ODSSearchService) searchService);
 
 		Mockito.doReturn(Collections.emptyMap()).when(service).fetchIds(Mockito.anyString());
 

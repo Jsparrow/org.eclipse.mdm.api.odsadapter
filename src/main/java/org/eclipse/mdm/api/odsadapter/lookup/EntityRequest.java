@@ -11,24 +11,26 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextSensor;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.ModelManager;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.dflt.model.TemplateComponent;
 import org.eclipse.mdm.api.dflt.model.TemplateSensor;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
+import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
 /**
@@ -47,7 +49,7 @@ public class EntityRequest<T extends Entity> {
 	// ======================================================================
 
 	final ModelManager modelManager;
-
+	final QueryService queryService;
 	final EntityConfig<T> entityConfig;
 	final EntityResult<T> entityResult = new EntityResult<>(this);
 
@@ -67,9 +69,10 @@ public class EntityRequest<T extends Entity> {
 	 * @param config
 	 *            The {@link EntityConfig}.
 	 */
-	public EntityRequest(ModelManager modelManager, EntityConfig<T> config) {
+	public EntityRequest(ODSModelManager modelManager, QueryService queryService, Key<T> key) {
 		this.modelManager = modelManager;
-		this.entityConfig = config;
+		this.queryService = queryService;
+		this.entityConfig = modelManager.getEntityConfig(key);
 		cache = new Cache();
 	}
 
@@ -83,6 +86,7 @@ public class EntityRequest<T extends Entity> {
 	 */
 	protected EntityRequest(EntityRequest<?> parentRequest, EntityConfig<T> entityConfig) {
 		modelManager = parentRequest.modelManager;
+		queryService = parentRequest.queryService;
 		cache = parentRequest.cache;
 		this.entityConfig = entityConfig;
 	}
@@ -252,7 +256,7 @@ public class EntityRequest<T extends Entity> {
 		EntityType entityType = entityConfig.getEntityType();
 		Relation reflexiveRelation = entityConfig.isReflexive() ? entityType.getRelation(entityType) : null;
 
-		Query query = modelManager.createQuery().selectAll(entityConfig.getEntityType());
+		Query query = queryService.createQuery().selectAll(entityConfig.getEntityType());
 
 		if (entityConfig.isReflexive()) {
 			query.select(reflexiveRelation.getAttribute());

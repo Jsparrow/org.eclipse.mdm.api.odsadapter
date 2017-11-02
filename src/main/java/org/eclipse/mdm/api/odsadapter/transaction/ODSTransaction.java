@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.Transaction;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ContextRoot;
@@ -35,11 +36,11 @@ import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
+import org.eclipse.mdm.api.odsadapter.ODSContext;
 import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
@@ -70,12 +71,12 @@ public final class ODSTransaction implements Transaction {
 	// ======================================================================
 
 	// this one is stored in case of application model modifications
-	private final ODSModelManager parentModelManager;
-
+	private final ODSContext parentContext;
+	
 	// this one is used to access the application model and execute queries
 	// instance is decoupled from its parent
-	private final ODSModelManager modelManager;
-
+	private final ODSContext context;
+	
 	// only for logging
 	private final String id = UUID.randomUUID().toString();
 
@@ -111,12 +112,12 @@ public final class ODSTransaction implements Transaction {
 	 * @throws AoException
 	 *             Thrown if unable to start a co-session.
 	 */
-	public ODSTransaction(ODSModelManager parentModelManager, Entity entity, Transfer transfer) throws AoException {
-		this.parentModelManager = parentModelManager;
+	public ODSTransaction(ODSContext parentContext, Entity entity, Transfer transfer) throws AoException {
+		this.parentContext = parentContext;
 		this.entity = entity;
 		this.transfer = transfer;
-		modelManager = parentModelManager.newSession();
-		modelManager.getAoSession().startTransaction();
+		context = parentContext.newSession();
+		context.getAoSession().startTransaction();
 		LOGGER.debug("Transaction '{}' started.", id);
 	}
 
@@ -336,7 +337,7 @@ public final class ODSTransaction implements Transaction {
 	@Override
 	public void commit() throws DataAccessException {
 		try {
-			modelManager.getAoSession().commitTransaction();
+			context.getAoSession().commitTransaction();
 
 			// commit succeed -> apply changes in entity cores
 			modified.forEach(Core::apply);
@@ -348,7 +349,7 @@ public final class ODSTransaction implements Transaction {
 
 			if (catalogManager != null) {
 				// application model has been modified -> reload
-				parentModelManager.reloadApplicationModel();
+				parentContext.getODSModelManager().reloadApplicationModel();
 			}
 
 			LOGGER.debug("Transaction '{}' committed.", id);
@@ -375,7 +376,7 @@ public final class ODSTransaction implements Transaction {
 			String virtualID = "0";
 			created.forEach(c -> c.setID(virtualID));
 
-			modelManager.getAoSession().abortTransaction();
+			context.getAoSession().abortTransaction();
 
 			LOGGER.debug("Transaction '{}' aborted.", id);
 		} catch (AoException e) {
@@ -413,14 +414,23 @@ public final class ODSTransaction implements Transaction {
 	}
 
 	/**
+	 * Returns the {@link ODSContext}.
+	 *
+	 * @return The {@code ODSContext} is returned.
+	 */
+	ODSContext getContext() {
+		return context;
+	}
+
+	/**
 	 * Returns the {@link ODSModelManager}.
 	 *
 	 * @return The {@code ODSModelManager} is returned.
 	 */
 	ODSModelManager getModelManager() {
-		return modelManager;
+		return context.getODSModelManager();
 	}
-
+	
 	/**
 	 * Returns the {@link UploadService}.
 	 *
@@ -430,13 +440,13 @@ public final class ODSTransaction implements Transaction {
 	 */
 	UploadService getUploadService() throws DataAccessException {
 		if (uploadService == null) {
-			if (modelManager.getFileServer() == null) {
+			if (context.getFileServer() == null) {
 				throw new DataAccessException("CORBA file server is not available.");
 			}
 
 			// upload service starts a periodic session refresh task -> lazy
 			// instantiation
-			uploadService = new UploadService(modelManager, entity, transfer);
+			uploadService = new UploadService(context, entity, transfer);
 		}
 
 		return uploadService;
@@ -494,7 +504,7 @@ public final class ODSTransaction implements Transaction {
 	private <T extends Entity> void executeStatements(Function<EntityType, BaseStatement> statementFactory,
 			Collection<T> entities) throws AoException, DataAccessException, IOException {
 		Map<EntityType, List<Entity>> entitiesByType = entities.stream()
-				.collect(Collectors.groupingBy(modelManager::getEntityType));
+				.collect(Collectors.groupingBy(context.getODSModelManager()::getEntityType));
 		for (Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {
 			statementFactory.apply(entry.getKey()).execute(entry.getValue());
 		}
@@ -503,17 +513,13 @@ public final class ODSTransaction implements Transaction {
 	/**
 	 * Closes the co-session of this transaction.
 	 */
-	private void closeSession() {
-		try {
-			if (catalogManager != null) {
-				catalogManager.clear();
-			}
-
-			modelManager.close();
-			LOGGER.debug("Transaction '{}' closed.", id);
-		} catch (AoException e) {
-			LOGGER.error("Unable to close transaction '" + id + "' due to: " + e.reason, e);
+	private void closeSession() {		
+		if (catalogManager != null) {
+			catalogManager.clear();
 		}
+
+		context.close();
+		LOGGER.debug("Transaction '{}' closed.", id);
 	}
 
 }

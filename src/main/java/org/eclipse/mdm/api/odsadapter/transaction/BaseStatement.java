@@ -15,11 +15,13 @@ import java.util.Collection;
 
 import org.asam.ods.AoException;
 import org.asam.ods.ApplElemAccess;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
@@ -128,6 +130,16 @@ abstract class BaseStatement {
 	}
 
 	/**
+	 * Returns the {@link QueryService}.
+	 *
+	 * @return The {@code QueryService} is returned.
+	 */
+	protected QueryService getQueryService() {
+		return transaction.getContext().getQueryService()
+				.orElseThrow(() -> new ServiceNotProvidedException(QueryService.class));
+	}
+	
+	/**
 	 * Returns the {@link ApplElemAccess}.
 	 *
 	 * @return The {@code ApplElemAccess} is returned.
@@ -135,9 +147,11 @@ abstract class BaseStatement {
 	 *             Thrown in case of errors.
 	 */
 	protected ApplElemAccess getApplElemAccess() throws AoException {
-		return transaction.getModelManager().getApplElemAccess();
+		return transaction.getContext().getODSModelManager().getApplElemAccess();
 	}
 
+
+	
 	/**
 	 * Returns the associated {@link EntityType}.
 	 *

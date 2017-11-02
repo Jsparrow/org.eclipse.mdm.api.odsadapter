@@ -39,6 +39,9 @@ import org.asam.ods.SelAIDNameUnitId;
 import org.asam.ods.SelItem;
 import org.asam.ods.SelOrder;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.ContextComponent;
@@ -59,10 +62,6 @@ import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.User;
-import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.ModelManager;
-import org.eclipse.mdm.api.base.query.Query;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
@@ -89,8 +88,6 @@ import org.omg.CORBA.ORB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
-
 /**
  * ODS implementation of the {@link ModelManager} interface.
  *
@@ -111,7 +108,7 @@ public class ODSModelManager implements ModelManager {
 
 	private final Map<String, EntityType> entityTypesByName = new HashMap<>();
 
-	private final CORBAFileServerIF fileServer;
+	
 	private final ORB orb;
 
 	private final Lock write;
@@ -133,13 +130,10 @@ public class ODSModelManager implements ModelManager {
 	 *            Used to activate CORBA service objects.
 	 * @param aoSession
 	 *            The underlying ODS session.
-	 * @param fileServer
-	 *            Used for file transfers.
 	 * @throws AoException
 	 *             Thrown on errors.
 	 */
-	public ODSModelManager(ORB orb, AoSession aoSession, CORBAFileServerIF fileServer) throws AoException {
-		this.fileServer = fileServer;
+	public ODSModelManager(ORB orb, AoSession aoSession) throws AoException {
 		this.aoSession = aoSession;
 		this.orb = orb;
 		applElemAccess = aoSession.getApplElemAccess();
@@ -165,16 +159,7 @@ public class ODSModelManager implements ModelManager {
 	 *             Thrown on errors.
 	 */
 	public ODSModelManager newSession() throws AoException {
-		return new ODSModelManager(orb, getAoSession().createCoSession(), fileServer);
-	}
-
-	/**
-	 * Returns the {@link CORBAFileServerIF}.
-	 *
-	 * @return The {@code CORBAFileServerIF} is returned or null, if missing.
-	 */
-	public CORBAFileServerIF getFileServer() {
-		return fileServer;
+		return new ODSModelManager(orb, getAoSession().createCoSession());
 	}
 
 	/**
@@ -237,20 +222,6 @@ public class ODSModelManager implements ModelManager {
 
 		try {
 			return entityConfigRepository.find(entityType);
-		} finally {
-			read.unlock();
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Query createQuery() {
-		read.lock();
-
-		try {
-			return new ODSQuery(getApplElemAccess());
 		} finally {
 			read.unlock();
 		}

@@ -16,7 +16,9 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.eclipse.mdm.api.base.adapter.DefaultCore;
 import org.eclipse.mdm.api.base.model.AxisType;
+import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
@@ -30,7 +32,6 @@ import org.eclipse.mdm.api.base.model.TypeSpecification;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.model.VersionState;
-import org.eclipse.mdm.api.base.query.DefaultCore;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
@@ -165,5 +166,4 @@ public final class ODSEntityFactory extends EntityFactory {
 
 		return core;
 	}
-
 }

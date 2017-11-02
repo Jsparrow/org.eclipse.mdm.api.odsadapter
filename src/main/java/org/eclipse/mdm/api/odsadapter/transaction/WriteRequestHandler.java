@@ -17,14 +17,14 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import org.asam.ods.AoException;
+import org.eclipse.mdm.api.base.adapter.DefaultCore;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.DefaultCore;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 
 /**

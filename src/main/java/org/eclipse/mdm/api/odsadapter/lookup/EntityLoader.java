@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -23,7 +24,7 @@ public class EntityLoader {
 	// ======================================================================
 
 	private final ODSModelManager modelManager;
-
+	private final QueryService queryService;
 	// ======================================================================
 	// Constructors
 	// ======================================================================
@@ -34,8 +35,9 @@ public class EntityLoader {
 	 * @param modelManager
 	 *            The {@link ODSModelManager}.
 	 */
-	public EntityLoader(ODSModelManager modelManager) {
+	public EntityLoader(ODSModelManager modelManager, QueryService queryService) {
 		this.modelManager = modelManager;
+		this.queryService = queryService;
 	}
 
 	// ======================================================================
@@ -116,7 +118,7 @@ public class EntityLoader {
 		/*
 		 * TODO: add custom request implementations here!
 		 */
-		return new EntityRequest<>(modelManager, modelManager.getEntityConfig(key));
+		return new EntityRequest<>(modelManager, queryService, key);
 	}
 
 }

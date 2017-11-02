@@ -1,9 +1,9 @@
 package org.eclipse.mdm.api.odsadapter;
 
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMESERVICE;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_SERVICENAME;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_USER;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_NAMESERVICE;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_PASSWORD;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_SERVICENAME;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_USER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -22,7 +22,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.massdata.WriteRequestBuilder;
 import org.eclipse.mdm.api.base.model.AxisType;
@@ -47,10 +50,9 @@ import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.ModelManager;
-import org.eclipse.mdm.api.base.query.SearchService;
+import org.eclipse.mdm.api.base.search.SearchService;
+import org.eclipse.mdm.api.dflt.ApplicationContext;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
@@ -86,6 +88,7 @@ public class ODSAdapterTest {
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
 
+	private static ApplicationContext context;
 	private static EntityManager entityManager;
 	private static EntityFactory entityFactory;
 
@@ -114,8 +117,10 @@ public class ODSAdapterTest {
 		connectionParameters.put(PARAM_USER, USER);
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
-		entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
-		entityFactory = entityManager.getEntityFactory()
+		context  = new ODSContextFactory().connect(connectionParameters);
+		entityManager = context.getEntityManager()
+				.orElseThrow(() -> new ServiceNotProvidedException(EntityManager.class));
+		entityFactory = context.getEntityFactory()
 				.orElseThrow(() -> new IllegalStateException("Entity manager factory not available."));
 	}
 
@@ -133,8 +138,8 @@ public class ODSAdapterTest {
 	//@org.junit.Test
 	public void changeFile() throws Exception {
 		String idteststep = "2";
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType etteststep = modelManager.getEntityType(TestStep.class);
 		Transaction transaction;
@@ -158,7 +163,7 @@ public class ODSAdapterTest {
 			toUpdate.add(contextComponent.get());
             transaction.update(toUpdate);
             transaction.commit();
-		} catch (RuntimeException | DataAccessException e) {
+		} catch (RuntimeException e) {
 			transaction.abort();
 			throw e;
 		}
@@ -194,7 +199,7 @@ public class ODSAdapterTest {
 		List<Project> projects = Collections.emptyList();
 		try {
 			projects = createTestData(templateTest, quantity);
-		} catch (DataAccessException | RuntimeException e) {
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 		}
 
@@ -267,7 +272,7 @@ public class ODSAdapterTest {
 			transaction.writeMeasuredValues(writeRequests);
 			transaction.commit();
 			return Collections.singletonList(project);
-		} catch (DataAccessException | RuntimeException e) {
+		} catch (DataAccessException e) {
 			e.printStackTrace();
 			transaction.abort();
 		}

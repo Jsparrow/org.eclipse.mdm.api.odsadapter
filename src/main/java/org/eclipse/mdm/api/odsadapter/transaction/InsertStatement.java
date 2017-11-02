@@ -21,6 +21,9 @@ import org.asam.ods.AIDNameValueSeqUnitId;
 import org.asam.ods.AoException;
 import org.asam.ods.ElemId;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.adapter.Attribute;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
@@ -30,13 +33,10 @@ import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Aggregation;
-import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
@@ -264,7 +264,7 @@ final class InsertStatement extends BaseStatement {
 		EntityType test = getModelManager().getEntityType(Test.class);
 		Relation parentRelation = testStep.getRelation(test);
 
-		Query query = getModelManager().createQuery().select(parentRelation.getAttribute())
+		Query query = getQueryService().createQuery().select(parentRelation.getAttribute())
 				.select(testStep.getAttribute(Sortable.ATTR_SORT_INDEX), Aggregation.MAXIMUM)
 				.group(parentRelation.getAttribute());
 

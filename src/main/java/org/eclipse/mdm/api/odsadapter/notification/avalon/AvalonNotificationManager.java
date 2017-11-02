@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextDescribable;
 import org.eclipse.mdm.api.base.model.ContextRoot;
@@ -20,9 +21,9 @@ import org.eclipse.mdm.api.base.notification.NotificationException;
 import org.eclipse.mdm.api.base.notification.NotificationFilter;
 import org.eclipse.mdm.api.base.notification.NotificationFilter.ModificationType;
 import org.eclipse.mdm.api.base.notification.NotificationListener;
-import org.eclipse.mdm.api.base.notification.NotificationManager;
+import org.eclipse.mdm.api.base.notification.NotificationService;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.notification.NotificationEntityLoader;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -46,7 +47,7 @@ import com.highqsoft.avalonCorbaNotification.notification.MODE_REPLACE;
  * @author Matthias Koller, Peak Solution GmbH
  *
  */
-public class AvalonNotificationManager implements NotificationManager {
+public class AvalonNotificationManager implements NotificationService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AvalonNotificationManager.class);
 
@@ -78,13 +79,13 @@ public class AvalonNotificationManager implements NotificationManager {
 	 * @param pollingInterval
 	 *            polling interval in milleseconds
 	 */
-	public AvalonNotificationManager(ODSModelManager modelManager, String serviceName, String nameServiceURL,
+	public AvalonNotificationManager(ODSModelManager modelManager, QueryService queryService, String serviceName, String nameServiceURL,
 			boolean loadContextDescribable, long pollingInterval) {
 		this.modelManager = modelManager;
 		this.serviceName = serviceName;
 		this.nameServiceURL = nameServiceURL;
 		this.pollingInterval = pollingInterval;
-		loader = new NotificationEntityLoader(modelManager, loadContextDescribable);
+		loader = new NotificationEntityLoader(modelManager, queryService, loadContextDescribable);
 	}
 
 	@Override

@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.eclipse.mdm.api.base.adapter.Attribute;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Entity;
@@ -23,14 +25,13 @@ import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
-import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Result;
-import org.eclipse.mdm.api.base.query.SearchQuery;
-import org.eclipse.mdm.api.base.query.SearchService;
-import org.eclipse.mdm.api.base.query.Searchable;
+import org.eclipse.mdm.api.base.search.SearchQuery;
+import org.eclipse.mdm.api.base.search.SearchService;
+import org.eclipse.mdm.api.base.search.Searchable;
 import org.eclipse.mdm.api.dflt.model.Pool;
 import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
@@ -63,18 +64,18 @@ public class ODSSearchService implements SearchService {
 	 * @param entityLoader
 	 *            Used to load complete {@link Entity}s.
 	 */
-	public ODSSearchService(ODSModelManager modelManager, EntityLoader entityLoader, String host) {
+	public ODSSearchService(ODSModelManager modelManager, QueryService queryService, EntityLoader entityLoader, String host) {
 		this.modelManager = modelManager;
 		this.entityLoader = entityLoader;
 		esHost = host;
 
-		registerMergedSearchQuery(Project.class, c -> new ProjectSearchQuery(modelManager, c));
-		registerMergedSearchQuery(Pool.class, c -> new PoolSearchQuery(modelManager, c));
-		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, c));
-		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(modelManager, c));
-		registerMergedSearchQuery(Measurement.class, c -> new MeasurementSearchQuery(modelManager, c));
-		registerMergedSearchQuery(ChannelGroup.class, c -> new ChannelGroupSearchQuery(modelManager, c));
-		registerMergedSearchQuery(Channel.class, c -> new ChannelSearchQuery(modelManager, c));
+		registerMergedSearchQuery(Project.class, c -> new ProjectSearchQuery(modelManager, queryService, c));
+		registerMergedSearchQuery(Pool.class, c -> new PoolSearchQuery(modelManager, queryService, c));
+		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, queryService, c));
+		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(modelManager, queryService, c));
+		registerMergedSearchQuery(Measurement.class, c -> new MeasurementSearchQuery(modelManager, queryService, c));
+		registerMergedSearchQuery(ChannelGroup.class, c -> new ChannelGroupSearchQuery(modelManager, queryService, c));
+		registerMergedSearchQuery(Channel.class, c -> new ChannelSearchQuery(modelManager, queryService, c));
 	}
 
 	/**

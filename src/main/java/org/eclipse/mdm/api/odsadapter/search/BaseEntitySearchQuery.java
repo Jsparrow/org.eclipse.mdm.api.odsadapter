@@ -19,6 +19,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.mdm.api.base.adapter.Attribute;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
@@ -26,17 +29,15 @@ import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.Aggregation;
-import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.FilterItem;
 import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.Query;
-import org.eclipse.mdm.api.base.query.Relation;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Result;
-import org.eclipse.mdm.api.base.query.SearchQuery;
-import org.eclipse.mdm.api.base.query.Searchable;
+import org.eclipse.mdm.api.base.search.SearchQuery;
+import org.eclipse.mdm.api.base.search.Searchable;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -60,7 +61,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	private final Class<? extends Entity> entityClass;
 
 	private final ODSModelManager modelManager;
-
+	private final QueryService queryService;
 	// ======================================================================
 	// Constructors
 	// ======================================================================
@@ -75,9 +76,10 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 * @param rootEntityClass
 	 *            The root entity class of this search query.
 	 */
-	protected BaseEntitySearchQuery(ODSModelManager modelManager, Class<? extends Entity> entityClass,
+	protected BaseEntitySearchQuery(ODSModelManager modelManager, QueryService queryService, Class<? extends Entity> entityClass,
 			Class<? extends Entity> rootEntityClass) {
 		this.modelManager = modelManager;
+		this.queryService = queryService;
 		this.entityClass = entityClass;
 		this.rootEntityClass = rootEntityClass;
 
@@ -131,7 +133,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 */
 	@Override
 	public final List<Value> getFilterValues(Attribute attribute, Filter filter) throws DataAccessException {
-		Query query = modelManager.createQuery().select(attribute, Aggregation.DISTINCT).group(attribute);
+		Query query = queryService.createQuery().select(attribute, Aggregation.DISTINCT).group(attribute);
 
 		// add required joins
 		filter.stream().filter(FilterItem::isCondition).map(FilterItem::getCondition).forEach(c -> {
@@ -146,7 +148,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 */
 	@Override
 	public final List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) throws DataAccessException {
-		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
+		Query query = queryService.createQuery().selectID(modelManager.getEntityType(entityClass));
 
 		// add required joins
 		entityTypes.stream().forEach(entityType -> {
@@ -162,7 +164,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 */
 	@Override
 	public final List<Result> fetch(List<Attribute> attributes, Filter filter) throws DataAccessException {
-		Query query = modelManager.createQuery().selectID(modelManager.getEntityType(entityClass));
+		Query query = queryService.createQuery().selectID(modelManager.getEntityType(entityClass));
 
 		// add required joins
 		attributes.stream().forEach(attribute -> {
