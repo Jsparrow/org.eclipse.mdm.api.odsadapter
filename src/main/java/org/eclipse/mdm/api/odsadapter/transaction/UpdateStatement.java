@@ -33,6 +33,7 @@ import org.eclipse.mdm.api.base.model.FilesAttachable;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
+import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
@@ -101,7 +102,7 @@ final class UpdateStatement extends BaseStatement {
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
 		for (Entity entity : entities) {
-			readEntityCore(extract(entity));
+			readEntityCore(ODSEntityFactory.extract(entity));
 		}
 
 		// TODO tracing progress in this method...

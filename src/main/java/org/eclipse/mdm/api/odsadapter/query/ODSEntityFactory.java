@@ -83,6 +83,55 @@ public final class ODSEntityFactory extends EntityFactory {
 		this.modelManager = modelManager;
 		this.loggedInUser = loggedInUser;
 	}
+	
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * Extracts the {@link Core} from an {@link Entity} instance. This method
+	 * effectively makes access to the Core of a BaseEntity publicly
+	 * available (by calling the corresponding protected method of
+	 * BaseEntityFactory, which is this class's superclass) to users of
+	 * ODSEntityFactory. 
+	 * 
+	 * @param entity
+	 *            The {@link Entity} from which to extract the {@link Core}.
+	 * @return The entity's {@link Core}.
+	 */
+	public static Core extract(Entity entity) {
+		if (entity instanceof BaseEntity) {
+			return getCore((BaseEntity) entity);
+		} else {
+			throw new IllegalArgumentException("Entity of type '" + entity.getClass().getSimpleName()
+					+ "' does not extend '" + BaseEntity.class.getName() + "'");
+		}
+	}
+
+	/**
+	 * Create an instance of a class implementing the {@link Entity} interface with
+	 * core as the instance's {@link Core}. This method effectively makes the
+	 * protected BaseEntity constructor publicly available (by calling the
+	 * corresponding protected method of BaseEntityFactory, which is this class's
+	 * superclass) to users of ODSEntityFactory.
+	 * 
+	 * @param clazz
+	 *            The class to instantiate, must implement the {@link Entity}
+	 *            interface.
+	 * @param core
+	 *            The {@link Core} to use for the newly created instance.
+	 * @return The newly created instance.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T extends Entity> T createEntity(Class<T> clazz, Core core) {
+		if (BaseEntity.class.isAssignableFrom(clazz)) {
+			return (T) createBaseEntity(clazz.asSubclass(BaseEntity.class), core);
+		} else {
+			throw new IllegalArgumentException(
+					"Class '" + clazz.getSimpleName() + "' does not extend '" + BaseEntity.class.getName() + "'");
+		}
+
+	}
 
 	// ======================================================================
 	// Protected methods
