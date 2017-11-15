@@ -379,10 +379,9 @@ public class ODSModelManager implements ModelManager {
 				Enumeration<ODSEnum> enumdyn = new Enumeration<>(ODSEnum.class, eas.enumName);
 				EnumerationDefinition enumdef = applicationStructure.getEnumerationDefinition(eas.enumName);
 				String[] listItemNames = enumdef.listItemNames();
-				int ordinal = 0;
 				for (String item : listItemNames) {
+					int ordinal=enumdef.getItem(item);
 					enumdyn.addValue(new ODSEnum(item, ordinal));
-					ordinal++;
 				}
 				er.add(eas.enumName, enumdyn);
 			}
