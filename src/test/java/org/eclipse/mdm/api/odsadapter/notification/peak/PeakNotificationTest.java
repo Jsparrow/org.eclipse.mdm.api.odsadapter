@@ -39,9 +39,9 @@ import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.dflt.ApplicationContext;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
+import org.eclipse.mdm.api.odsadapter.ODSContext;
 import org.eclipse.mdm.api.odsadapter.ODSContextFactory;
 import org.eclipse.mdm.api.odsadapter.notification.ODSNotificationServiceFactory;
-import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -111,7 +111,6 @@ public class PeakNotificationTest {
 		notificationParameters.put(ODSNotificationServiceFactory.PARAM_URL, NOTIFICATION_URL);
 		notificationParameters.put(ODSContextFactory.PARAM_USER, NOTIFICATION_USER);
 		notificationParameters.put(ODSContextFactory.PARAM_PASSWORD, NOTIFICATION_PASSWORD);
-		notificationParameters.put(ODSNotificationServiceFactory.PARAM_EVENT_MEDIATYPE, "application/json");
 
 		notificationManager = new ODSNotificationServiceFactory().create(context, notificationParameters);
 	}
@@ -245,7 +244,7 @@ public class PeakNotificationTest {
 
 		AoSession session = null;
 		try {
-			session = ((ODSModelManager) context.getModelManager().get()).getAoSession().createCoSession();
+			session = ((ODSContext) context).getAoSession().createCoSession();
 
 			ApplicationElement aeUUT = session.getApplicationStructure().getElementsByBaseType("AoUnitUnderTest")[0];
 
@@ -283,7 +282,7 @@ public class PeakNotificationTest {
 
 		AoSession session = null;
 		try {
-			session = ((ODSModelManager) context.getModelManager().get()).getAoSession().createCoSession();
+			session = ((ODSContext) context).getAoSession().createCoSession();
 
 			ApplicationElement aeTyre = session.getApplicationStructure().getElementByName("tyre");
 

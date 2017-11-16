@@ -29,7 +29,6 @@ import org.glassfish.jersey.media.sse.SseFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Strings;
 import com.peaksolution.ods.notification.protobuf.NotificationProtos.Notification;
 
 /**
@@ -51,7 +50,6 @@ public class PeakNotificationManager implements NotificationService {
 
 	private final ExecutorService executor = Executors.newCachedThreadPool();
 
-	private final MediaType eventMediaType;
 	private final ODSModelManager modelManager;
 
 	private final NotificationEntityLoader loader;
@@ -60,8 +58,6 @@ public class PeakNotificationManager implements NotificationService {
 	 * @param modelManager
 	 * @param url
 	 *            URL of the notification plugin
-	 * @param eventMediaType
-	 *            MediaType to use.
 	 * @param loadContextDescribable
 	 *            if true, the corresponding context describable is loaded if a
 	 *            notification for a context root or context component is
@@ -70,19 +66,13 @@ public class PeakNotificationManager implements NotificationService {
 	 *             Thrown if the manager cannot connect to the notification
 	 *             server.
 	 */
-	public PeakNotificationManager(ODSModelManager modelManager, QueryService queryService, String url, String eventMediaType,
+	public PeakNotificationManager(ODSModelManager modelManager, QueryService queryService, String url,
 			boolean loadContextDescribable) throws NotificationException {
 		this.modelManager = modelManager;
 		loader = new NotificationEntityLoader(modelManager, queryService, loadContextDescribable);
 
 		try {
-			if (Strings.isNullOrEmpty(eventMediaType) || MediaType.APPLICATION_JSON.equalsIgnoreCase(eventMediaType)) {
-				this.eventMediaType = MediaType.APPLICATION_JSON_TYPE;
-			} else {
-				this.eventMediaType = ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE;
-			}
-
-			client = ClientBuilder.newBuilder().register(SseFeature.class).register(ProtobufMessageBodyProvider.class)
+			client = ClientBuilder.newBuilder().register(SseFeature.class)
 					.register(JsonMessageBodyProvider.class).build();
 
 			endpoint = client.target(url).path("events");
@@ -102,14 +92,16 @@ public class PeakNotificationManager implements NotificationService {
 	@Override
 	public void register(String registration, NotificationFilter filter, NotificationListener listener)
 			throws NotificationException {
-		LOGGER.info("Starting registration for with name: " + registration);
+		LOGGER.info("Starting registration for with name: {}", registration);
 		
 		Response response = endpoint.path(registration).request().post(javax.ws.rs.client.Entity
-				.entity(ProtobufConverter.from(filter), ProtobufMessageBodyProvider.APPLICATION_PROTOBUF_TYPE));
+				.entity(ProtobufConverter.from(filter), MediaType.APPLICATION_JSON_TYPE));
 
 		if (response.getStatusInfo().getStatusCode() == Status.CONFLICT.getStatusCode()) {
-			LOGGER.info("A registration with the name already exists: " + response.readEntity(String.class));
-			LOGGER.info("Trying to reregister...");
+			if (LOGGER.isInfoEnabled()) {
+				LOGGER.info("A registration with the name already exists: {}", response.readEntity(String.class));
+				LOGGER.info("Trying to reregister...");
+			}
 			deregister(registration);
 			LOGGER.info("Deregisteration successful.");
 			register(registration, filter, listener);
@@ -122,13 +114,13 @@ public class PeakNotificationManager implements NotificationService {
 		}
 
 		try {
-			LOGGER.info("Requesting event input for " + registration);
+			LOGGER.info("Requesting event input for {}", registration);
 			EventInput eventInput = endpoint.path(registration)
 					.request(SseFeature.SERVER_SENT_EVENTS_TYPE)
 					.get(EventInput.class);
 
 			LOGGER.info("Received event input, starting event processor.");
-			EventProcessor processor = new EventProcessor(eventInput, listener, this, eventMediaType);
+			EventProcessor processor = new EventProcessor(eventInput, listener, this, MediaType.APPLICATION_JSON_TYPE);
 
 			executor.submit(processor);
 
@@ -167,10 +159,10 @@ public class PeakNotificationManager implements NotificationService {
 
 		for (String registration : processors.keySet()) {
 			if (isDeregisterAll) {
-				LOGGER.debug("Deregistering '" + registration + "'.");
+				LOGGER.debug("Deregistering '{}'.", registration);
 				deregister(registration);
 			} else {
-				LOGGER.debug("Disconnecting '" + registration + "'.");
+				LOGGER.debug("Disconnecting '{}'.", registration);
 				close(registration);
 			}
 		}
