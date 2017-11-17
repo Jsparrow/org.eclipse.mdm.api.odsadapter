@@ -133,13 +133,12 @@ public final class ODSTransaction implements Transaction {
 
 			List<CatalogSensor> catalogSensors = (List<CatalogSensor>) entitiesByClassType.get(CatalogSensor.class);
 			if (catalogSensors != null) {
-				// TODO avalon 4.3b throws an exception in
-				// AoSession.commintTransaction() if multiple
+				// TODO anehmer on 2017-11-16: avalon 4.3b throws an exception in
+				// AoSession.commitTransaction() if multiple
 				// catalog sensors have been deleted and leaves the application
-				// model in a broken state
-
-				// getCatalogManager().createCatalogSensors(catalogSensors);
-				throw new DataAccessException("CURRENTLY NOT IMPLEMENTED");
+				// model in a broken state. This is also stated in the documentation. This
+				// comment should be removed later.
+				getCatalogManager().createCatalogSensors(catalogSensors);
 			}
 
 			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType
@@ -217,7 +216,6 @@ public final class ODSTransaction implements Transaction {
 					getUploadService().upload(filtered, null);
 				}
 			}
-
 			executeStatements(et -> new UpdateStatement(this, et, false), entities);
 		} catch (AoException e) {
 			throw new DataAccessException("Unable to update entities due to: " + e.reason, e);
@@ -251,13 +249,12 @@ public final class ODSTransaction implements Transaction {
 
 			List<CatalogSensor> catalogSensors = (List<CatalogSensor>) entitiesByClassType.get(CatalogSensor.class);
 			if (catalogSensors != null) {
-				// TODO avalon 4.3b throws an exception in
-				// AoSession.commintTransaction() if multiple
+				// TODO anehmer on 2017-11-16: avalon 4.3b throws an exception in
+				// AoSession.commitTransaction() if multiple
 				// catalog sensors have been deleted and leaves the application
-				// model in a broken state
-
-				// getCatalogManager().deleteCatalogSensors(catalogSensors);
-				throw new DataAccessException("CURRENTLY NOT IMPLEMENTED");
+				// model in a broken state. This is also stated in the documentation. This
+				// comment should be removed later.
+				getCatalogManager().deleteCatalogSensors(catalogSensors);
 			}
 
 			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType
