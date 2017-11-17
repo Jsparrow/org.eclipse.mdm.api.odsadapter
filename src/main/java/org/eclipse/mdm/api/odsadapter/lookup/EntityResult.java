@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import org.eclipse.mdm.api.base.adapter.Attribute;
 import org.eclipse.mdm.api.base.adapter.DefaultCore;
 import org.eclipse.mdm.api.base.adapter.EntityType;
-import org.eclipse.mdm.api.base.model.Core;
+import org.eclipse.mdm.api.base.core.Core;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.EnumRegistry;

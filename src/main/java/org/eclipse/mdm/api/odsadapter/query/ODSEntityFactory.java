@@ -17,10 +17,10 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.mdm.api.base.adapter.DefaultCore;
+import org.eclipse.mdm.api.base.core.Core;
 import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.EnumRegistry;
 import org.eclipse.mdm.api.base.model.Enumeration;
