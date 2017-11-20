@@ -26,10 +26,9 @@ import org.slf4j.LoggerFactory;
 public class ODSNotificationServiceFactory {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSNotificationServiceFactory.class);
 
-	public static final String PARAM_SERVER_TYPE = "notificationType";
-	public static final String PARAM_URL = "url";
-	public static final String PARAM_EVENT_MEDIATYPE = "notificationMimeType";
-	public static final String PARAM_POLLING_INTERVAL = "pollingInterval";
+	public static final String PARAM_SERVER_TYPE = "freetext.notificationType";
+	public static final String PARAM_URL = "freetext.notificationUrl";
+	public static final String PARAM_POLLING_INTERVAL = "freetext.pollingInterval";
 
 	public static final String SERVER_TYPE_PEAK = "peak";
 	public static final String SERVER_TYPE_AVALON = "avalon";
@@ -51,14 +50,12 @@ public class ODSNotificationServiceFactory {
 
 		if (SERVER_TYPE_PEAK.equalsIgnoreCase(type)) {
 			String url = getParameter(parameters, PARAM_URL);
-			String eventMediaType = getParameter(parameters, PARAM_EVENT_MEDIATYPE);
-
+			
 			LOGGER.info("Connecting to Peak Notification Server ...");
 			LOGGER.info("URL: {}", url);
-			LOGGER.info("Event MediaType: {}", eventMediaType);
 
 			try {
-				return new PeakNotificationManager((ODSModelManager) mm, queryService, url, eventMediaType, true);
+				return new PeakNotificationManager((ODSModelManager) mm, queryService, url, true);
 			} catch (NotificationException e) {
 				throw new ConnectionException("Could not connect to notification service!", e);
 			}

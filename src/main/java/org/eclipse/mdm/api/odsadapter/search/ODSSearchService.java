@@ -34,6 +34,7 @@ import org.eclipse.mdm.api.base.search.SearchService;
 import org.eclipse.mdm.api.base.search.Searchable;
 import org.eclipse.mdm.api.dflt.model.Pool;
 import org.eclipse.mdm.api.dflt.model.Project;
+import org.eclipse.mdm.api.odsadapter.ODSContext;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -51,31 +52,33 @@ public class ODSSearchService implements SearchService {
 
 	private final Map<Class<? extends Entity>, SearchQuery> searchQueries = new HashMap<>();
 
-	private final ODSModelManager modelManager;
+	private final ODSContext context;
 	private final EntityLoader entityLoader;
 	private final String esHost;
 	private ODSFreeTextSearch freeTextSearch;
 
+	public static final String PARAM_ELASTIC_SEARCH_URL = "elasticsearch.url";
+
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager
-	 *            Used to retrieve {@link EntityType}s.
+	 * @param context
+	 *            Used to retrieve {@link ODSModelManager}.
 	 * @param entityLoader
 	 *            Used to load complete {@link Entity}s.
 	 */
-	public ODSSearchService(ODSModelManager modelManager, QueryService queryService, EntityLoader entityLoader, String host) {
-		this.modelManager = modelManager;
+	public ODSSearchService(ODSContext context, QueryService queryService, EntityLoader entityLoader) {
+		this.context = context;
 		this.entityLoader = entityLoader;
-		esHost = host;
-
-		registerMergedSearchQuery(Project.class, c -> new ProjectSearchQuery(modelManager, queryService, c));
-		registerMergedSearchQuery(Pool.class, c -> new PoolSearchQuery(modelManager, queryService, c));
-		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(modelManager, queryService, c));
-		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(modelManager, queryService, c));
-		registerMergedSearchQuery(Measurement.class, c -> new MeasurementSearchQuery(modelManager, queryService, c));
-		registerMergedSearchQuery(ChannelGroup.class, c -> new ChannelGroupSearchQuery(modelManager, queryService, c));
-		registerMergedSearchQuery(Channel.class, c -> new ChannelSearchQuery(modelManager, queryService, c));
+		esHost = context.getParameters().get(PARAM_ELASTIC_SEARCH_URL);
+		
+		registerMergedSearchQuery(Project.class, c -> new ProjectSearchQuery(context.getODSModelManager(), queryService, c));
+		registerMergedSearchQuery(Pool.class, c -> new PoolSearchQuery(context.getODSModelManager(), queryService, c));
+		registerMergedSearchQuery(Test.class, c -> new TestSearchQuery(context.getODSModelManager(), queryService, c));
+		registerMergedSearchQuery(TestStep.class, c -> new TestStepSearchQuery(context.getODSModelManager(), queryService, c));
+		registerMergedSearchQuery(Measurement.class, c -> new MeasurementSearchQuery(context.getODSModelManager(), queryService, c));
+		registerMergedSearchQuery(ChannelGroup.class, c -> new ChannelGroupSearchQuery(context.getODSModelManager(), queryService, c));
+		registerMergedSearchQuery(Channel.class, c -> new ChannelSearchQuery(context.getODSModelManager(), queryService, c));
 	}
 
 	/**
@@ -140,7 +143,7 @@ public class ODSSearchService implements SearchService {
 			return Collections.emptyList();
 		}
 
-		EntityType entityType = modelManager.getEntityType(entityClass);
+		EntityType entityType = context.getODSModelManager().getEntityType(entityClass);
 		Map<String, Result> recordsByEntityID = new HashMap<>();
 		for (Result result : findSearchQuery(entityClass).fetch(attributes, mergedFilter)) {
 			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
@@ -230,7 +233,7 @@ public class ODSSearchService implements SearchService {
 		Filter freeTextResultsFilter = Filter.or();
 		for (Map.Entry<Class<? extends Entity>, List<String>> entry : fetchIds(query).entrySet()) {
 			if (!entry.getValue().isEmpty()) {
-				freeTextResultsFilter.ids(modelManager.getEntityType(entry.getKey()), entry.getValue());
+				freeTextResultsFilter.ids(context.getODSModelManager().getEntityType(entry.getKey()), entry.getValue());
 			}
 		}
 
@@ -253,7 +256,7 @@ public class ODSSearchService implements SearchService {
 	 */
 	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results)
 			throws DataAccessException {
-		EntityType entityType = modelManager.getEntityType(entityClass);
+		EntityType entityType = context.getODSModelManager().getEntityType(entityClass);
 		Map<String, Result> recordsByEntityID = new HashMap<>();
 		for (Result result : results) {
 			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
@@ -294,7 +297,7 @@ public class ODSSearchService implements SearchService {
 	 */
 	private void registerMergedSearchQuery(Class<? extends Entity> entityClass,
 			Function<ContextState, BaseEntitySearchQuery> factory) {
-		searchQueries.put(entityClass, new MergedSearchQuery(modelManager.getEntityType(entityClass), factory));
+		searchQueries.put(entityClass, new MergedSearchQuery(context.getODSModelManager().getEntityType(entityClass), factory));
 	}
 
 	private void initFreetextSearch() throws DataAccessException {

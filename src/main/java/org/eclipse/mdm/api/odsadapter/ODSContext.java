@@ -48,7 +48,6 @@ public class ODSContext implements ApplicationContext {
 	
 	private Map<String, String> parameters;
 	private final Transfer transfer = Transfer.SOCKET;
-	public static final String PARAM_ELASTIC_SEARCH_URL = "elasticsearch.url";
 	
 	private ORB orb;
 	private AoSession aoSession;
@@ -57,6 +56,7 @@ public class ODSContext implements ApplicationContext {
 	private ODSQueryService queryService;
 	private EntityLoader entityLoader;
 	private ODSEntityManager entityManager;
+	private ODSSearchService searchService;
 	
 	/**
 	 * Creates a new ODS application context.
@@ -76,6 +76,8 @@ public class ODSContext implements ApplicationContext {
 		this.queryService = new ODSQueryService(this.modelManager);
 		this.entityManager = new ODSEntityManager(this);
 		this.entityLoader = new EntityLoader(modelManager, queryService);
+		this.searchService = new ODSSearchService(this, queryService, entityLoader);
+		LOGGER.debug("ODSContext initialized.");
 	}
 
 	
@@ -123,9 +125,7 @@ public class ODSContext implements ApplicationContext {
 	 */
 	@Override
 	public Optional<SearchService> getSearchService() {
-		// TODO
-		// java docs: cache this service for ONE request!
-		return Optional.of(new ODSSearchService(modelManager, queryService, entityLoader, parameters.get(PARAM_ELASTIC_SEARCH_URL)));
+		return Optional.of(searchService);
 	}
 
 	/**
@@ -147,7 +147,7 @@ public class ODSContext implements ApplicationContext {
 		try {
 			return Optional.of(new ODSNotificationServiceFactory().create(this, parameters));
 		} catch (ConnectionException e) {
-			throw new IllegalStateException("Unable to create notification manager.");
+			throw new IllegalStateException("Unable to create notification manager.", e);
 		}
 	}
 	
