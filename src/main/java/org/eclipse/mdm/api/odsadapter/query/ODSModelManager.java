@@ -96,15 +96,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ODSModelManager implements ModelManager {
 
-	// ======================================================================
-	// Class variables
-	// ======================================================================
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSModelManager.class);
-
-	// ======================================================================
-	// Instance variables
-	// ======================================================================
 
 	private final Map<String, EntityType> entityTypesByName = new HashMap<>();
 
@@ -118,10 +110,6 @@ public class ODSModelManager implements ModelManager {
 
 	private ApplElemAccess applElemAccess;
 	private AoSession aoSession;
-
-	// ======================================================================
-	// Constructors
-	// ======================================================================
 
 	/**
 	 * Constructor.
@@ -143,23 +131,7 @@ public class ODSModelManager implements ModelManager {
 		write = reentrantReadWriteLock.writeLock();
 		read = reentrantReadWriteLock.readLock();
 
-		// initialization
 		initialize();
-	}
-
-	// ======================================================================
-	// Public methods
-	// ======================================================================
-
-	/**
-	 * Returns a new {@link ODSModelManager} with a new ODS co-session.
-	 *
-	 * @return The created {@code ODSModelManager} is returned.
-	 * @throws AoException
-	 *             Thrown on errors.
-	 */
-	public ODSModelManager newSession() throws AoException {
-		return new ODSModelManager(orb, getAoSession().createCoSession());
 	}
 
 	/**
@@ -375,10 +347,6 @@ public class ODSModelManager implements ModelManager {
 			aoSessionOld._release();
 		}
 	}
-
-	// ======================================================================
-	// Private methods
-	// ======================================================================
 
 	/**
 	 * Initializes this model manager by caching the application model and
