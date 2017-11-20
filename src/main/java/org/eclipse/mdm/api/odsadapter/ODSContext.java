@@ -49,8 +49,6 @@ public class ODSContext implements ApplicationContext {
 	private Map<String, String> parameters;
 	private final Transfer transfer = Transfer.SOCKET;
 	
-	private ORB orb;
-	private AoSession aoSession;
 	private CORBAFileServerIF fileServer;
 	private ODSModelManager modelManager;
 	private ODSQueryService queryService;
@@ -67,8 +65,6 @@ public class ODSContext implements ApplicationContext {
 	 * @throws AoException
 	 */
 	ODSContext(ORB orb, AoSession aoSession, CORBAFileServerIF fileServer, Map<String, String> parameters) throws AoException {
-		this.orb = orb;
-		this.aoSession = aoSession;
 		this.fileServer = fileServer;
 		this.parameters = parameters;
 		
@@ -159,9 +155,16 @@ public class ODSContext implements ApplicationContext {
 		return parameters;
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void close() {
-		closeSession();
+		try {
+			modelManager.close();
+		} catch (AoException e) {
+			LOGGER.warn("Unable to close sesssion due to: " + e.reason, e);
+		}
 	}
 	
 	/**
@@ -177,7 +180,7 @@ public class ODSContext implements ApplicationContext {
 	 * @return {@link AoSession} used for this context.
 	 */
 	public AoSession getAoSession() {
-		return aoSession;
+		return modelManager.getAoSession();
 	}
 
 	/**
@@ -185,7 +188,7 @@ public class ODSContext implements ApplicationContext {
 	 * @return ORB used for this context
 	 */
 	public ORB getORB() {
-		return orb;
+		return modelManager.getORB();
 	}
 
 	/**
@@ -196,21 +199,15 @@ public class ODSContext implements ApplicationContext {
 	public CORBAFileServerIF getFileServer() {
 		return fileServer;
 	}
-	
-	private void closeSession() {
-		if (aoSession == null) {
-			return;
-		}
 
-		try {
-			aoSession.close();
-		} catch (AoException e) {
-			LOGGER.warn("Unable to close sesssion due to: " + e.reason, e);
-		}
-	}
-
-
-	public ODSContext newSession() throws AoException {
-		return new ODSContext(orb, getAoSession().createCoSession(), fileServer, parameters);
+	/**
+	 * Returns a new {@link ODSContext} with a new ODS co-session.
+	 *
+	 * @return The created {@code ODSContext} is returned.
+	 * @throws AoException
+	 *             Thrown on errors.
+	 */
+	public ODSContext newContext() throws AoException {
+		return new ODSContext(modelManager.getORB(), getAoSession().createCoSession(), fileServer, parameters);
 	}
 }

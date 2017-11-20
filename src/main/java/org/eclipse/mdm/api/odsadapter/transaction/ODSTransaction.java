@@ -55,20 +55,12 @@ import org.slf4j.LoggerFactory;
  */
 public final class ODSTransaction implements Transaction {
 
-	// ======================================================================
-	// Class variables
-	// ======================================================================
-
 	// TODO: it should be possible to a attach a progress listener
 	// -> progress notification updates while uploading files
 	// -> any other useful informations?!
 	// -> splitting of tasks into subtasks may be required...
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSTransaction.class);
-
-	// ======================================================================
-	// Instance variables
-	// ======================================================================
 
 	// this one is stored in case of application model modifications
 	private final ODSContext parentContext;
@@ -96,10 +88,6 @@ public final class ODSTransaction implements Transaction {
 
 	private CatalogManager catalogManager;
 
-	// ======================================================================
-	// Constructors
-	// ======================================================================
-
 	/**
 	 * Constructor.
 	 *
@@ -116,14 +104,10 @@ public final class ODSTransaction implements Transaction {
 		this.parentContext = parentContext;
 		this.entity = entity;
 		this.transfer = transfer;
-		context = parentContext.newSession();
+		context = parentContext.newContext();
 		context.getAoSession().startTransaction();
 		LOGGER.debug("Transaction '{}' started.", id);
 	}
-
-	// ======================================================================
-	// Public methods
-	// ======================================================================
 
 	/**
 	 * {@inheritDoc}
@@ -386,10 +370,6 @@ public final class ODSTransaction implements Transaction {
 		}
 	}
 
-	// ======================================================================
-	// Package methods
-	// ======================================================================
-
 	/**
 	 * Once {@link #abort()} is called instance ID of given {@link Core} will be
 	 * reset to {@code 0} which indicates a virtual {@link Entity}, not yet
@@ -451,10 +431,6 @@ public final class ODSTransaction implements Transaction {
 
 		return uploadService;
 	}
-
-	// ======================================================================
-	// Private methods
-	// ======================================================================
 
 	/**
 	 * Returns the {@link CatalogManager}.
