@@ -118,7 +118,7 @@ public class ODSSearchService implements SearchService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> Map<T, Result> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes,
+	public <T extends Entity> List<T> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes,
 			Filter filter) throws DataAccessException {
 		return createResult(entityClass, findSearchQuery(entityClass).fetchComplete(entityTypes, filter));
 	}
@@ -127,7 +127,7 @@ public class ODSSearchService implements SearchService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> Map<T, Result> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter)
+	public <T extends Entity> List<T> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter)
 			throws DataAccessException {
 		return createResult(entityClass, findSearchQuery(entityClass).fetch(attributes, filter));
 	}
@@ -249,12 +249,11 @@ public class ODSSearchService implements SearchService {
 	 *            Entity class of the loaded {@code Entity}s.
 	 * @param results
 	 *            The queried {@code Result}s.
-	 * @return All Results are returned in a Map, which maps entities to the
-	 *         corresponding results.
+	 * @return All loaded entities are returned as a {@link List}.
 	 * @throws DataAccessException
 	 *             Thrown if unable to load the {@code Entity}s.
 	 */
-	private <T extends Entity> Map<T, Result> createResult(Class<T> entityClass, List<Result> results)
+	private <T extends Entity> List<T> createResult(Class<T> entityClass, List<Result> results)
 			throws DataAccessException {
 		EntityType entityType = context.getODSModelManager().getEntityType(entityClass);
 		Map<String, Result> recordsByEntityID = new HashMap<>();
@@ -267,7 +266,7 @@ public class ODSSearchService implements SearchService {
 			resultsByEntity.put(entity, recordsByEntityID.get(entity.getID()));
 		}
 
-		return resultsByEntity;
+		return new ArrayList<>(resultsByEntity.keySet());
 	}
 
 	/**

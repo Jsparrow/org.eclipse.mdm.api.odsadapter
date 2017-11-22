@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.mdm.api.base.ConnectionException;
-import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.model.Channel;
@@ -31,12 +30,9 @@ import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.search.SearchService;
 import org.eclipse.mdm.api.dflt.ApplicationContext;
-import org.eclipse.mdm.api.dflt.EntityManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * JoinType test
@@ -48,7 +44,6 @@ import org.slf4j.LoggerFactory;
 // FIXME 10.7.2017: this test needs a running ODS Server, that is not suitable for continous build in Jenkins.
 // Comment this in for local tests only.
 public class JoinTest {
-	private static final Logger LOGGER = LoggerFactory.getLogger(JoinTest.class);
 
 	private static final String NAME_SERVICE = "corbaloc::1.2@%s:%s/NameService";
 
@@ -56,7 +51,6 @@ public class JoinTest {
 	private static final String PASSWORD = "sa";
 
 	private static ApplicationContext context;
-	private static EntityManager entityManager;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
@@ -84,14 +78,12 @@ public class JoinTest {
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
 		context  = new ODSContextFactory().connect(connectionParameters);
-		entityManager = context.getEntityManager()
-				.orElseThrow(() -> new ServiceNotProvidedException(EntityManager.class));
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws ConnectionException {
-		if (entityManager != null) {
-			entityManager.close();
+		if (context != null) {
+			context.close();
 		}
 	}
 

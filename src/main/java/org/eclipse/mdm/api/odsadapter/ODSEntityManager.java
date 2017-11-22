@@ -364,16 +364,4 @@ public class ODSEntityManager implements EntityManager {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void close() throws ConnectionException {
-		try {
-			odsModelManager.close();
-		} catch (AoException e) {
-			throw new ConnectionException("Unable to close the connection to the data source due to: " + e.reason, e);
-		}
-	}
-
 }

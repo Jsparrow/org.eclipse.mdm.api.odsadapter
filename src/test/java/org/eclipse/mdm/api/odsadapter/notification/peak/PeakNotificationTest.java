@@ -117,8 +117,8 @@ public class PeakNotificationTest {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws ConnectionException, NotificationException {
-		if (entityManager != null) {
-			entityManager.close();
+		if (context != null) {
+			context.close();
 		}
 
 		if (notificationManager != null) {
