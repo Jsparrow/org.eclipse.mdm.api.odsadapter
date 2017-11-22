@@ -12,6 +12,8 @@ import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -123,7 +125,7 @@ public final class ODSEntityFactory extends EntityFactory {
 	 * @return The newly created instance.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T extends Entity> T createEntity(Class<T> clazz, Core core) {
+	public <T extends Entity> T createEntity(Class<T> clazz, Core core) {
 		if (BaseEntity.class.isAssignableFrom(clazz)) {
 			return (T) createBaseEntity(clazz.asSubclass(BaseEntity.class), core);
 		} else {
@@ -187,6 +189,23 @@ public final class ODSEntityFactory extends EntityFactory {
         if (er.get(enumerationObj.getName())==null) {
 		  throw new IllegalArgumentException("Given enum class '" + enumerationObj.getName() + "' is not supported.");
         }
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected <T extends BaseEntity> T createBaseEntity(Class<T> clazz, Core core) {
+		try {
+			Constructor<T> constructor = clazz.getDeclaredConstructor(Core.class);
+			try {
+				return constructor.newInstance(core);
+			} catch (IllegalAccessException exc) {
+				return super.createBaseEntity(clazz, core);
+			}
+		} catch (NoSuchMethodException | InvocationTargetException | InstantiationException exc) {
+			throw new IllegalStateException(exc.getMessage(), exc);
+		}
 	}
 
 	// ======================================================================

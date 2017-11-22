@@ -4,8 +4,6 @@ import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +26,7 @@ import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
+import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 
 /**
  * Container for entities by executing an {@link EntityRequest}.
@@ -91,7 +90,7 @@ final class EntityResult<T extends Entity> {
 
 	/**
 	 * Creates an {@link EntityRecord} for given {@link Record} using given
-	 * parent {@code EntityRecord} and mapps it internally by its instance ID.
+	 * parent {@code EntityRecord} and maps it internally by its instance ID.
 	 *
 	 * @param parentRecord
 	 *            The created {@code EntityRecord} will be related as a child
@@ -165,7 +164,7 @@ final class EntityResult<T extends Entity> {
 	 *            The {@code CatalogAttribute} {@code Core}.
 	 */
 	private void adjustCatalogAttributeCore(Entity catalogComponent, Core catalogAttributeCore) {
-		EntityType entityType = request.modelManager.getEntityType(catalogComponent.getName());
+		EntityType entityType = request.odsModelManager.getEntityType(catalogComponent.getName());
 		Attribute attribute = entityType.getAttribute(catalogAttributeCore.getValues().get(Entity.ATTR_NAME).extract());
 
 		Map<String, Value> values = catalogAttributeCore.getValues();
@@ -192,24 +191,12 @@ final class EntityResult<T extends Entity> {
 	 * @return The created {@link EntityRecord} is returned.
 	 */
 	private EntityRecord<T> create(Core core) {
-		Constructor<T> constructor = null;
-		boolean isAccessible = false;
-		try {
-			constructor = request.entityConfig.getEntityClass().getDeclaredConstructor(Core.class);
-			isAccessible = constructor.isAccessible();
-			constructor.setAccessible(true);
-			EntityRecord<T> entityRecord = new EntityRecord<>(constructor.newInstance(core), core);
-			entityRecords.put(core.getID(), entityRecord);
-			entities.add(entityRecord.entity);
-			return entityRecord;
-		} catch (InstantiationException | IllegalAccessException | NoSuchMethodException
-				| InvocationTargetException e) {
-			throw new IllegalStateException(e.getMessage(), e);
-		} finally {
-			if (constructor != null) {
-				constructor.setAccessible(isAccessible);
-			}
-		}
+		ODSEntityFactory odsEntityFactory = new ODSEntityFactory(request.getODSModelManager(), null);
+		EntityRecord<T> entityRecord = new EntityRecord<>(
+				odsEntityFactory.createEntity(request.entityConfig.getEntityClass(), core), core);
+		entityRecords.put(core.getID(), entityRecord);
+		entities.add(entityRecord.entity);
+		return entityRecord;
 	}
 
 }

@@ -48,7 +48,7 @@ public class EntityRequest<T extends Entity> {
 	// Instance variables
 	// ======================================================================
 
-	final ModelManager modelManager;
+	final ODSModelManager odsModelManager;
 	final QueryService queryService;
 	final EntityConfig<T> entityConfig;
 	final EntityResult<T> entityResult = new EntityResult<>(this);
@@ -70,7 +70,7 @@ public class EntityRequest<T extends Entity> {
 	 *            The {@link EntityConfig}.
 	 */
 	public EntityRequest(ODSModelManager modelManager, QueryService queryService, Key<T> key) {
-		this.modelManager = modelManager;
+		this.odsModelManager = modelManager;
 		this.queryService = queryService;
 		this.entityConfig = modelManager.getEntityConfig(key);
 		cache = new Cache();
@@ -85,7 +85,7 @@ public class EntityRequest<T extends Entity> {
 	 *            The {@link EntityConfig}.
 	 */
 	protected EntityRequest(EntityRequest<?> parentRequest, EntityConfig<T> entityConfig) {
-		modelManager = parentRequest.modelManager;
+		odsModelManager = parentRequest.odsModelManager;
 		queryService = parentRequest.queryService;
 		cache = parentRequest.cache;
 		this.entityConfig = entityConfig;
@@ -126,6 +126,10 @@ public class EntityRequest<T extends Entity> {
 		}
 
 		return load(Filter.idsOnly(entityConfig.getEntityType(), instanceIDs)).getSortedEntities();
+	}
+	
+	public ODSModelManager getODSModelManager() {
+		return odsModelManager;
 	}
 
 	// ======================================================================
