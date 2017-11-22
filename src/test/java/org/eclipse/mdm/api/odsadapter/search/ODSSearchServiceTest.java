@@ -48,6 +48,7 @@ import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.Pool;
 import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.odsadapter.ODSContextFactory;
+import org.eclipse.mdm.api.odsadapter.ODSEntityManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 import org.junit.AfterClass;
@@ -151,77 +152,7 @@ public class ODSSearchServiceTest {
 		}
 
 	}
-	
-	/**
-	 * changes a relation between instances. There needs to exist a MeaResult of id 1101 and a ParameterSet of id
-	 * 1102 which will be related after running this test.
-	 * If these don't exist, please leave the following line commented, or the test will fail.  
-	 * @throws Exception 
-	 */
-	//@org.junit.Test
-	public void changeRelation() throws Exception {
-		String idmea = "1101";
-		String idparamset = "1002";
-
-		EntityType etmeasurement = modelManager.getEntityType(Measurement.class);
-		EntityType etparamset = modelManager.getEntityType(ParameterSet.class);
-		Transaction transaction;
-
-		transaction = entityManager.startTransaction();
-
-		try {
-			List<Measurement> mealist;
-			mealist = searchService.fetch(Measurement.class, Filter.idOnly(etmeasurement, idmea));
-			assertEquals(1, mealist.size());
-			Measurement mea = mealist.get(0);
-
-			List<ParameterSet> paramsetlist = new ArrayList<>();
-			ParameterSet paramset = entityManager.load(ParameterSet.class, idparamset);
-			paramsetlist.add(paramset);
-
-			// FIXME: the API should expose the getCore method so that we don't
-			// need to use introspection
-			// to access the core.
-			Method GET_CORE_METHOD;
-			try {
-				GET_CORE_METHOD = BaseEntity.class.getDeclaredMethod("getCore");
-				GET_CORE_METHOD.setAccessible(true);
-			} catch (NoSuchMethodException | SecurityException e) {
-				throw new IllegalStateException(
-						"Unable to load 'getCore()' in class '" + BaseEntity.class.getSimpleName() + "'.", e);
-			}
-			Core core = (Core) GET_CORE_METHOD.invoke(paramset);
-			// Note: we can only set relations in the mutable store (which
-			// doesn't include parent-child-relations)
-			EntityStore store = core.getMutableStore();
-			store.set(mea);
-			assertEquals(core.getMutableStore().get(Measurement.class), mea);
-
-			transaction.update(paramsetlist);
-			transaction.commit();
-
-			// reload from database and check if relation is consistent with
-			// expectations
-			// first we need to build our own SearchQuery, because the
-			// predefined ones don't include ParameterSet
-			MeasurementSearchQuery mq = new MeasurementSearchQuery((ODSModelManager) modelManager,
-					queryService,
-					ContextState.MEASURED);
-			List<EntityType> fetchList = new ArrayList<>();
-			fetchList.add(etmeasurement);
-			List<Result> fetch = mq.fetchComplete(fetchList, Filter.idOnly(etparamset, idparamset));
-			assertEquals(fetch.size(), 1);
-			Record record = fetch.get(0).getRecord(etmeasurement);
-			assertNotNull(record);
-			assertEquals(record.getID(), idmea);
-
-		} catch (RuntimeException | IllegalAccessException | InvocationTargetException e) {
-			transaction.abort();
-			throw e;
-		}
-
-	}
-	
+		
 	private Extractor<FilterItem, Tuple> filterExtractors = new Extractor<FilterItem, Tuple>() {
 
 		@Override

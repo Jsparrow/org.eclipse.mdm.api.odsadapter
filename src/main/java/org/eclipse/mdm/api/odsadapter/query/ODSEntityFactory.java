@@ -19,7 +19,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.mdm.api.base.adapter.DefaultCore;
+import org.eclipse.mdm.api.base.core.ChildrenStore;
 import org.eclipse.mdm.api.base.core.Core;
+import org.eclipse.mdm.api.base.core.EntityStore;
 import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.ContextType;
@@ -161,6 +163,27 @@ public final class ODSEntityFactory extends EntityFactory {
 	@Override
 	protected <T extends Entity> Core createCore(Class<T> entityClass, ContextType contextType) {
 		return createCore(new Key<>(entityClass, contextType));
+	}
+		
+	/**
+	 * {@inheritDoc}
+	 */
+	public static final EntityStore getMutableStore(BaseEntity entity) {
+		return EntityFactory.getMutableStore(entity);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	public static final EntityStore getPermanentStore(BaseEntity entity) {
+		return EntityFactory.getPermanentStore(entity);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	public static final ChildrenStore getChildrenStore(BaseEntity entity) {
+		return EntityFactory.getChildrenStore(entity);
 	}
 
 	/**

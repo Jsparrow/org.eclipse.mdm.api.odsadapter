@@ -69,7 +69,7 @@ public final class RelationConfig {
 		if (relatedEntityID.isPresent()) {
 			dependants.computeIfAbsent(relatedEntityID.get(), k -> new ArrayList<>()).add(entityRecord);
 		} else if (mandatory) {
-			throw new IllegalStateException("Mandatory relation unsatisfied.");
+			throw new IllegalStateException("Mandatory relation unsatisfied for relation "+relation.getName());
 		}
 	}
 
