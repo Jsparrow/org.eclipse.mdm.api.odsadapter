@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.Transaction;
+import org.eclipse.mdm.api.base.adapter.Core;
 import org.eclipse.mdm.api.base.adapter.EntityType;
-import org.eclipse.mdm.api.base.core.Core;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ContextRoot;

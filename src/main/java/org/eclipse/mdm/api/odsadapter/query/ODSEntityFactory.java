@@ -18,10 +18,10 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.eclipse.mdm.api.base.adapter.ChildrenStore;
+import org.eclipse.mdm.api.base.adapter.Core;
 import org.eclipse.mdm.api.base.adapter.DefaultCore;
-import org.eclipse.mdm.api.base.core.ChildrenStore;
-import org.eclipse.mdm.api.base.core.Core;
-import org.eclipse.mdm.api.base.core.EntityStore;
+import org.eclipse.mdm.api.base.adapter.EntityStore;
 import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.ContextType;
