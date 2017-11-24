@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -126,7 +127,7 @@ public class ODSFreeTextSearchTest {
 	@Test(expected = IllegalStateException.class)
 	public void illegalLoadRequest_niceExceptionIsThrown() throws DataAccessException, InterruptedException {
 		loader = mock(EntityLoader.class);
-		when(loader.loadAll(any(Key.class), anyCollection())).thenThrow(new DataAccessException(""));
+		when(loader.loadAll(any(), anyCollectionOf(String.class))).thenThrow(new DataAccessException(""));
 		createExampleIndex("TestStep", "mdm2", "asdf");
 		ODSFreeTextSearch fts2 = new ODSFreeTextSearch(loader, "mdm2", HOST);
 

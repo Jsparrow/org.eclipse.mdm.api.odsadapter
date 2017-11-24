@@ -17,14 +17,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.mdm.api.base.adapter.Attribute;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.Value;
-import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.Result;
-import org.eclipse.mdm.api.base.query.SearchQuery;
-import org.eclipse.mdm.api.base.query.Searchable;
+import org.eclipse.mdm.api.base.search.SearchQuery;
+import org.eclipse.mdm.api.base.search.Searchable;
 
 /**
  * Merges 2 distinct search queries, where one queries context data as ordered

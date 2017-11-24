@@ -1,18 +1,15 @@
-package org.eclipse.mdm.api.odsadapter;
+package org.eclipse.mdm.api.odsadapter.notification;
 
 import java.util.Map;
-import java.util.Optional;
 
-import javax.ejb.LocalBean;
-import javax.ejb.Stateful;
-
-import org.eclipse.mdm.api.base.BaseEntityManager;
 import org.eclipse.mdm.api.base.ConnectionException;
-import org.eclipse.mdm.api.base.NotificationManagerFactory;
-import org.eclipse.mdm.api.base.model.BaseEntityFactory;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.notification.NotificationException;
-import org.eclipse.mdm.api.base.notification.NotificationManager;
-import org.eclipse.mdm.api.base.query.ModelManager;
+import org.eclipse.mdm.api.base.notification.NotificationService;
+import org.eclipse.mdm.api.base.query.QueryService;
+import org.eclipse.mdm.api.dflt.ApplicationContext;
+import org.eclipse.mdm.api.odsadapter.ODSContextFactory;
 import org.eclipse.mdm.api.odsadapter.notification.avalon.AvalonNotificationManager;
 import org.eclipse.mdm.api.odsadapter.notification.peak.PeakNotificationManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -20,60 +17,53 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Factory for creating a notification manager.
- * 
- * Currently only supports creating a notification manager for server type
- * 'peak'.
+ * Factory for creating a notification service.
  * 
  * @since 1.0.0
  * @author Matthias Koller, Peak Solution GmbH
  *
  */
-@Stateful
-@LocalBean
-public class ODSNotificationManagerFactory implements NotificationManagerFactory {
-	private static final Logger LOGGER = LoggerFactory.getLogger(ODSNotificationManagerFactory.class);
+public class ODSNotificationServiceFactory {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ODSNotificationServiceFactory.class);
 
-	public static final String PARAM_SERVER_TYPE = "serverType";
-	public static final String PARAM_URL = "url";
-	public static final String PARAM_EVENT_MEDIATYPE = "eventMimetype";
-	public static final String PARAM_POLLING_INTERVAL = "pollingInterval";
+	public static final String PARAM_SERVER_TYPE = "freetext.notificationType";
+	public static final String PARAM_URL = "freetext.notificationUrl";
+	public static final String PARAM_POLLING_INTERVAL = "freetext.pollingInterval";
 
 	public static final String SERVER_TYPE_PEAK = "peak";
 	public static final String SERVER_TYPE_AVALON = "avalon";
 
 	public static final String PARAM_NAMESERVICE_URL = "nameserviceURL";
-
-	public NotificationManager create(BaseEntityManager<? extends BaseEntityFactory> entityManager,
-			Map<String, String> parameters) throws ConnectionException {
+	
+	public NotificationService create(ApplicationContext context, Map<String, String> parameters) throws ConnectionException {
 		String type = getParameter(parameters, PARAM_SERVER_TYPE);
 
-		Optional<ModelManager> mm = entityManager.getModelManager();
-		if (!mm.isPresent()) {
-			throw new ConnectionException("EntityManager has no ModelManager!");
-		}
-		if (!ODSModelManager.class.isInstance(mm.get())) {
+		ModelManager mm = context.getModelManager()
+				.orElseThrow(() -> new ServiceNotProvidedException(ModelManager.class));
+		
+		QueryService queryService = context.getQueryService()
+				.orElseThrow(() -> new ServiceNotProvidedException(QueryService.class));
+		
+		if (!ODSModelManager.class.isInstance(mm)) {
 			throw new ConnectionException("ModelManager is not a ODSModelManager!");
 		}
 
 		if (SERVER_TYPE_PEAK.equalsIgnoreCase(type)) {
 			String url = getParameter(parameters, PARAM_URL);
-			String eventMediaType = getParameter(parameters, PARAM_EVENT_MEDIATYPE);
-
+			
 			LOGGER.info("Connecting to Peak Notification Server ...");
 			LOGGER.info("URL: {}", url);
-			LOGGER.info("Event MediaType: {}", eventMediaType);
 
 			try {
-				return new PeakNotificationManager((ODSModelManager) mm.get(), url, eventMediaType, true);
+				return new PeakNotificationManager((ODSModelManager) mm, queryService, url, true);
 			} catch (NotificationException e) {
 				throw new ConnectionException("Could not connect to notification service!", e);
 			}
 		} else if (SERVER_TYPE_AVALON.equalsIgnoreCase(type)) {
 
-			String serviceName = getParameter(parameters, ODSEntityManagerFactory.PARAM_SERVICENAME);
+			String serviceName = getParameter(parameters, ODSContextFactory.PARAM_SERVICENAME);
 			serviceName = serviceName.replace(".ASAM-ODS", "");
-			String nameServiceURL = getParameter(parameters, ODSEntityManagerFactory.PARAM_NAMESERVICE);
+			String nameServiceURL = getParameter(parameters, ODSContextFactory.PARAM_NAMESERVICE);
 
 			LOGGER.info("Connecting to Avalon Notification Server ...");
 			LOGGER.info("Name service URL: {}", nameServiceURL);
@@ -87,7 +77,7 @@ public class ODSNotificationManagerFactory implements NotificationManagerFactory
 						e);
 			}
 
-			return new AvalonNotificationManager((ODSModelManager) mm.get(), serviceName, nameServiceURL, true,
+			return new AvalonNotificationManager((ODSModelManager) mm, queryService, serviceName, nameServiceURL, true,
 					pollingInterval);
 		} else {
 			throw new ConnectionException("Invalid server type. Expected on of: 'peak'");

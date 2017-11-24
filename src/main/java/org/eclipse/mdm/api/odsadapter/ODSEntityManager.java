@@ -21,8 +21,9 @@ import java.util.stream.Collectors;
 import org.asam.ods.AoException;
 import org.asam.ods.InstanceElement;
 import org.eclipse.mdm.api.base.ConnectionException;
-import org.eclipse.mdm.api.base.FileService;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
@@ -34,23 +35,17 @@ import org.eclipse.mdm.api.base.model.Environment;
 import org.eclipse.mdm.api.base.model.MeasuredValues;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.JoinType;
-import org.eclipse.mdm.api.base.query.ModelManager;
 import org.eclipse.mdm.api.base.query.Query;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Result;
-import org.eclipse.mdm.api.base.query.SearchService;
 import org.eclipse.mdm.api.dflt.EntityManager;
-import org.eclipse.mdm.api.dflt.model.EntityFactory;
-import org.eclipse.mdm.api.odsadapter.filetransfer.CORBAFileService;
 import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
-import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
-import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
 import org.eclipse.mdm.api.odsadapter.transaction.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
@@ -74,12 +69,12 @@ public class ODSEntityManager implements EntityManager {
 	// ======================================================================
 	// Instance variables
 	// ======================================================================
-
-	private final ODSModelManager modelManager;
-	private final EntityLoader entityLoader;
-
 	private final Transfer transfer = Transfer.SOCKET;
-	private String esHost;
+	
+	private final ODSContext context;
+	private final ODSModelManager odsModelManager;
+	private final QueryService queryService;
+	private final EntityLoader entityLoader;
 
 	// ======================================================================
 	// Constructors
@@ -88,59 +83,21 @@ public class ODSEntityManager implements EntityManager {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager
-	 *            The {@link ODSModelManager}.
+	 * @param context
+	 *            The {@link ODSContext}.
 	 */
-	public ODSEntityManager(ODSModelManager modelManager, String esHost) {
-		this.modelManager = modelManager;
-		this.esHost = esHost;
-		entityLoader = new EntityLoader(modelManager);
+	public ODSEntityManager(ODSContext context) {
+		this.context = context;
+		this.odsModelManager = context.getODSModelManager();
+		this.queryService = context.getQueryService()
+				.orElseThrow(() -> new ServiceNotProvidedException(QueryService.class));
+		entityLoader = new EntityLoader(odsModelManager, queryService);
 	}
 
 	// ======================================================================
 	// Public methods
 	// ======================================================================
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Optional<EntityFactory> getEntityFactory() {
-		try {
-			return Optional.of(new ODSEntityFactory(modelManager, loadLoggedOnUser().get()));
-		} catch (DataAccessException e) {
-			throw new IllegalStateException("Unable to load instance of the logged in user.");
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Optional<ModelManager> getModelManager() {
-		return Optional.of(modelManager);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Optional<SearchService> getSearchService() {
-		// TODO
-		// java docs: cache this service for ONE request!
-		return Optional.of(new ODSSearchService(modelManager, entityLoader, esHost));
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Optional<FileService> getFileService() {
-		if (modelManager.getFileServer() == null) {
-			return Optional.empty();
-		}
-		return Optional.of(new CORBAFileService(modelManager, transfer));
-	}
 
 	/**
 	 * {@inheritDoc}
@@ -162,7 +119,7 @@ public class ODSEntityManager implements EntityManager {
 	public Optional<User> loadLoggedOnUser() throws DataAccessException {
 		InstanceElement ieUser = null;
 		try {
-			ieUser = modelManager.getAoSession().getUser();
+			ieUser = odsModelManager.getAoSession().getUser();
 			return Optional.of(
 					entityLoader.load(new Key<>(User.class), Long.toString(ODSConverter.fromODSLong(ieUser.getId()))));
 		} catch (AoException e) {
@@ -202,14 +159,14 @@ public class ODSEntityManager implements EntityManager {
 	 */
 	@Override
 	public <T extends Entity> Optional<T> loadParent(Entity child, Class<T> entityClass) throws DataAccessException {
-		EntityType parentEntityType = modelManager.getEntityType(entityClass);
-		EntityType childEntityType = modelManager.getEntityType(child);
-		Query query = modelManager.createQuery().selectID(parentEntityType);
+		EntityType parentEntityType = odsModelManager.getEntityType(entityClass);
+		EntityType childEntityType = odsModelManager.getEntityType(child);
+		Query query = queryService.createQuery().selectID(parentEntityType);
 
 		if (child instanceof Channel && ChannelGroup.class.equals(entityClass)) {
 			// this covers the gap between channel and channel group via local
 			// column
-			EntityType localColumnEntityType = modelManager.getEntityType("LocalColumn");
+			EntityType localColumnEntityType = odsModelManager.getEntityType("LocalColumn");
 			query.join(childEntityType, localColumnEntityType).join(localColumnEntityType, parentEntityType);
 		} else {
 			query.join(childEntityType, parentEntityType);
@@ -277,14 +234,14 @@ public class ODSEntityManager implements EntityManager {
 	@Override
 	public <T extends Entity> List<T> loadChildren(Entity parent, Class<T> entityClass, String pattern)
 			throws DataAccessException {
-		EntityType parentEntityType = modelManager.getEntityType(parent);
-		EntityType childEntityType = modelManager.getEntityType(entityClass);
-		Query query = modelManager.createQuery();
+		EntityType parentEntityType = odsModelManager.getEntityType(parent);
+		EntityType childEntityType = odsModelManager.getEntityType(entityClass);
+		Query query = queryService.createQuery();
 
 		if (parent instanceof ChannelGroup && Channel.class.equals(entityClass)) {
 			// this covers the gap between channel and channel group via local
 			// column
-			EntityType localColumnEntityType = modelManager.getEntityType("LocalColumn");
+			EntityType localColumnEntityType = odsModelManager.getEntityType("LocalColumn");
 			query.join(childEntityType, localColumnEntityType).join(localColumnEntityType, parentEntityType);
 		} else {
 			query.join(childEntityType, parentEntityType);
@@ -326,12 +283,12 @@ public class ODSEntityManager implements EntityManager {
 	 */
 	@Override
 	public List<ContextType> loadContextTypes(ContextDescribable contextDescribable) throws DataAccessException {
-		EntityType contextDescribableEntityType = modelManager.getEntityType(contextDescribable);
-		Query query = modelManager.createQuery();
+		EntityType contextDescribableEntityType = odsModelManager.getEntityType(contextDescribable);
+		Query query = queryService.createQuery();
 
 		Map<ContextType, EntityType> contextRootEntityTypes = new EnumMap<>(ContextType.class);
 		for (ContextType contextType : ContextType.values()) {
-			EntityType entityType = modelManager.getEntityType(ContextRoot.class, contextType);
+			EntityType entityType = odsModelManager.getEntityType(ContextRoot.class, contextType);
 			contextRootEntityTypes.put(contextType, entityType);
 			query.join(contextDescribableEntityType.getRelation(entityType), JoinType.OUTER).selectID(entityType);
 		}
@@ -359,12 +316,12 @@ public class ODSEntityManager implements EntityManager {
 	@Override
 	public Map<ContextType, ContextRoot> loadContexts(ContextDescribable contextDescribable,
 			ContextType... contextTypes) throws DataAccessException {
-		EntityType contextDescribableEntityType = modelManager.getEntityType(contextDescribable);
-		Query query = modelManager.createQuery();
+		EntityType contextDescribableEntityType = odsModelManager.getEntityType(contextDescribable);
+		Query query = queryService.createQuery();
 
 		Map<ContextType, EntityType> contextRootEntityTypes = new EnumMap<>(ContextType.class);
 		for (ContextType contextType : contextTypes.length == 0 ? ContextType.values() : contextTypes) {
-			EntityType entityType = modelManager.getEntityType(ContextRoot.class, contextType);
+			EntityType entityType = odsModelManager.getEntityType(ContextRoot.class, contextType);
 			contextRootEntityTypes.put(contextType, entityType);
 			query.join(contextDescribableEntityType.getRelation(entityType), JoinType.OUTER).selectID(entityType);
 		}
@@ -392,7 +349,7 @@ public class ODSEntityManager implements EntityManager {
 	 */
 	@Override
 	public List<MeasuredValues> readMeasuredValues(ReadRequest readRequest) throws DataAccessException {
-		return new ReadRequestHandler(modelManager).execute(readRequest);
+		return new ReadRequestHandler(odsModelManager).execute(readRequest);
 	}
 
 	/**
@@ -401,21 +358,9 @@ public class ODSEntityManager implements EntityManager {
 	@Override
 	public Transaction startTransaction() throws DataAccessException {
 		try {
-			return new ODSTransaction(modelManager, loadEnvironment(), transfer);
+			return new ODSTransaction(context, loadEnvironment(), transfer);
 		} catch (AoException e) {
 			throw new DataAccessException("Unable to start transaction due to: " + e.reason, e);
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void close() throws ConnectionException {
-		try {
-			modelManager.close();
-		} catch (AoException e) {
-			throw new ConnectionException("Unable to close the connection to the data source due to: " + e.reason, e);
 		}
 	}
 

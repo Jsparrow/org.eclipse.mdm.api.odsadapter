@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextDescribable;
 import org.eclipse.mdm.api.base.model.ContextRoot;
@@ -12,9 +13,9 @@ import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.JoinType;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
@@ -29,13 +30,15 @@ public class NotificationEntityLoader {
 	private static final Logger LOGGER = LoggerFactory.getLogger(NotificationEntityLoader.class);
 
 	private final ODSModelManager modelManager;
+	private final QueryService queryService;
 	private final EntityLoader loader;
 
 	private boolean loadContextDescribable;
 
-	public NotificationEntityLoader(ODSModelManager modelManager, boolean loadContextDescribable) {
+	public NotificationEntityLoader(ODSModelManager modelManager, QueryService queryService, boolean loadContextDescribable) {
 		this.modelManager = modelManager;
-		this.loader = new EntityLoader(modelManager);
+		this.queryService =  queryService;
+		this.loader = new EntityLoader(modelManager, queryService);
 		this.loadContextDescribable = loadContextDescribable;
 	}
 
@@ -101,12 +104,12 @@ public class NotificationEntityLoader {
 		final EntityType testStep = modelManager.getEntityType(TestStep.class);
 		final EntityType measurement = modelManager.getEntityType(Measurement.class);
 
-		List<String> testStepIDs = modelManager.createQuery().selectID(testStep)
+		List<String> testStepIDs = queryService.createQuery().selectID(testStep)
 				.join(testStep.getRelation(contextRoot), JoinType.OUTER)
 				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
-		List<String> measurementIDs = modelManager.createQuery().selectID(measurement)
+		List<String> measurementIDs = queryService.createQuery().selectID(measurement)
 				.join(measurement.getRelation(contextRoot), JoinType.OUTER)
 				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
@@ -138,13 +141,13 @@ public class NotificationEntityLoader {
 		final EntityType testStep = modelManager.getEntityType(TestStep.class);
 		final EntityType measurement = modelManager.getEntityType(Measurement.class);
 
-		List<String> testStepIDs = modelManager.createQuery().selectID(testStep)
+		List<String> testStepIDs = queryService.createQuery().selectID(testStep)
 				.join(testStep.getRelation(contextRoot), JoinType.OUTER)
 				.join(contextRoot.getRelation(contextComponent), JoinType.OUTER)
 				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids)))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
-		List<String> measurementIDs = modelManager.createQuery().selectID(measurement)
+		List<String> measurementIDs = queryService.createQuery().selectID(measurement)
 				.join(measurement.getRelation(contextRoot), JoinType.OUTER)
 				.join(contextRoot.getRelation(contextComponent), JoinType.OUTER)
 				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids)))

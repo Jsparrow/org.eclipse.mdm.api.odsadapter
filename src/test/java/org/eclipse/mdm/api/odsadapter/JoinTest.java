@@ -8,10 +8,10 @@
 
 package org.eclipse.mdm.api.odsadapter;
 
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMESERVICE;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_SERVICENAME;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_USER;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_NAMESERVICE;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_PASSWORD;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_SERVICENAME;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_USER;
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
@@ -19,23 +19,20 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.ModelManager;
-import org.eclipse.mdm.api.base.query.SearchService;
-import org.eclipse.mdm.api.dflt.EntityManager;
-import org.eclipse.mdm.api.dflt.model.EntityFactory;
+import org.eclipse.mdm.api.base.search.SearchService;
+import org.eclipse.mdm.api.dflt.ApplicationContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * JoinType test
@@ -47,15 +44,13 @@ import org.slf4j.LoggerFactory;
 // FIXME 10.7.2017: this test needs a running ODS Server, that is not suitable for continous build in Jenkins.
 // Comment this in for local tests only.
 public class JoinTest {
-	private static final Logger LOGGER = LoggerFactory.getLogger(JoinTest.class);
 
 	private static final String NAME_SERVICE = "corbaloc::1.2@%s:%s/NameService";
 
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
 
-	private static EntityManager entityManager;
-	private static EntityFactory entityFactory;
+	private static ApplicationContext context;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
@@ -82,22 +77,20 @@ public class JoinTest {
 		connectionParameters.put(PARAM_USER, USER);
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
-		entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
-		entityFactory = entityManager.getEntityFactory()
-				.orElseThrow(() -> new IllegalStateException("Entity manager factory not available."));
+		context  = new ODSContextFactory().connect(connectionParameters);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws ConnectionException {
-		if (entityManager != null) {
-			entityManager.close();
+		if (context != null) {
+			context.close();
 		}
 	}
 
 	@org.junit.Test
 	public void findTestFromTestStepId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
@@ -109,8 +102,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findTestFromMeasurementId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
@@ -122,8 +115,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findTestFromChannelGroupId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 
@@ -135,8 +128,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findTestFromChannelId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
@@ -148,8 +141,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findTestStepFromTestId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
@@ -161,8 +154,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findTestStepFromMeasurementId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
@@ -174,8 +167,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findTestStepFromChannelGroupId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 
@@ -187,8 +180,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findTestStepFromChannelId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
@@ -200,8 +193,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findMeasurementFromTestId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
@@ -213,8 +206,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findMeasurementFromTestStepId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
@@ -226,8 +219,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findMeasurementFromChannelGroupId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 
@@ -239,8 +232,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findMeasurementFromChannelId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
@@ -252,8 +245,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelGroupFromTestId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
@@ -265,8 +258,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelGroupFromTestStepId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
@@ -278,8 +271,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelGroupFromMeasurementId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
@@ -291,8 +284,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelGroupFromChannelId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Channel.class);
 
@@ -304,8 +297,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelFromTestId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Test.class);
 
@@ -317,8 +310,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelFromTestStepId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(TestStep.class);
 
@@ -330,8 +323,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelFromMeasurementId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(Measurement.class);
 
@@ -343,8 +336,8 @@ public class JoinTest {
 
 	@org.junit.Test
 	public void findChannelFromChannelGroupId() throws DataAccessException {
-		ModelManager modelManager = entityManager.getModelManager().get();
-		SearchService searchService = entityManager.getSearchService().get();
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
 
 		EntityType et = modelManager.getEntityType(ChannelGroup.class);
 

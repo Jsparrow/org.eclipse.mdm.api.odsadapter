@@ -32,11 +32,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.asam.ods.ElemId;
-import org.eclipse.mdm.api.base.FileService;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
+import org.eclipse.mdm.api.base.file.FileService;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
+import org.eclipse.mdm.api.odsadapter.ODSContext;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
-import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +64,7 @@ public class CORBAFileService implements FileService {
 	// ======================================================================
 
 	private final CORBAFileServer fileServer;
-	private final ODSModelManager modelManager;
-
+	private final ModelManager modelManager;
 	// ======================================================================
 	// Constructors
 	// ======================================================================
@@ -71,14 +72,15 @@ public class CORBAFileService implements FileService {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager
+	 * @param context
 	 *            Used for {@link Entity} to {@link ElemId} conversion.
 	 * @param transfer
 	 *            The transfer type for up- and downloads.
 	 */
-	public CORBAFileService(ODSModelManager modelManager, Transfer transfer) {
-		this.modelManager = modelManager;
-		fileServer = new CORBAFileServer(modelManager, transfer);
+	public CORBAFileService(ODSContext context, Transfer transfer) {
+		this.modelManager = context.getModelManager().orElseThrow(() -> new ServiceNotProvidedException(ModelManager.class));
+		
+		fileServer = new CORBAFileServer(context, transfer);
 	}
 
 	// ======================================================================

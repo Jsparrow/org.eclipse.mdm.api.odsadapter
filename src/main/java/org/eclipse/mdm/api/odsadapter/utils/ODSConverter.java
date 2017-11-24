@@ -8,9 +8,12 @@
 
 package org.eclipse.mdm.api.odsadapter.utils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +32,7 @@ import org.asam.ods.T_COMPLEX;
 import org.asam.ods.T_DCOMPLEX;
 import org.asam.ods.T_ExternalReference;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.adapter.Attribute;
 import org.eclipse.mdm.api.base.model.DoubleComplex;
 import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.FloatComplex;
@@ -37,7 +41,6 @@ import org.eclipse.mdm.api.base.model.MimeType;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
-import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.odsadapter.query.ODSAttribute;
 
@@ -56,13 +59,17 @@ public final class ODSConverter {
 	private static final Map<Integer, DateTimeFormatter> ODS_DATE_FORMATTERS = new HashMap<>();
 
 	static {
-		ODS_DATE_FORMATTERS.put(4, DateTimeFormatter.ofPattern("yyyy"));
-		ODS_DATE_FORMATTERS.put(6, DateTimeFormatter.ofPattern("yyyyMM"));
+		ODS_DATE_FORMATTERS.put(4, new DateTimeFormatterBuilder().appendPattern("yyyy").parseDefaulting(ChronoField.MONTH_OF_YEAR, 1).parseDefaulting(ChronoField.DAY_OF_MONTH, 1).toFormatter());
+		ODS_DATE_FORMATTERS.put(6, new DateTimeFormatterBuilder().appendPattern("yyyyMM").parseDefaulting(ChronoField.DAY_OF_MONTH, 1).toFormatter());
 		ODS_DATE_FORMATTERS.put(8, DateTimeFormatter.ofPattern("yyyyMMdd"));
 		ODS_DATE_FORMATTERS.put(10, DateTimeFormatter.ofPattern("yyyyMMddHH"));
 		ODS_DATE_FORMATTERS.put(12, DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
 		ODS_DATE_FORMATTERS.put(14, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-		ODS_DATE_FORMATTERS.put(17, DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+		/*
+		 * JDK-8031085: DateTimeFormatter won't parse dates with custom format "yyyyMMddHHmmssSSS"
+		 * @see http://bugs.java.com/bugdatabase/view_bug.do?bug_id=8031085
+		 */
+		ODS_DATE_FORMATTERS.put(17, new DateTimeFormatterBuilder().appendPattern("yyyyMMddHHmmss").appendValue(ChronoField.MILLI_OF_SECOND, 3).toFormatter());
 	}
 
 	// ======================================================================
@@ -910,7 +917,12 @@ public final class ODSConverter {
 		}
 
 		try {
-			return LocalDateTime.parse(input, formatter);
+			if (input.length() <= 8) {
+				// Java does not accept a bare date as DateTime, so we are using LocalDate instead of LocalDateTime
+				return LocalDate.parse(input, formatter).atStartOfDay();
+			} else {
+				return LocalDateTime.parse(input, formatter);
+			}
 		} catch (DateTimeParseException e) {
 			throw new IllegalArgumentException("Invalid ODS date: " + input, e);
 		}
@@ -1114,7 +1126,8 @@ public final class ODSConverter {
 		if (input == null) {
 			return new T_ExternalReference("", "", "");
 		}
-		return new T_ExternalReference(input.getDescription(), input.getMimeType().toString(), input.getRemotePath());
+		String remotePath=input.isRemote() ? input.getRemotePath() : "";
+		return new T_ExternalReference(input.getDescription(), input.getMimeType().toString(), remotePath);
 	}
 
 	/**

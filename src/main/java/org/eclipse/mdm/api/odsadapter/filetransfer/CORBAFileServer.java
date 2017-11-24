@@ -18,7 +18,10 @@ import java.net.Socket;
 
 import org.asam.ods.AoSession;
 import org.asam.ods.ElemId;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.model.FileLink;
+import org.eclipse.mdm.api.odsadapter.ODSContext;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.omg.CORBA.ORB;
 import org.omg.CORBA.ORBPackage.InvalidName;
@@ -80,10 +83,15 @@ final class CORBAFileServer {
 	 * @param transfer
 	 *            The transfer type for up- and downloads.
 	 */
-	CORBAFileServer(ODSModelManager modelManager, Transfer transfer) {
-		fileServer = modelManager.getFileServer();
-		aoSession = modelManager.getAoSession();
-		orb = modelManager.getORB();
+	CORBAFileServer(ODSContext context, Transfer transfer) {
+		ModelManager mm = context.getModelManager().orElseThrow(() -> new ServiceNotProvidedException(ModelManager.class));
+		if (!(mm instanceof ODSModelManager)) {
+			throw new IllegalArgumentException("The supplied ModelManager must be an ODSModelManager!");
+		}
+		
+		fileServer = context.getFileServer();
+		aoSession = context.getAoSession();
+		orb = context.getORB();
 		this.transfer = transfer;
 
 		bufferSize = getBufferSize();

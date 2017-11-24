@@ -6,15 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 
 /**
@@ -69,7 +69,7 @@ final class ChildRequest<T extends Deletable> extends EntityRequest<T> {
 		Relation parentRelation = entityConfig.getEntityType().getRelation(parent.entityConfig.getEntityType());
 		Relation reflexiveRelation = entityConfig.isReflexive() ? entityType.getRelation(entityType) : null;
 
-		Query query = modelManager.createQuery()
+		Query query = queryService.createQuery()
 				// select entity attributes
 				.selectAll(entityConfig.getEntityType())
 				// select parent entity ID

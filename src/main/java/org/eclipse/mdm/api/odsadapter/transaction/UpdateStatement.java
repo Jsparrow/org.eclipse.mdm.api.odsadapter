@@ -21,18 +21,19 @@ import org.asam.ods.AIDName;
 import org.asam.ods.AIDNameValueSeqUnitId;
 import org.asam.ods.AoException;
 import org.asam.ods.T_LONGLONG;
-import org.eclipse.mdm.api.base.model.Core;
-import org.eclipse.mdm.api.base.model.Core.EntityStore;
+import org.eclipse.mdm.api.base.adapter.Attribute;
+import org.eclipse.mdm.api.base.adapter.Core;
+import org.eclipse.mdm.api.base.adapter.EntityStore;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.FilesAttachable;
 import org.eclipse.mdm.api.base.model.Value;
-import org.eclipse.mdm.api.base.query.Attribute;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
+import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
@@ -101,7 +102,7 @@ final class UpdateStatement extends BaseStatement {
 	@Override
 	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
 		for (Entity entity : entities) {
-			readEntityCore(extract(entity));
+			readEntityCore(ODSEntityFactory.extract(entity));
 		}
 
 		// TODO tracing progress in this method...

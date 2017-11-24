@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
 import org.asam.ods.T_LONGLONG;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
@@ -33,11 +35,9 @@ import org.eclipse.mdm.api.base.model.ParameterSet;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.Query;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
@@ -128,7 +128,7 @@ final class DeleteStatement extends BaseStatement {
 			return 0;
 		}
 
-		Query query = getModelManager().createQuery().selectID(entityType);
+		Query query = getQueryService().createQuery().selectID(entityType);
 		for (Relation relation : entityType.getChildRelations()) {
 			if (useAutoDelete && AUTO_DELETABLE.contains(relation.getTarget().getName())) {
 				continue;
@@ -208,7 +208,7 @@ final class DeleteStatement extends BaseStatement {
 					continue;
 				}
 
-				Query contextQuery = getModelManager().createQuery();
+				Query contextQuery = getQueryService().createQuery();
 				contextQuery.selectID(contextRoot, measurement);
 				contextQuery.join(contextRoot, measurement);
 

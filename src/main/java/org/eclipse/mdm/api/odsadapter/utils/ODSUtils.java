@@ -12,6 +12,7 @@ import org.asam.ods.AggrFunc;
 import org.asam.ods.DataType;
 import org.asam.ods.SelOpcode;
 import org.asam.ods.SelOperator;
+import org.eclipse.mdm.api.base.adapter.RelationType;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Aggregation;
@@ -19,7 +20,6 @@ import org.eclipse.mdm.api.base.query.BracketOperator;
 import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.BooleanOperator;
-import org.eclipse.mdm.api.base.query.RelationType;
 
 /**
  * Utility class provides bidirectional mappings for ODS types

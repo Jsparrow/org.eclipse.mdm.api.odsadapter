@@ -8,19 +8,26 @@
 
 package org.eclipse.mdm.api.odsadapter.query;
 
-import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_CLASS;
+import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_ENUMERATION_NAME;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SCALAR_TYPE;
 import static org.eclipse.mdm.api.dflt.model.CatalogAttribute.VATTR_SEQUENCE;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.eclipse.mdm.api.base.adapter.ChildrenStore;
+import org.eclipse.mdm.api.base.adapter.Core;
+import org.eclipse.mdm.api.base.adapter.DefaultCore;
+import org.eclipse.mdm.api.base.adapter.EntityStore;
 import org.eclipse.mdm.api.base.model.AxisType;
+import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.Core;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.Enumeration;
 import org.eclipse.mdm.api.base.model.EnumerationValue;
 import org.eclipse.mdm.api.base.model.Interpolation;
 import org.eclipse.mdm.api.base.model.ScalarType;
@@ -29,7 +36,6 @@ import org.eclipse.mdm.api.base.model.TypeSpecification;
 import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.model.VersionState;
-import org.eclipse.mdm.api.base.query.DefaultCore;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
@@ -81,6 +87,55 @@ public final class ODSEntityFactory extends EntityFactory {
 		this.modelManager = modelManager;
 		this.loggedInUser = loggedInUser;
 	}
+	
+	// ======================================================================
+	// Public methods
+	// ======================================================================
+
+	/**
+	 * Extracts the {@link Core} from an {@link Entity} instance. This method
+	 * effectively makes access to the Core of a BaseEntity publicly
+	 * available (by calling the corresponding protected method of
+	 * BaseEntityFactory, which is this class's superclass) to users of
+	 * ODSEntityFactory. 
+	 * 
+	 * @param entity
+	 *            The {@link Entity} from which to extract the {@link Core}.
+	 * @return The entity's {@link Core}.
+	 */
+	public static Core extract(Entity entity) {
+		if (entity instanceof BaseEntity) {
+			return getCore((BaseEntity) entity);
+		} else {
+			throw new IllegalArgumentException("Entity of type '" + entity.getClass().getSimpleName()
+					+ "' does not extend '" + BaseEntity.class.getName() + "'");
+		}
+	}
+
+	/**
+	 * Create an instance of a class implementing the {@link Entity} interface with
+	 * core as the instance's {@link Core}. This method effectively makes the
+	 * protected BaseEntity constructor publicly available (by calling the
+	 * corresponding protected method of BaseEntityFactory, which is this class's
+	 * superclass) to users of ODSEntityFactory.
+	 * 
+	 * @param clazz
+	 *            The class to instantiate, must implement the {@link Entity}
+	 *            interface.
+	 * @param core
+	 *            The {@link Core} to use for the newly created instance.
+	 * @return The newly created instance.
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends Entity> T createEntity(Class<T> clazz, Core core) {
+		if (BaseEntity.class.isAssignableFrom(clazz)) {
+			return (T) createBaseEntity(clazz.asSubclass(BaseEntity.class), core);
+		} else {
+			throw new IllegalArgumentException(
+					"Class '" + clazz.getSimpleName() + "' does not extend '" + BaseEntity.class.getName() + "'");
+		}
+
+	}
 
 	// ======================================================================
 	// Protected methods
@@ -109,6 +164,27 @@ public final class ODSEntityFactory extends EntityFactory {
 	protected <T extends Entity> Core createCore(Class<T> entityClass, ContextType contextType) {
 		return createCore(new Key<>(entityClass, contextType));
 	}
+		
+	/**
+	 * {@inheritDoc}
+	 */
+	public static final EntityStore getMutableStore(BaseEntity entity) {
+		return EntityFactory.getMutableStore(entity);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	public static final EntityStore getPermanentStore(BaseEntity entity) {
+		return EntityFactory.getPermanentStore(entity);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	public static final ChildrenStore getChildrenStore(BaseEntity entity) {
+		return EntityFactory.getChildrenStore(entity);
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -130,16 +206,29 @@ public final class ODSEntityFactory extends EntityFactory {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void validateEnum(Class<? extends EnumerationValue> enumClass) {
-		if (ENUM_CLASSES.contains(enumClass)) {
-			// given enumeration class is a default one, which is always
-			// supported
-			return;
+	protected void validateEnum(Enumeration<?> enumerationObj) {
+		EnumRegistry er = EnumRegistry.getInstance();
+		// check if enum is properly registered
+        if (er.get(enumerationObj.getName())==null) {
+		  throw new IllegalArgumentException("Given enum class '" + enumerationObj.getName() + "' is not supported.");
+        }
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected <T extends BaseEntity> T createBaseEntity(Class<T> clazz, Core core) {
+		try {
+			Constructor<T> constructor = clazz.getDeclaredConstructor(Core.class);
+			try {
+				return constructor.newInstance(core);
+			} catch (IllegalAccessException exc) {
+				return super.createBaseEntity(clazz, core);
+			}
+		} catch (NoSuchMethodException | InvocationTargetException | InstantiationException exc) {
+			throw new IllegalStateException(exc.getMessage(), exc);
 		}
-
-		// TODO check here for other enumeration classes introduced by modules
-
-		throw new IllegalArgumentException("Given enum class '" + enumClass.getSimpleName() + "' is not supported.");
 	}
 
 	// ======================================================================
@@ -161,12 +250,11 @@ public final class ODSEntityFactory extends EntityFactory {
 		core.getValues().get(Entity.ATTR_MIMETYPE).set(entityConfig.getMimeType());
 
 		if (CatalogAttribute.class.equals(entityConfig.getEntityClass())) {
-			core.getValues().put(VATTR_ENUMERATION_CLASS, ValueType.STRING.create(VATTR_ENUMERATION_CLASS));
+			core.getValues().put(VATTR_ENUMERATION_NAME, ValueType.STRING.create(VATTR_ENUMERATION_NAME));
 			core.getValues().put(VATTR_SCALAR_TYPE, ValueType.ENUMERATION.create(EnumRegistry.getInstance().get("ScalarType"), VATTR_SCALAR_TYPE));
 			core.getValues().put(VATTR_SEQUENCE, ValueType.BOOLEAN.create(VATTR_SEQUENCE));
 		}
 
 		return core;
 	}
-
 }

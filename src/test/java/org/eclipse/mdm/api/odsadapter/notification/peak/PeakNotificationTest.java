@@ -1,9 +1,9 @@
 package org.eclipse.mdm.api.odsadapter.notification.peak;
 
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMESERVICE;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_SERVICENAME;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_USER;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_NAMESERVICE;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_PASSWORD;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_SERVICENAME;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.times;
@@ -34,15 +34,14 @@ import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.notification.NotificationException;
 import org.eclipse.mdm.api.base.notification.NotificationFilter;
 import org.eclipse.mdm.api.base.notification.NotificationListener;
-import org.eclipse.mdm.api.base.notification.NotificationManager;
+import org.eclipse.mdm.api.base.notification.NotificationService;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.dflt.ApplicationContext;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
-import org.eclipse.mdm.api.odsadapter.ODSEntityManager;
-import org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory;
-import org.eclipse.mdm.api.odsadapter.ODSNotificationManagerFactory;
-import org.eclipse.mdm.api.odsadapter.notification.peak.EventProcessor;
-import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
+import org.eclipse.mdm.api.odsadapter.ODSContext;
+import org.eclipse.mdm.api.odsadapter.ODSContextFactory;
+import org.eclipse.mdm.api.odsadapter.notification.ODSNotificationServiceFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -92,8 +91,9 @@ public class PeakNotificationTest {
 	private static final String NOTIFICATION_USER = "sa";
 	private static final String NOTIFICATION_PASSWORD = "sa";
 
+	private static ApplicationContext context;
 	private static EntityManager entityManager;
-	private static NotificationManager notificationManager;
+	private static NotificationService notificationManager;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
@@ -103,24 +103,22 @@ public class PeakNotificationTest {
 		connectionParameters.put(PARAM_USER, USER);
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
-		entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
+		context = new ODSContextFactory().connect(connectionParameters);
 
 		Map<String, String> notificationParameters = new HashMap<>();
-		notificationParameters.put(ODSNotificationManagerFactory.PARAM_SERVER_TYPE,
-				ODSNotificationManagerFactory.SERVER_TYPE_PEAK);
-		notificationParameters.put(ODSNotificationManagerFactory.PARAM_URL, NOTIFICATION_URL);
-		notificationParameters.put(ODSEntityManagerFactory.PARAM_USER, NOTIFICATION_USER);
-		notificationParameters.put(ODSEntityManagerFactory.PARAM_PASSWORD, NOTIFICATION_PASSWORD);
-		notificationParameters.put(ODSNotificationManagerFactory.PARAM_EVENT_MEDIATYPE, "application/json");
+		notificationParameters.put(ODSNotificationServiceFactory.PARAM_SERVER_TYPE,
+				ODSNotificationServiceFactory.SERVER_TYPE_PEAK);
+		notificationParameters.put(ODSNotificationServiceFactory.PARAM_URL, NOTIFICATION_URL);
+		notificationParameters.put(ODSContextFactory.PARAM_USER, NOTIFICATION_USER);
+		notificationParameters.put(ODSContextFactory.PARAM_PASSWORD, NOTIFICATION_PASSWORD);
 
-		notificationManager = new ODSNotificationManagerFactory().create((ODSEntityManager) entityManager,
-				notificationParameters);
+		notificationManager = new ODSNotificationServiceFactory().create(context, notificationParameters);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws ConnectionException, NotificationException {
-		if (entityManager != null) {
-			entityManager.close();
+		if (context != null) {
+			context.close();
 		}
 
 		if (notificationManager != null) {
@@ -219,7 +217,7 @@ public class PeakNotificationTest {
 
 		assertThat("Parent test not found!", !tests.isEmpty());
 
-		Optional<EntityFactory> entityFactory = entityManager.getEntityFactory();
+		Optional<? extends EntityFactory> entityFactory = context.getEntityFactory();
 		if (!entityFactory.isPresent()) {
 			throw new IllegalStateException("Entity factory not present!");
 		}
@@ -246,7 +244,7 @@ public class PeakNotificationTest {
 
 		AoSession session = null;
 		try {
-			session = ((ODSModelManager) entityManager.getModelManager().get()).getAoSession().createCoSession();
+			session = ((ODSContext) context).getAoSession().createCoSession();
 
 			ApplicationElement aeUUT = session.getApplicationStructure().getElementsByBaseType("AoUnitUnderTest")[0];
 
@@ -284,7 +282,7 @@ public class PeakNotificationTest {
 
 		AoSession session = null;
 		try {
-			session = ((ODSModelManager) entityManager.getModelManager().get()).getAoSession().createCoSession();
+			session = ((ODSContext) context).getAoSession().createCoSession();
 
 			ApplicationElement aeTyre = session.getApplicationStructure().getElementByName("tyre");
 

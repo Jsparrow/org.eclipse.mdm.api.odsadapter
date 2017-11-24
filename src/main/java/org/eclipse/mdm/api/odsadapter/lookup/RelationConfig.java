@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Relation;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
 
 /**
@@ -69,7 +69,7 @@ public final class RelationConfig {
 		if (relatedEntityID.isPresent()) {
 			dependants.computeIfAbsent(relatedEntityID.get(), k -> new ArrayList<>()).add(entityRecord);
 		} else if (mandatory) {
-			throw new IllegalStateException("Mandatory relation unsatisfied.");
+			throw new IllegalStateException("Mandatory relation unsatisfied for relation "+relation.getName());
 		}
 	}
 

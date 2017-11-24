@@ -26,14 +26,16 @@ import org.asam.ods.BaseElement;
 import org.asam.ods.BaseStructure;
 import org.asam.ods.DataType;
 import org.asam.ods.RelationRange;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
@@ -536,7 +538,9 @@ final class CatalogManager {
 			EntityType source = entry.getKey();
 			EntityType target = transaction.getModelManager().getEntityType(source.getName().replace("Cat", "Tpl"));
 
-			Query query = transaction.getModelManager().createQuery().selectID(target).join(source, target);
+			Query query = transaction.getContext().getQueryService()
+					.orElseThrow(() -> new ServiceNotProvidedException(QueryService.class))
+					.createQuery().selectID(target).join(source, target);
 
 			List<Result> results = query.fetch(Filter.and()
 					.add(ComparisonOperator.IN_SET.create(source.getIDAttribute(), collectInstanceIDs(entry.getValue()))));

@@ -1,9 +1,10 @@
 package org.eclipse.mdm.api.odsadapter;
 
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_NAMESERVICE;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_PASSWORD;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_SERVICENAME;
-import static org.eclipse.mdm.api.odsadapter.ODSEntityManagerFactory.PARAM_USER;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_NAMESERVICE;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_PASSWORD;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_SERVICENAME;
+import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_USER;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.time.LocalDateTime;
@@ -21,25 +22,37 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.eclipse.mdm.api.base.ConnectionException;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
+import org.eclipse.mdm.api.base.adapter.EntityType;
+import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.massdata.WriteRequest;
 import org.eclipse.mdm.api.base.massdata.WriteRequestBuilder;
 import org.eclipse.mdm.api.base.model.AxisType;
+import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
+import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.EnumRegistry;
+import org.eclipse.mdm.api.base.model.FileLink;
 import org.eclipse.mdm.api.base.model.Measurement;
+import org.eclipse.mdm.api.base.model.MimeType;
 import org.eclipse.mdm.api.base.model.PhysicalDimension;
 import org.eclipse.mdm.api.base.model.Quantity;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
 import org.eclipse.mdm.api.base.model.Unit;
+import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.DataAccessException;
+import org.eclipse.mdm.api.base.query.Filter;
+import org.eclipse.mdm.api.base.search.SearchService;
+import org.eclipse.mdm.api.dflt.ApplicationContext;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.EntityFactory;
@@ -75,6 +88,7 @@ public class ODSAdapterTest {
 	private static final String USER = "sa";
 	private static final String PASSWORD = "sa";
 
+	private static ApplicationContext context;
 	private static EntityManager entityManager;
 	private static EntityFactory entityFactory;
 
@@ -103,15 +117,55 @@ public class ODSAdapterTest {
 		connectionParameters.put(PARAM_USER, USER);
 		connectionParameters.put(PARAM_PASSWORD, PASSWORD);
 
-		entityManager = new ODSEntityManagerFactory().connect(connectionParameters);
-		entityFactory = entityManager.getEntityFactory()
+		context  = new ODSContextFactory().connect(connectionParameters);
+		entityManager = context.getEntityManager()
+				.orElseThrow(() -> new ServiceNotProvidedException(EntityManager.class));
+		entityFactory = context.getEntityFactory()
 				.orElseThrow(() -> new IllegalStateException("Entity manager factory not available."));
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws ConnectionException {
-		if (entityManager != null) {
-			entityManager.close();
+		if (context != null) {
+			context.close();
+		}
+	}
+	
+	/* FIXME this test requires that there is a teststep with id 2, that has a unitundertest component called "filetest",
+	 * that has an empty filelink attribute "myextref" and a string attrinute "attr1".
+	 * remove the comment at org.junit.Test if you fulfill these requirements  
+	 */
+	//@org.junit.Test
+	public void changeFile() throws Exception {
+		String idteststep = "2";
+		ModelManager modelManager = context.getModelManager().get();
+		SearchService searchService = context.getSearchService().get();
+
+		EntityType etteststep = modelManager.getEntityType(TestStep.class);
+		Transaction transaction;
+
+		transaction = entityManager.startTransaction();
+		
+		try {
+			List<TestStep> mealist;
+			mealist = searchService.fetch(TestStep.class, Filter.idOnly(etteststep, idteststep));
+			assertEquals(1, mealist.size());
+			TestStep ts = mealist.get(0);
+			Map<ContextType, ContextRoot> loadContexts = ts.loadContexts(entityManager, ContextType.UNITUNDERTEST);
+			ContextRoot contextRoot = loadContexts.get(ContextType.UNITUNDERTEST);
+			Optional<ContextComponent> contextComponent = contextRoot.getContextComponent("filetest");
+			Value value = contextComponent.get().getValue("myextref");
+			contextComponent.get().getValue("attr1").set("val4711");
+			FileLink fl=FileLink.newRemote("", new MimeType(""), "");
+			FileLink fl2 = (FileLink)value.extract();
+			assertEquals(fl2,fl);
+			List<BaseEntity> toUpdate=new ArrayList<>();
+			toUpdate.add(contextComponent.get());
+            transaction.update(toUpdate);
+            transaction.commit();
+		} catch (RuntimeException e) {
+			transaction.abort();
+			throw e;
 		}
 	}
 
@@ -138,13 +192,14 @@ public class ODSAdapterTest {
 			transaction.commit();
 		} catch (RuntimeException e) {
 			transaction.abort();
+			e.printStackTrace();
 			fail("Unable to create test data due to: " + e.getMessage());
 		}
 
 		List<Project> projects = Collections.emptyList();
 		try {
 			projects = createTestData(templateTest, quantity);
-		} catch (DataAccessException | RuntimeException e) {
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 		}
 
@@ -217,7 +272,7 @@ public class ODSAdapterTest {
 			transaction.writeMeasuredValues(writeRequests);
 			transaction.commit();
 			return Collections.singletonList(project);
-		} catch (DataAccessException | RuntimeException e) {
+		} catch (DataAccessException e) {
 			e.printStackTrace();
 			transaction.abort();
 		}
@@ -358,7 +413,8 @@ public class ODSAdapterTest {
 		entityFactory.createCatalogAttribute("long", ValueType.LONG, catalogComponent);
 		entityFactory.createCatalogAttribute("file_link", ValueType.FILE_LINK, catalogComponent);
 		entityFactory.createCatalogAttribute("file_link_array", ValueType.FILE_LINK_SEQUENCE, catalogComponent);
-		entityFactory.createCatalogAttribute("scalar_type", ScalarType.class, catalogComponent);
+		EnumRegistry er = EnumRegistry.getInstance();
+		entityFactory.createCatalogAttribute("scalar_type", er.get(EnumRegistry.SCALAR_TYPE), catalogComponent);
 
 		return catalogComponent;
 	}

@@ -9,17 +9,15 @@
 package org.eclipse.mdm.api.odsadapter.transaction;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 
 import org.asam.ods.AoException;
 import org.asam.ods.ApplElemAccess;
-import org.eclipse.mdm.api.base.model.BaseEntity;
-import org.eclipse.mdm.api.base.model.Core;
+import org.eclipse.mdm.api.base.ServiceNotProvidedException;
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.query.DataAccessException;
-import org.eclipse.mdm.api.base.query.EntityType;
+import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 
@@ -30,22 +28,6 @@ import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
  */
 abstract class BaseStatement {
-
-	// ======================================================================
-	// Class variables
-	// ======================================================================
-
-	private static final Method GET_CORE_METHOD;
-
-	static {
-		try {
-			GET_CORE_METHOD = BaseEntity.class.getDeclaredMethod("getCore");
-			GET_CORE_METHOD.setAccessible(true);
-		} catch (NoSuchMethodException | SecurityException e) {
-			throw new IllegalStateException(
-					"Unable to load 'getCore()' in class '" + BaseEntity.class.getSimpleName() + "'.", e);
-		}
-	}
 
 	// ======================================================================
 	// Instance variables
@@ -94,22 +76,6 @@ abstract class BaseStatement {
 	// ======================================================================
 
 	/**
-	 * Returns the {@link Core} of given {@link Entity}.
-	 *
-	 * @param entity
-	 *            The {@code Entity} whose {@code Core} will be returned.
-	 * @return The {@code Core} is returned.
-	 */
-	protected Core extract(Entity entity) {
-		try {
-			return (Core) GET_CORE_METHOD.invoke(entity);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new IllegalArgumentException("Entity of type '" + entity.getClass().getSimpleName()
-					+ "' does not extend '" + BaseEntity.class.getName() + "'", e);
-		}
-	}
-
-	/**
 	 * Returns the {@link ODSTransaction}.
 	 *
 	 * @return The {@code ODSTransaction} is returned.
@@ -128,6 +94,16 @@ abstract class BaseStatement {
 	}
 
 	/**
+	 * Returns the {@link QueryService}.
+	 *
+	 * @return The {@code QueryService} is returned.
+	 */
+	protected QueryService getQueryService() {
+		return transaction.getContext().getQueryService()
+				.orElseThrow(() -> new ServiceNotProvidedException(QueryService.class));
+	}
+	
+	/**
 	 * Returns the {@link ApplElemAccess}.
 	 *
 	 * @return The {@code ApplElemAccess} is returned.
@@ -135,9 +111,11 @@ abstract class BaseStatement {
 	 *             Thrown in case of errors.
 	 */
 	protected ApplElemAccess getApplElemAccess() throws AoException {
-		return transaction.getModelManager().getApplElemAccess();
+		return transaction.getContext().getODSModelManager().getApplElemAccess();
 	}
 
+
+	
 	/**
 	 * Returns the associated {@link EntityType}.
 	 *

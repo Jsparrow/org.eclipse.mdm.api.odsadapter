@@ -8,13 +8,14 @@
 
 package org.eclipse.mdm.api.odsadapter.search;
 
+import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
-import org.eclipse.mdm.api.base.query.EntityType;
-import org.eclipse.mdm.api.base.query.SearchQuery;
+import org.eclipse.mdm.api.base.query.QueryService;
+import org.eclipse.mdm.api.base.search.SearchQuery;
 import org.eclipse.mdm.api.dflt.model.Pool;
 import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
@@ -37,8 +38,8 @@ final class MeasurementSearchQuery extends BaseEntitySearchQuery {
 	 * @param contextState
 	 *            The {@link ContextState}.
 	 */
-	MeasurementSearchQuery(ODSModelManager modelManager, ContextState contextState) {
-		super(modelManager, Measurement.class, Project.class);
+	MeasurementSearchQuery(ODSModelManager modelManager, QueryService queryService, ContextState contextState) {
+		super(modelManager, queryService, Measurement.class, Project.class);
 
 		// layers
 		addJoinConfig(JoinConfig.up(Pool.class, Project.class));
