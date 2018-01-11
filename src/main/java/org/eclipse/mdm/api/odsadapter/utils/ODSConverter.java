@@ -41,8 +41,11 @@ import org.eclipse.mdm.api.base.model.MimeType;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
+import org.eclipse.mdm.api.base.query.Aggregation;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.odsadapter.query.ODSAttribute;
+
+import com.google.common.collect.Sets;
 
 /**
  * Utility class for value conversions from/to ODS types.
@@ -91,6 +94,8 @@ public final class ODSConverter {
 	 *
 	 * @param attribute
 	 *            The {@link Attribute}.
+	 * @param aggregation
+	 *            The {@link Aggregation} used when the values were obtained.
 	 * @param unit
 	 *            The unit name.
 	 * @param odsValueSeq
@@ -99,35 +104,41 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	public static List<Value> fromODSValueSeq(Attribute attribute, String unit, TS_ValueSeq odsValueSeq)
+	public static List<Value> fromODSValueSeq(Attribute attribute, Aggregation aggregation, String unit, TS_ValueSeq odsValueSeq)
 			throws DataAccessException {
 		DataType dataType = odsValueSeq.u.discriminator();
 		short[] flags = odsValueSeq.flag;
 		List<Value> values = new ArrayList<>(flags.length);
 
-		if (((ODSAttribute) attribute).isIdAttribute()) {
+		if (((ODSAttribute) attribute).isIdAttribute() && Sets
+				.immutableEnumSet(Aggregation.MINIMUM, Aggregation.MAXIMUM, Aggregation.DISTINCT, Aggregation.NONE)
+				.contains(aggregation)) {
 			if (DataType.DT_LONGLONG == dataType) {
 				T_LONGLONG[] odsValues = odsValueSeq.u.longlongVal();
 				for (int i = 0; i < flags.length; i++) {
-					values.add(attribute.createValue(unit, flags[i] == 15, Long.toString(fromODSLong(odsValues[i]))));
+					values.add(createValue(attribute, aggregation, DataType.DT_STRING, unit, flags[i] == 15,
+							Long.toString(fromODSLong(odsValues[i]))));
 				}
 				return values;
 			} else if (DataType.DS_LONGLONG == dataType) {
 				T_LONGLONG[][] odsValues = odsValueSeq.u.longlongSeq();
 				for (int i = 0; i < flags.length; i++) {
-					values.add(attribute.createValue(unit, flags[i] == 15, toString(odsValues[i])));
+					values.add(createValue(attribute, aggregation, DataType.DS_STRING, unit, flags[i] == 15,
+							toString(odsValues[i])));
 				}
 				return values;
 			} else if (DataType.DT_LONG == dataType) {
 				int[] odsValues = odsValueSeq.u.longVal();
 				for (int i = 0; i < flags.length; i++) {
-					values.add(attribute.createValue(unit, flags[i] == 15, Integer.toString(odsValues[i])));
+					values.add(createValue(attribute, aggregation, DataType.DT_STRING, unit, flags[i] == 15,
+							Integer.toString(odsValues[i])));
 				}
 				return values;
 			} else if (DataType.DS_LONG == dataType) {
 				int[][] odsValues = odsValueSeq.u.longSeq();
 				for (int i = 0; i < flags.length; i++) {
-					values.add(attribute.createValue(unit, flags[i] == 15, toString(odsValues[i])));
+					values.add(createValue(attribute, aggregation, DataType.DS_STRING, unit, flags[i] == 15,
+							toString(odsValues[i])));
 				}
 				return values;
 			}
@@ -136,155 +147,193 @@ public final class ODSConverter {
 		if (DataType.DT_STRING == dataType) {
 			String[] odsValues = odsValueSeq.u.stringVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_STRING == dataType) {
 			String[][] odsValues = odsValueSeq.u.stringSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_DATE == dataType) {
 			String[] odsValues = odsValueSeq.u.dateVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSDate(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSDate(odsValues[i])));
 			}
 		} else if (DataType.DS_DATE == dataType) {
 			String[][] odsValues = odsValueSeq.u.dateSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSDateSeq(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSDateSeq(odsValues[i])));
 			}
 		} else if (DataType.DT_BOOLEAN == dataType) {
 			boolean[] odsValues = odsValueSeq.u.booleanVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_BOOLEAN == dataType) {
 			boolean[][] odsValues = odsValueSeq.u.booleanSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_BYTE == dataType) {
 			byte[] odsValues = odsValueSeq.u.byteVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_BYTE == dataType) {
 			byte[][] odsValues = odsValueSeq.u.byteSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_SHORT == dataType) {
 			short[] odsValues = odsValueSeq.u.shortVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_SHORT == dataType) {
 			short[][] odsValues = odsValueSeq.u.shortSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_LONG == dataType) {
 			int[] odsValues = odsValueSeq.u.longVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_LONG == dataType) {
 			int[][] odsValues = odsValueSeq.u.longSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_LONGLONG == dataType) {
 			T_LONGLONG[] odsValues = odsValueSeq.u.longlongVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSLong(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSLong(odsValues[i])));
 			}
 		} else if (DataType.DS_LONGLONG == dataType) {
 			T_LONGLONG[][] odsValues = odsValueSeq.u.longlongSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSLongSeq(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSLongSeq(odsValues[i])));
 			}
 		} else if (DataType.DT_FLOAT == dataType) {
 			float[] odsValues = odsValueSeq.u.floatVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_FLOAT == dataType) {
 			float[][] odsValues = odsValueSeq.u.floatSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_DOUBLE == dataType) {
 			double[] odsValues = odsValueSeq.u.doubleVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_DOUBLE == dataType) {
 			double[][] odsValues = odsValueSeq.u.doubleSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_BYTESTR == dataType) {
 			byte[][] odsValues = odsValueSeq.u.bytestrVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DS_BYTESTR == dataType) {
 			byte[][][] odsValues = odsValueSeq.u.bytestrSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, odsValues[i]));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, odsValues[i]));
 			}
 		} else if (DataType.DT_COMPLEX == dataType) {
 			T_COMPLEX[] odsValues = odsValueSeq.u.complexVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSFloatComplex(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSFloatComplex(odsValues[i])));
 			}
 		} else if (DataType.DS_COMPLEX == dataType) {
 			T_COMPLEX[][] odsValues = odsValueSeq.u.complexSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSFloatComplexSeq(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSFloatComplexSeq(odsValues[i])));
 			}
 		} else if (DataType.DT_DCOMPLEX == dataType) {
 			T_DCOMPLEX[] odsValues = odsValueSeq.u.dcomplexVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSDoubleComplex(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSDoubleComplex(odsValues[i])));
 			}
 		} else if (DataType.DS_DCOMPLEX == dataType) {
 			T_DCOMPLEX[][] odsValues = odsValueSeq.u.dcomplexSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSDoubleComplexSeq(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSDoubleComplexSeq(odsValues[i])));
 			}
 		} else if (DataType.DT_ENUM == dataType) {
 			int[] odsValues = odsValueSeq.u.enumVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15,
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15,
 						ODSEnumerations.fromODSEnum(attribute.getEnumObj(), odsValues[i])));
 			}
 		} else if (DataType.DS_ENUM == dataType) {
 			int[][] odsValues = odsValueSeq.u.enumSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15,
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15,
 						ODSEnumerations.fromODSEnumSeq(attribute.getEnumObj(), odsValues[i])));
 			}
 		} else if (DataType.DT_EXTERNALREFERENCE == dataType) {
 			T_ExternalReference[] odsValues = odsValueSeq.u.extRefVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSExternalReference(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSExternalReference(odsValues[i])));
 			}
 		} else if (DataType.DS_EXTERNALREFERENCE == dataType) {
 			T_ExternalReference[][] odsValues = odsValueSeq.u.extRefSeq();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSExternalReferenceSeq(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSExternalReferenceSeq(odsValues[i])));
 			}
 		} else if (DataType.DT_BLOB == dataType) {
 			Blob[] odsValues = odsValueSeq.u.blobVal();
 			for (int i = 0; i < flags.length; i++) {
-				values.add(attribute.createValue(unit, flags[i] == 15, fromODSBlob(odsValues[i])));
+				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSBlob(odsValues[i])));
 			}
 		} else {
 			throw new DataAccessException("Conversion for ODS data type '" + dataType.toString() + "' does not exist.");
 		}
 
 		return values;
+	}
+	
+	/**
+	 * Creates a {@link Value} from the input.
+	 * 
+	 * @param attribute
+	 *            The {@link Attribute}
+	 * @param aggregation
+	 *            The {@link Aggregation} used when the input values were obtained
+	 * @param dataType
+	 *            The {@link DataType} associated with the input value, evaluated
+	 *            only if aggregation != {@code Aggregation.NONE}, otherwise that of
+	 *            the attribute is used
+	 * @param unit
+	 *            The unit of the input value
+	 * @param valid
+	 *            The validity flag of the input value
+	 * @param input
+	 *            The input value
+	 * @return The {@link Value} created.
+	 */
+	private static Value createValue(Attribute attribute, Aggregation aggregation, DataType dataType, String unit,
+			boolean valid, Object input) {
+		if (Aggregation.NONE == aggregation) {
+			return attribute.createValue(unit, valid, input);
+		} else {
+			ValueType<?> valueType = ODSUtils.VALUETYPES.revert(dataType);
+			if (valueType.isEnumerationType()
+					&& attribute.getValueType().isEnumerationType()
+					&& Sets.immutableEnumSet(Aggregation.MINIMUM, Aggregation.MAXIMUM, Aggregation.DISTINCT)
+							.contains(aggregation)) {
+				return valueType.create(String.format("%s(%s)", aggregation.name(), attribute.getName()), unit, valid,
+						input, attribute.getEnumObj().getName());
+			} else {
+				return valueType.create(String.format("%s(%s)", aggregation.name(), attribute.getName()), unit, valid,
+						input);
+			}
+		}
 	}
 
 	private static String[] toString(int[] odsValues) {

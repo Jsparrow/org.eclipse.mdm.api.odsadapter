@@ -52,6 +52,8 @@ import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
+
 /**
  * ODS implementation of the {@link Query} interface.
  *
@@ -66,8 +68,10 @@ public class ODSQuery implements Query {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSQuery.class);
 
-	private static final String GROUPE_NAME = "name";
-	private static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("\\S+\\((?<" + GROUPE_NAME + ">\\S+)\\)");
+	private static final String GROUP_NAME = "name";
+	private static final String GROUP_AGGRFUNC = "aggrfunc";
+	private static final Pattern AGGREGATION_NAME_PATTERN = Pattern
+			.compile("(?<" + GROUP_AGGRFUNC + ">\\S+)\\((?<" + GROUP_NAME + ">\\S+)\\)");
 
 	// ======================================================================
 	// Instance variables
@@ -323,6 +327,23 @@ public class ODSQuery implements Query {
 
 		return aidName;
 	}
+	
+	private static Aggregation getAggregation(String odsAggrFunc) {		  
+		switch (Strings.nullToEmpty(odsAggrFunc).trim().toUpperCase()) {
+		case "COUNT": return Aggregation.COUNT;
+		case "DCOUNT": return Aggregation.DISTINCT_COUNT;
+		case "MIN": return Aggregation.MINIMUM;
+		case "MAX": return Aggregation.MAXIMUM;
+		case "AVG": return Aggregation.AVERAGE;
+		case "STDDEV": return Aggregation.DEVIATION;
+		case "SUM": return Aggregation.SUM;
+		case "DISTINCT": return Aggregation.DISTINCT;
+		default: 
+			throw new IllegalArgumentException("Unsupported aggregate function '" + 
+					Strings.nullToEmpty(odsAggrFunc).trim().toUpperCase() + "'!");
+		}
+		
+	}
 
 	// ======================================================================
 	// Inner classes
@@ -436,9 +457,15 @@ public class ODSQuery implements Query {
 		private RecordFactory(EntityType entityType, NameValueSeqUnitId[] nvsuis) throws DataAccessException {
 			this.entityType = entityType;
 			for (NameValueSeqUnitId nvsui : nvsuis) {
+				String attributeName = nvsui.valName;
+				Aggregation aggregation = Aggregation.NONE;
 				Matcher matcher = AGGREGATION_NAME_PATTERN.matcher(nvsui.valName);
-				String attributeName = matcher.matches() ? matcher.group(GROUPE_NAME) : nvsui.valName;
-				valueFactories.add(new ValueFactory(entityType.getAttribute(attributeName), nvsui));
+				if (matcher.matches()) {
+					attributeName = matcher.group(GROUP_NAME);
+					aggregation = ODSQuery.getAggregation(matcher.group(GROUP_AGGRFUNC));
+				}
+
+				valueFactories.add(new ValueFactory(entityType.getAttribute(attributeName), aggregation, nvsui));
 			}
 		}
 
@@ -489,10 +516,10 @@ public class ODSQuery implements Query {
 		 * @throws DataAccessException
 		 *             Thrown on conversion errors.
 		 */
-		private ValueFactory(Attribute attribute, NameValueSeqUnitId nvsui) throws DataAccessException {
+		private ValueFactory(Attribute attribute, Aggregation aggregation, NameValueSeqUnitId nvsui) throws DataAccessException {
 			length = nvsui.value.flag.length;
 			unit = attribute.getUnit();
-			values = ODSConverter.fromODSValueSeq(attribute, unit, nvsui.value);
+			values = ODSConverter.fromODSValueSeq(attribute, aggregation, unit, nvsui.value);
 		}
 
 		// ======================================================================
