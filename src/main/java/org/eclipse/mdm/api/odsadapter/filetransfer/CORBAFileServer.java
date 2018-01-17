@@ -51,17 +51,9 @@ import com.highqsoft.corbafileserver.generated.SeverityFlag;
  */
 final class CORBAFileServer {
 
-	// ======================================================================
-	// Class variables
-	// ======================================================================
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(CORBAFileServer.class);
 	private static final int DEFAULT_BUFFER_SIZE = 100_000;
 	private static final int SOCKET_TIMEOUT = 5_000;
-
-	// ======================================================================
-	// Instance variables
-	// ======================================================================
 
 	private final CORBAFileServerIF fileServer;
 	private final AoSession aoSession;
@@ -70,10 +62,6 @@ final class CORBAFileServer {
 	private final Transfer transfer;
 
 	private final int bufferSize;
-
-	// ======================================================================
-	// Constructors
-	// ======================================================================
 
 	/**
 	 * Constructor.
@@ -96,11 +84,7 @@ final class CORBAFileServer {
 
 		bufferSize = getBufferSize();
 	}
-
-	// ======================================================================
-	// Public methods
-	// ======================================================================
-
+	
 	/**
 	 * Opens a consumable download {@link InputStream} for given
 	 * {@link FileLink}.
@@ -188,10 +172,6 @@ final class CORBAFileServer {
 		}
 	}
 
-	// ======================================================================
-	// Public methods
-	// ======================================================================
-
 	/**
 	 * Opens a simple {@link InputStreamIF} using the {@link CORBAFileServerIF}.
 	 *
@@ -236,7 +216,7 @@ final class CORBAFileServer {
 					 * registration is done asynchronously!
 					 */
 					fileServer.getForInstanceBySocket(aoSession, fileLink.getRemotePath(), elemId.aid, elemId.iid,
-							InetAddress.getLocalHost().getHostName(), serverSocket.getLocalPort());
+							InetAddress.getLocalHost().getHostAddress(), serverSocket.getLocalPort());
 				} catch (CORBAFileServerException | IOException e) {
 					LOGGER.error("Unable to initialize socket stream, awaiting socket timeout.", e);
 				}
@@ -305,7 +285,7 @@ final class CORBAFileServer {
 
 			try {
 				return fileServer.saveForInstanceBySocket(aoSession, fileLink.getFileName(), "", elemId.aid, elemId.iid,
-						InetAddress.getLocalHost().getHostName(), serverSocket.getLocalPort());
+						InetAddress.getLocalHost().getHostAddress(), serverSocket.getLocalPort());
 			} catch (CORBAFileServerException e) {
 				throw new IOException("Unable to upload file via socket due to: " + e.reason, e);
 			}
@@ -324,14 +304,10 @@ final class CORBAFileServer {
 			// try to use the same buffer size as the corba file server for best
 			// performance
 			return Integer.parseInt(fileServer.getContext(aoSession, "CORBAFileServer.BufferSize"));
-		} catch (CORBAFileServerException e) {
+		} catch (NumberFormatException | CORBAFileServerException e) {
 			return DEFAULT_BUFFER_SIZE;
 		}
 	}
-
-	// ======================================================================
-	// Inner classes
-	// ======================================================================
 
 	/**
 	 * A simple {@link InputStream} adapter implementation for an
@@ -339,15 +315,7 @@ final class CORBAFileServer {
 	 */
 	private static final class InputStreamAdapter extends InputStream {
 
-		// ======================================================================
-		// Instance variables
-		// ======================================================================
-
 		private final InputStreamIF inputStream;
-
-		// ======================================================================
-		// Constructors
-		// ======================================================================
 
 		/**
 		 * Constructor.
@@ -358,11 +326,7 @@ final class CORBAFileServer {
 		private InputStreamAdapter(InputStreamIF inputStream) {
 			this.inputStream = inputStream;
 		}
-
-		// ======================================================================
-		// Public methods
-		// ======================================================================
-
+		
 		/**
 		 * {@inheritDoc}
 		 */
@@ -412,19 +376,11 @@ final class CORBAFileServer {
 	 */
 	private static final class CORBAInputStreamAdapter extends InputStreamIFPOA implements AutoCloseable {
 
-		// ======================================================================
-		// Instance variables
-		// ======================================================================
-
 		private final InputStream inputStream;
 		private final long length;
 
 		private final byte[] objectID;
 		private final POA poa;
-
-		// ======================================================================
-		// Constructors
-		// ======================================================================
 
 		/**
 		 * Constructor.
@@ -451,10 +407,6 @@ final class CORBAFileServer {
 				throw new IOException("Unable to create CORBA input stream.", e);
 			}
 		}
-
-		// ======================================================================
-		// Public methods
-		// ======================================================================
 
 		/**
 		 * {@inheritDoc}
