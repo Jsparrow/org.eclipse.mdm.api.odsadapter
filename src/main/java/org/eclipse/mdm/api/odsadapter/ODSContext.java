@@ -12,9 +12,12 @@ import java.util.Optional;
 
 import org.asam.ods.AoException;
 import org.asam.ods.AoSession;
+import org.asam.ods.ElemId;
+import org.asam.ods.InstanceElement;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.file.FileService;
+import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.notification.NotificationService;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.QueryService;
@@ -27,9 +30,11 @@ import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.notification.ODSNotificationServiceFactory;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
+import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSQueryService;
 import org.eclipse.mdm.api.odsadapter.search.ODSSearchService;
+import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.omg.CORBA.ORB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,6 +159,15 @@ public class ODSContext implements ApplicationContext {
 	public Map<String, String> getParameters() {
 		return parameters;
 	}
+	
+	/**
+	 * @returns the string "ods"
+	 */
+	@Override
+	public String getAdapterType() {
+		return "ods";
+	}
+	
 	
 	/**
 	 * {@inheritDoc}

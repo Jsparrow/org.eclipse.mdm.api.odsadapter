@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,8 +20,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.asam.ods.AoException;
+import org.asam.ods.ApplicationStructure;
+import org.asam.ods.ElemId;
 import org.asam.ods.InstanceElement;
-import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.adapter.EntityType;
@@ -45,6 +47,7 @@ import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
+import org.eclipse.mdm.api.odsadapter.query.ODSEntityType;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.transaction.ODSTransaction;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
@@ -364,4 +367,57 @@ public class ODSEntityManager implements EntityManager {
 		}
 	}
 
+	/**
+	 * Retrives the ASAM paths for the given entities. The ASAM paths are prefixed with a servicename, in the form
+	 * <code>corbaloc:[iop|ssliop]:1.2@HOSTNAME:PORT/NameService/MDM.ASAM-ODS/</code> 
+	 * @returns returns a map with the ASAM paths to the given entities. If a entity is not found in the ODS server
+	 * the entity is not included in the result map.
+	 * @throws DataAccessException if links could not be loaded for the given entities
+	 * @throws IllegalArgumentException if a the source or typeName of an entity is invalid
+	 * @see org.eclipse.mdm.api.base.BaseEntityManager#getLinks(Collection)
+	 */
+	@Override
+	public Map<Entity, String> getLinks(Collection<Entity> entities) throws DataAccessException {
+		
+		Map<Entity, String> linkMap = new HashMap<>();
+		
+		ApplicationStructure appStructure;
+		try {
+			appStructure = odsModelManager.getAoSession().getApplicationStructure();
+		} catch (AoException e) {
+			throw new DataAccessException("Could not load application structure! Reason: " + e.reason, e);
+		}
+		
+		String serverRoot = context.getParameters().get(ODSContextFactory.PARAM_NAMESERVICE) 
+				+ "/" + context.getParameters().get(ODSContextFactory.PARAM_SERVICENAME);
+		
+		Map<String, List<Entity>> entitiesByTypeName = entities.stream()
+				.filter(e -> e.getTypeName() != null)
+				.collect(Collectors.groupingBy(Entity::getTypeName));
+		
+		for (Map.Entry<String, List<Entity>> entry : entitiesByTypeName.entrySet()) {
+			ODSEntityType et = (ODSEntityType) odsModelManager.getEntityType(entry.getKey());
+			
+			List<ElemId> elemIds = entry.getValue().stream()
+				.map(e -> new ElemId(et.getODSID(), ODSConverter.toODSLong(Long.parseLong(e.getID()))))
+				.collect(Collectors.toList());
+			
+			try {
+				InstanceElement[] instances = appStructure.getInstancesById(elemIds.toArray(new ElemId[0]));
+				
+				for (InstanceElement ie : instances) {
+					String id = Long.toString(ODSConverter.fromODSLong(ie.getId()));
+					String asamPath = serverRoot + ie.getAsamPath();
+					entry.getValue().stream()
+							.filter(e -> e.getID().equals(id))
+							.findFirst()
+							.ifPresent(e -> linkMap.put(e, asamPath));
+				}
+			} catch (AoException e) {
+				LOGGER.debug("Could not load links for entities: " + entities + ". Reason: " + e.reason, e);
+			}
+		}
+		
+		return linkMap;
+	}
 }
