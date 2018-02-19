@@ -128,17 +128,6 @@ task compileIDL(type: JavaExec) {
 	outputs.dir("src/gen/java")
 }
 
-task compileIDL2(type: JavaExec) {
-	classpath = configurations.generatedCompile
-
-	main = 'com.sun.tools.corba.se.idl.toJavaPortable.Compile'
-
-	// add 'fallTIE' if <Type>POA & <Type>POATie have to be generated   
-	args '-td', 'src/gen/java/', 'src/main/idl/not.idl'
-
-	outputs.dir("src/gen/java")
-}
-
 compileGeneratedJava {
 	inputs.dir("build/generated/source")
 	inputs.dir("src/gen/java")
