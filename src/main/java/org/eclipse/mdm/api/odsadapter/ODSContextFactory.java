@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.asam.ods.AoException;
@@ -107,7 +108,12 @@ public class ODSContextFactory implements ApplicationContextFactory {
 			LOGGER.info("Connection to ODS server established.");
 
 			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
-			return new ODSContext(orb, aoSession, fileServer, parameters); 
+		
+			// Create a parameters map without password (which should not be visible from this point onwards),
+			// leaving the original map untouched:
+			Map<String, String> mapParams = new HashMap<>(parameters);
+			mapParams.remove(PARAM_PASSWORD);
+			return new ODSContext(orb, aoSession, fileServer, mapParams); 
 		} catch (AoException e) {
 			closeSession(aoSession);
 			throw new ConnectionException("Unable to connect to ODS server due to: " + e.reason, e);

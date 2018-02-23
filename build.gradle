@@ -50,6 +50,10 @@ sourceSets {
 	}
 }
 
+configurations {
+    all*.exclude group: 'javax.inject', module: 'javax.inject'
+}
+
 dependencies {
 	compile 'javax:javaee-api:7.0'
 
@@ -67,12 +71,9 @@ dependencies {
 	compile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
 	compile 'com.google.protobuf:protobuf-java-util:3.0.0-beta-3'
 	compile 'com.google.guava:guava:18.0'
-	compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
-	compile 'org.glassfish.jersey.media:jersey-media-sse:2.23.1'
+	compile 'org.glassfish.jersey.core:jersey-client:2.23.2'
+	compile 'org.glassfish.jersey.media:jersey-media-sse:2.23.2'
 	generatedCompile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
-
-	// Avalon notification service
-	compile 'org.jacorb:jacorb-services:3.8'
 
 	// querying es
 	compile 'commons-httpclient:commons-httpclient:3.1'
