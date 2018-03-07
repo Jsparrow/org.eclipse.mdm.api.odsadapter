@@ -27,7 +27,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
 import com.google.common.base.Charsets;
-import com.google.protobuf.GeneratedMessage;
+import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.Parser;
@@ -44,13 +44,10 @@ import com.google.protobuf.util.JsonFormat.Printer;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class JsonMessageBodyProvider implements MessageBodyReader<Message>, MessageBodyWriter<Message> {
+	
 	private static final Charset charset = Charsets.UTF_8;
 	private Printer jsonPrinter = JsonFormat.printer();
 	private Parser jsonParser = JsonFormat.parser();
-
-	public JsonMessageBodyProvider() {
-
-	}
 
 	@Override
 	public boolean isReadable(final Class<?> type, final Type genericType, final Annotation[] annotations,
@@ -64,7 +61,7 @@ public class JsonMessageBodyProvider implements MessageBodyReader<Message>, Mess
 			throws IOException {
 		try {
 			final Method newBuilder = type.getMethod("newBuilder");
-			final GeneratedMessage.Builder<?> builder = (GeneratedMessage.Builder<?>) newBuilder.invoke(type);
+			final GeneratedMessageV3.Builder<?> builder = (GeneratedMessageV3.Builder<?>) newBuilder.invoke(type);
 			jsonParser.merge(new InputStreamReader(entityStream, charset), builder);
 			return builder.build();
 		} catch (Exception e) {
