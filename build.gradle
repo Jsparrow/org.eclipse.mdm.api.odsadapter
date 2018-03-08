@@ -58,7 +58,7 @@ dependencies {
 	compile 'javax:javaee-api:7.0'
 
 	// logging	
-	compile 'org.slf4j:slf4j-api:1.7.19'
+	compile 'org.slf4j:slf4j-api:1.7.25'
 	
 	// MDM5 API
 	compile 'org.eclipse.mdm:org.eclipse.mdm.api.base:1.0.0'
@@ -81,8 +81,8 @@ dependencies {
 
 	// testing
 	testCompile 'junit:junit:4.12'
-	testRuntime 'org.slf4j:slf4j-simple:1.7.19'
-	testCompile 'org.mockito:mockito-core:2.10.0'
+	testRuntime 'org.slf4j:slf4j-simple:1.7.25'
+	testCompile 'org.mockito:mockito-core:2.13.0'
 	testCompile 'org.assertj:assertj-core:3.6.2'
 	testCompile(group: 'org.elasticsearch', name: 'elasticsearch', version: '2.3.4')
 	testCompile(group: 'org.elasticsearch', name: 'elasticsearch', version: '2.3.4', classifier: 'tests')
