@@ -55,7 +55,7 @@ configurations {
 }
 
 dependencies {
-	compile 'javax:javaee-api:7.0'
+	compileOnly 'javax:javaee-api:7.0'
 
 	// logging	
 	compile 'org.slf4j:slf4j-api:1.7.25'
