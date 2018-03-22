@@ -1,0 +1,39 @@
+/**
+ * This module is taken from the standard CORBA Event Service
+ * 1.2, as described in:
+ *
+ * https://www.omg.org/spec/EVNT/1.2/
+ *
+ * The idl was extracted from the following PDF:
+ * formal/04-10-02 
+ */
+ 
+#ifndef _COS_EVENT_COMM_IDL_
+#define _COS_EVENT_COMM_IDL_
+
+module CosEventComm {
+
+   exception Disconnected{};
+
+   interface PushConsumer {
+      void push (in any data) raises(Disconnected);
+      void disconnect_push_consumer();
+   };
+
+    interface PushSupplier {
+      void disconnect_push_supplier();
+   };
+
+   interface PullSupplier {
+      any pull () raises(Disconnected);
+      any try_pull (out boolean has_event) raises(Disconnected);
+      void disconnect_pull_supplier();
+   };
+
+   interface PullConsumer {
+      void disconnect_pull_consumer();
+   };
+
+};
+
+#endif /* ifndef _COS_EVENT_COMM_IDL_ */
