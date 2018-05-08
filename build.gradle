@@ -157,6 +157,9 @@ compileJava.dependsOn compileGeneratedJava
 jar {
 	from sourceSets.generated.output
 	dependsOn generatedClasses
+
+	metaInf { from 'NOTICE.txt' }
+	metaInf { from 'LICENSE.txt' }
 }
 
 task deleteGenerated(type: Delete) {
