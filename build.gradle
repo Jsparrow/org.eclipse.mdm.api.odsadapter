@@ -8,7 +8,7 @@
 
 description = 'MDM API - ODSAdapter'
 group = 'org.eclipse.mdm'
-version = '1.0.0'
+version = '5.0.0M1'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -64,8 +64,8 @@ dependencies {
 	compile 'org.slf4j:jcl-over-slf4j:1.7.25'
 
 	// MDM5 API
-	compile 'org.eclipse.mdm:org.eclipse.mdm.api.base:1.0.0'
-	compile 'org.eclipse.mdm:org.eclipse.mdm.api.default:1.0.0'
+	compile "org.eclipse.mdm:org.eclipse.mdm.api.base:${version}"
+	compile "org.eclipse.mdm:org.eclipse.mdm.api.default:${version}"
 
 	// compile CORBA idl using JDK tools
 	generatedCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
