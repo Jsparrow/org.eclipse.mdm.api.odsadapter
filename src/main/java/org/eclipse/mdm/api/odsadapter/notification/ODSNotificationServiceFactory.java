@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2017-2018 Peak Solution GmbH and others
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
+
 package org.eclipse.mdm.api.odsadapter.notification;
 
 import java.util.Map;
@@ -9,6 +17,8 @@ import org.eclipse.mdm.api.base.notification.NotificationException;
 import org.eclipse.mdm.api.base.notification.NotificationService;
 import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.dflt.ApplicationContext;
+import org.eclipse.mdm.api.odsadapter.ODSContextFactory;
+import org.eclipse.mdm.api.odsadapter.notification.avalon.AvalonNotificationManager;
 import org.eclipse.mdm.api.odsadapter.notification.peak.PeakNotificationManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.slf4j.Logger;
@@ -59,25 +69,24 @@ public class ODSNotificationServiceFactory {
 			}
 		} else if (SERVER_TYPE_AVALON.equalsIgnoreCase(type)) {
 
-			throw new IllegalArgumentException("Avalon notification service is not supported yet.");
-//			String serviceName = getParameter(parameters, ODSContextFactory.PARAM_SERVICENAME);
-//			serviceName = serviceName.replace(".ASAM-ODS", "");
-//			String nameServiceURL = getParameter(parameters, ODSContextFactory.PARAM_NAMESERVICE);
-//
-//			LOGGER.info("Connecting to Avalon Notification Server ...");
-//			LOGGER.info("Name service URL: {}", nameServiceURL);
-//			LOGGER.info("Service name: {}", serviceName);
-//
-//			long pollingInterval = 500L;
-//			try {
-//				pollingInterval = Long.parseLong(getParameter(parameters, PARAM_POLLING_INTERVAL));
-//			} catch (NumberFormatException | ConnectionException e) {
-//				LOGGER.warn("Could not parse parse parameter pollingInterval. Using default value: " + pollingInterval,
-//						e);
-//			}
-//
-//			return new AvalonNotificationManager((ODSModelManager) mm, queryService, serviceName, nameServiceURL, true,
-//					pollingInterval);
+			String serviceName = getParameter(parameters, ODSContextFactory.PARAM_SERVICENAME);
+			serviceName = serviceName.replace(".ASAM-ODS", "");
+			String nameServiceURL = getParameter(parameters, ODSContextFactory.PARAM_NAMESERVICE);
+
+			LOGGER.info("Connecting to Avalon Notification Server ...");
+			LOGGER.info("Name service URL: {}", nameServiceURL);
+			LOGGER.info("Service name: {}", serviceName);
+
+			long pollingInterval = 500L;
+			try {
+				pollingInterval = Long.parseLong(getParameter(parameters, PARAM_POLLING_INTERVAL));
+			} catch (NumberFormatException | ConnectionException e) {
+				LOGGER.warn("Could not parse parse parameter pollingInterval. Using default value: " + pollingInterval,
+						e);
+			}
+
+			return new AvalonNotificationManager((ODSModelManager) mm, queryService, serviceName, nameServiceURL, true,
+					pollingInterval);
 		} else {
 			throw new ConnectionException("Invalid server type. Expected on of: 'peak'");
 		}
