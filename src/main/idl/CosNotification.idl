@@ -11,6 +11,8 @@
 #ifndef _COS_NOTIFICATION_IDL_
 #define _COS_NOTIFICATION_IDL_
 
+#pragma prefix "omg.org"
+
 module CosNotification {
 
    typedef string Istring;

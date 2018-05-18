@@ -13,6 +13,8 @@
 
 #include "CosNotifyComm.idl"
 
+#pragma prefix "omg.org"
+
 module CosNotifyFilter {
 
    typedef long ConstraintID;

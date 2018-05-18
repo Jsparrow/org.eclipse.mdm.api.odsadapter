@@ -11,6 +11,8 @@
 #ifndef _COS_EVENT_COMM_IDL_
 #define _COS_EVENT_COMM_IDL_
 
+#pragma prefix "omg.org"
+
 module CosEventComm {
 
    exception Disconnected{};

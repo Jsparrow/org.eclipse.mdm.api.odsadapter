@@ -16,6 +16,8 @@
 #include "CosNotifyComm.idl"
 #include "CosEventChannelAdmin.idl"
 
+#pragma prefix "omg.org"
+
 module CosNotifyChannelAdmin {
 
    exception ConnectionAlreadyActive {};

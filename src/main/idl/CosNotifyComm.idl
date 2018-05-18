@@ -14,6 +14,8 @@
 #include "CosNotification.idl"
 #include "CosEventComm.idl"
 
+#pragma prefix "omg.org"
+
 module CosNotifyComm {
 
    exception InvalidEventType { CosNotification::_EventType type; };
