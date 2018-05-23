@@ -45,7 +45,7 @@ public final class ODSEnumerations {
 	// Constructors
 	// ======================================================================
 
-	/**
+	/*o*
 	 * Constructor.
 	 */
 	private ODSEnumerations() {
@@ -58,7 +58,6 @@ public final class ODSEnumerations {
 	/**
 	 * Returns the enumeration class identified by given name.
 	 *
-	 * @param <E>
 	 *            The enumeration type.
 	 * @param name
 	 *            The ODS name of the requested enumeration class.
@@ -89,8 +88,8 @@ public final class ODSEnumerations {
 	/**
 	 * Returns the ODS enumeration name for given enumeration class.
 	 *
-	 * @param enumClass
-	 *            The enumeration class name.
+	 * @param enumObj
+	 *            The enumeration object.
 	 * @return The corresponding ODS enumeration name is returned.
 	 * @throws IllegalArgumentException
 	 *             Thrown if enumeration class is unknown.
@@ -297,7 +296,7 @@ public final class ODSEnumerations {
 			return ScalarType.FLOAT_COMPLEX;
 		} else if (value == 14) {
 			return ScalarType.DOUBLE_COMPLEX;
-		} else if (value == 28) {
+			} else if (value == 28) {
 			return ScalarType.FILE_LINK;
 		} else if (value == 30) {
 			return ScalarType.ENUMERATION;

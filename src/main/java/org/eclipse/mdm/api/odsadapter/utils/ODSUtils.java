@@ -8,6 +8,7 @@
 
 package org.eclipse.mdm.api.odsadapter.utils;
 
+import com.google.common.collect.ImmutableBiMap;
 import org.asam.ods.AggrFunc;
 import org.asam.ods.DataType;
 import org.asam.ods.SelOpcode;
@@ -24,141 +25,142 @@ import org.eclipse.mdm.api.base.query.BooleanOperator;
 /**
  * Utility class provides bidirectional mappings for ODS types
  *
- * @since 1.0.0
  * @author Viktor Stoehr, Gigatronik Ingolstadt GmbH
+ * @since 1.0.0
  */
 public abstract class ODSUtils {
+    /**
+     * Maps {@link RelationType} to the corresponding ODS {@link RelationType}.
+     */
+    public static final ImmutableBiMap<RelationType, org.asam.ods.RelationType> RELATIONSHIPS =
+            ImmutableBiMap.<RelationType, org.asam.ods.RelationType>builder()
+                    .put(RelationType.FATHER_CHILD, org.asam.ods.RelationType.FATHER_CHILD)
+                    .put(RelationType.INFO, org.asam.ods.RelationType.INFO)
+                    .put(RelationType.INHERITANCE, org.asam.ods.RelationType.INHERITANCE)
+                    .build();
 
-	// ======================================================================
-	// Class variables
-	// ======================================================================
+    /**
+     * Maps {@link Aggregation} to the corresponding ODS {@link AggrFunc}.
+     */
+    public static final ImmutableBiMap<Aggregation, AggrFunc> AGGREGATIONS =
+            ImmutableBiMap.<Aggregation, AggrFunc>builder()
+                    .put(Aggregation.NONE, AggrFunc.NONE)
+                    .put(Aggregation.COUNT, AggrFunc.COUNT)
+                    .put(Aggregation.DISTINCT_COUNT, AggrFunc.DCOUNT)
+                    .put(Aggregation.MINIMUM, AggrFunc.MIN)
+                    .put(Aggregation.MAXIMUM, AggrFunc.MAX)
+                    .put(Aggregation.AVERAGE, AggrFunc.AVG)
+                    .put(Aggregation.DEVIATION, AggrFunc.STDDEV)
+                    .put(Aggregation.SUM, AggrFunc.SUM)
+                    .put(Aggregation.DISTINCT, AggrFunc.DISTINCT)
+                    .build();
 
-	/**
-	 * Maps {@link RelationType} to the corresponding ODS {@link RelationType}.
-	 */
-	public static final BiDiMapper<RelationType, org.asam.ods.RelationType> RELATIONSHIPS = new BiDiMapper<>();
+    /**
+     * Maps {@link ContextType} to the corresponding ODS {@link String}.
+     */
+    public static final ImmutableBiMap<ContextType, String> CONTEXTTYPES =
+            ImmutableBiMap.<ContextType, String>builder()
+                    .put(ContextType.UNITUNDERTEST, "UnitUnderTest")
+                    .put(ContextType.TESTSEQUENCE, "TestSequence")
+                    .put(ContextType.TESTEQUIPMENT, "TestEquipment")
+                    .build();
 
-	/**
-	 * Maps {@link Aggregation} to the corresponding ODS {@link AggrFunc}.
-	 */
-	public static final BiDiMapper<Aggregation, AggrFunc> AGGREGATIONS = new BiDiMapper<>();
+    /**
+     * Maps {@link ComparisonOperator} to the corresponding ODS {@link SelOpcode}.
+     */
+    public static final ImmutableBiMap<ComparisonOperator, SelOpcode> OPERATIONS =
+            ImmutableBiMap.<ComparisonOperator, SelOpcode>builder()
+                    .put(ComparisonOperator.LIKE, SelOpcode.LIKE)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_LIKE, SelOpcode.CI_LIKE)
+                    .put(ComparisonOperator.NOT_LIKE, SelOpcode.NOTLIKE)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_NOT_LIKE, SelOpcode.CI_NOTLIKE)
+                    .put(ComparisonOperator.EQUAL, SelOpcode.EQ)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_EQUAL, SelOpcode.CI_EQ)
+                    .put(ComparisonOperator.NOT_EQUAL, SelOpcode.NEQ)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_NOT_EQUAL, SelOpcode.CI_NEQ)
+                    .put(ComparisonOperator.GREATER_THAN, SelOpcode.GT)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_GREATER_THAN, SelOpcode.CI_GT)
+                    .put(ComparisonOperator.GREATER_THAN_OR_EQUAL, SelOpcode.GTE)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_GREATER_THAN_OR_EQUAL, SelOpcode.CI_GTE)
+                    .put(ComparisonOperator.LESS_THAN, SelOpcode.LT)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_LESS_THAN, SelOpcode.CI_LT)
+                    .put(ComparisonOperator.LESS_THAN_OR_EQUAL, SelOpcode.LTE)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_LESS_THAN_OR_EQUAL, SelOpcode.CI_LTE)
+                    .put(ComparisonOperator.IS_NULL, SelOpcode.IS_NULL)
+                    .put(ComparisonOperator.IS_NOT_NULL, SelOpcode.IS_NOT_NULL)
+                    .put(ComparisonOperator.IN_SET, SelOpcode.INSET)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_IN_SET, SelOpcode.CI_INSET)
+                    .put(ComparisonOperator.NOT_IN_SET, SelOpcode.NOTINSET)
+                    .put(ComparisonOperator.CASE_INSENSITIVE_NOT_IN_SET, SelOpcode.CI_NOTINSET)
+                    .put(ComparisonOperator.BETWEEN, SelOpcode.BETWEEN)
+                    .build();
 
-	/**
-	 * Maps {@link ContextType} to the corresponding ODS {@link String}.
-	 */
-	public static final BiDiMapper<ContextType, String> CONTEXTTYPES = new BiDiMapper<>();
+    /**
+     * Maps {@link BooleanOperator} to the corresponding ODS {@link SelOperator}.
+     */
+    public static final ImmutableBiMap<BooleanOperator, SelOperator> OPERATORS =
+            ImmutableBiMap.<BooleanOperator, SelOperator>builder()
+                    .put(BooleanOperator.AND, SelOperator.AND)
+                    .put(BooleanOperator.OR, SelOperator.OR)
+                    .put(BooleanOperator.NOT, SelOperator.NOT)
+                    .build();
 
-	/**
-	 * Maps {@link ComparisonOperator} to the corresponding ODS {@link SelOpcode}.
-	 */
-	public static final BiDiMapper<ComparisonOperator, SelOpcode> OPERATIONS = new BiDiMapper<>();
+    /**
+     * Maps {@link BracketOperator} to the corresponding ODS {@link SelOperator}.
+     */
+    public static final ImmutableBiMap<BracketOperator, SelOperator> BRACKETOPERATORS =
+            ImmutableBiMap.<BracketOperator, SelOperator>builder()
+                    .put(BracketOperator.OPEN, SelOperator.OPEN)
+                    .put(BracketOperator.CLOSE, SelOperator.CLOSE)
+                    .build();
 
-	/**
-	 * Maps {@link BooleanOperator} to the corresponding ODS {@link SelOperator}.
-	 */
-	public static final BiDiMapper<BooleanOperator, SelOperator> OPERATORS = new BiDiMapper<>();
-	
-	/**
-	 * Maps {@link BracketOperator} to the corresponding ODS {@link SelOperator}.
-	 */
-	public static final BiDiMapper<BracketOperator, SelOperator> BRACKETOPERATORS = new BiDiMapper<>();
+    /**
+     * Maps {@link ValueType} to the corresponding ODS {@link DataType}.
+     */
+    public static final ImmutableBiMap<ValueType<?>, DataType> VALUETYPES =
+            ImmutableBiMap.<ValueType<?>, DataType> builder()
+                    .put(ValueType.UNKNOWN, DataType.DT_UNKNOWN)
+                    .put(ValueType.STRING, DataType.DT_STRING)
+                    .put(ValueType.STRING_SEQUENCE, DataType.DS_STRING)
+                    .put(ValueType.DATE, DataType.DT_DATE)
+                    .put(ValueType.DATE_SEQUENCE, DataType.DS_DATE)
+                    .put(ValueType.BOOLEAN, DataType.DT_BOOLEAN)
+                    .put(ValueType.BOOLEAN_SEQUENCE, DataType.DS_BOOLEAN)
+                    .put(ValueType.BYTE, DataType.DT_BYTE)
+                    .put(ValueType.BYTE_SEQUENCE, DataType.DS_BYTE)
+                    .put(ValueType.SHORT, DataType.DT_SHORT)
+                    .put(ValueType.SHORT_SEQUENCE, DataType.DS_SHORT)
+                    .put(ValueType.INTEGER, DataType.DT_LONG)
+                    .put(ValueType.INTEGER_SEQUENCE, DataType.DS_LONG)
+                    .put(ValueType.LONG, DataType.DT_LONGLONG)
+                    .put(ValueType.LONG_SEQUENCE, DataType.DS_LONGLONG)
+                    .put(ValueType.FLOAT, DataType.DT_FLOAT)
+                    .put(ValueType.FLOAT_SEQUENCE, DataType.DS_FLOAT)
+                    .put(ValueType.DOUBLE, DataType.DT_DOUBLE)
+                    .put(ValueType.DOUBLE_SEQUENCE, DataType.DS_DOUBLE)
+                    .put(ValueType.BYTE_STREAM, DataType.DT_BYTESTR)
+                    .put(ValueType.BYTE_STREAM_SEQUENCE, DataType.DS_BYTESTR)
+                    .put(ValueType.FLOAT_COMPLEX, DataType.DT_COMPLEX)
+                    .put(ValueType.FLOAT_COMPLEX_SEQUENCE, DataType.DS_COMPLEX)
+                    .put(ValueType.DOUBLE_COMPLEX, DataType.DT_DCOMPLEX)
+                    .put(ValueType.DOUBLE_COMPLEX_SEQUENCE, DataType.DS_DCOMPLEX)
+                    .put(ValueType.ENUMERATION, DataType.DT_ENUM)
+                    .put(ValueType.ENUMERATION_SEQUENCE, DataType.DS_ENUM)
+                    .put(ValueType.FILE_LINK, DataType.DT_EXTERNALREFERENCE)
+                    .put(ValueType.FILE_LINK_SEQUENCE, DataType.DS_EXTERNALREFERENCE)
+                    .put(ValueType.BLOB, DataType.DT_BLOB)
+                    .build();
 
-	/**
-	 * Maps {@link ValueType} to the corresponding ODS {@link DataType}.
-	 */
-	public static final BiDiMapper<ValueType<?>, DataType> VALUETYPES = new BiDiMapper<>();
+    /**
+     * Maps {@link JoinType} to the corresponding ODS {@link org.asam.ods.JoinType}.
+     */
+    public static final ImmutableBiMap<JoinType, org.asam.ods.JoinType> JOINS =
+            ImmutableBiMap.<JoinType, org.asam.ods.JoinType>builder()
+                    .put(JoinType.INNER, org.asam.ods.JoinType.JTDEFAULT)
+                    .put(JoinType.OUTER, org.asam.ods.JoinType.JTOUTER)
+                    .build();
 
-	/**
-	 * Maps {@link JoinType} to the corresponding ODS {@link org.asam.ods.JoinType}.
-	 */
-	public static final BiDiMapper<JoinType, org.asam.ods.JoinType> JOINS = new BiDiMapper<>();
-
-	static {
-		RELATIONSHIPS.addMappings(RelationType.FATHER_CHILD, org.asam.ods.RelationType.FATHER_CHILD);
-		RELATIONSHIPS.addMappings(RelationType.INFO, org.asam.ods.RelationType.INFO);
-		RELATIONSHIPS.addMappings(RelationType.INHERITANCE, org.asam.ods.RelationType.INHERITANCE);
-
-		AGGREGATIONS.addMappings(Aggregation.NONE, AggrFunc.NONE);
-		AGGREGATIONS.addMappings(Aggregation.COUNT, AggrFunc.COUNT);
-		AGGREGATIONS.addMappings(Aggregation.DISTINCT_COUNT, AggrFunc.DCOUNT);
-		AGGREGATIONS.addMappings(Aggregation.MINIMUM, AggrFunc.MIN);
-		AGGREGATIONS.addMappings(Aggregation.MAXIMUM, AggrFunc.MAX);
-		AGGREGATIONS.addMappings(Aggregation.AVERAGE, AggrFunc.AVG);
-		AGGREGATIONS.addMappings(Aggregation.DEVIATION, AggrFunc.STDDEV);
-		AGGREGATIONS.addMappings(Aggregation.SUM, AggrFunc.SUM);
-		AGGREGATIONS.addMappings(Aggregation.DISTINCT, AggrFunc.DISTINCT);
-
-		CONTEXTTYPES.addMappings(ContextType.UNITUNDERTEST, "UnitUnderTest");
-		CONTEXTTYPES.addMappings(ContextType.TESTSEQUENCE, "TestSequence");
-		CONTEXTTYPES.addMappings(ContextType.TESTEQUIPMENT, "TestEquipment");
-
-		OPERATIONS.addMappings(ComparisonOperator.LIKE, SelOpcode.LIKE);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_LIKE, SelOpcode.CI_LIKE);
-		OPERATIONS.addMappings(ComparisonOperator.NOT_LIKE, SelOpcode.NOTLIKE);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_NOT_LIKE, SelOpcode.CI_NOTLIKE);
-		OPERATIONS.addMappings(ComparisonOperator.EQUAL, SelOpcode.EQ);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_EQUAL, SelOpcode.CI_EQ);
-		OPERATIONS.addMappings(ComparisonOperator.NOT_EQUAL, SelOpcode.NEQ);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_NOT_EQUAL, SelOpcode.CI_NEQ);
-		OPERATIONS.addMappings(ComparisonOperator.GREATER_THAN, SelOpcode.GT);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_GREATER_THAN, SelOpcode.CI_GT);
-		OPERATIONS.addMappings(ComparisonOperator.GREATER_THAN_OR_EQUAL, SelOpcode.GTE);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_GREATER_THAN_OR_EQUAL, SelOpcode.CI_GTE);
-		OPERATIONS.addMappings(ComparisonOperator.LESS_THAN, SelOpcode.LT);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_LESS_THAN, SelOpcode.CI_LT);
-		OPERATIONS.addMappings(ComparisonOperator.LESS_THAN_OR_EQUAL, SelOpcode.LTE);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_LESS_THAN_OR_EQUAL, SelOpcode.CI_LTE);
-		OPERATIONS.addMappings(ComparisonOperator.IS_NULL, SelOpcode.IS_NULL);
-		OPERATIONS.addMappings(ComparisonOperator.IS_NOT_NULL, SelOpcode.IS_NOT_NULL);
-		OPERATIONS.addMappings(ComparisonOperator.IN_SET, SelOpcode.INSET);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_IN_SET, SelOpcode.CI_INSET);
-		OPERATIONS.addMappings(ComparisonOperator.NOT_IN_SET, SelOpcode.NOTINSET);
-		OPERATIONS.addMappings(ComparisonOperator.CASE_INSENSITIVE_NOT_IN_SET, SelOpcode.CI_NOTINSET);
-		OPERATIONS.addMappings(ComparisonOperator.BETWEEN, SelOpcode.BETWEEN);
-
-		OPERATORS.addMappings(BooleanOperator.AND, SelOperator.AND);
-		OPERATORS.addMappings(BooleanOperator.OR, SelOperator.OR);
-		OPERATORS.addMappings(BooleanOperator.NOT, SelOperator.NOT);
-		
-		BRACKETOPERATORS.addMappings(BracketOperator.OPEN, SelOperator.OPEN);
-		BRACKETOPERATORS.addMappings(BracketOperator.CLOSE, SelOperator.CLOSE);
-
-		VALUETYPES.addMappings(ValueType.UNKNOWN, DataType.DT_UNKNOWN);
-		VALUETYPES.addMappings(ValueType.STRING, DataType.DT_STRING);
-		VALUETYPES.addMappings(ValueType.STRING_SEQUENCE, DataType.DS_STRING);
-		VALUETYPES.addMappings(ValueType.DATE, DataType.DT_DATE);
-		VALUETYPES.addMappings(ValueType.DATE_SEQUENCE, DataType.DS_DATE);
-		VALUETYPES.addMappings(ValueType.BOOLEAN, DataType.DT_BOOLEAN);
-		VALUETYPES.addMappings(ValueType.BOOLEAN_SEQUENCE, DataType.DS_BOOLEAN);
-		VALUETYPES.addMappings(ValueType.BYTE, DataType.DT_BYTE);
-		VALUETYPES.addMappings(ValueType.BYTE_SEQUENCE, DataType.DS_BYTE);
-		VALUETYPES.addMappings(ValueType.SHORT, DataType.DT_SHORT);
-		VALUETYPES.addMappings(ValueType.SHORT_SEQUENCE, DataType.DS_SHORT);
-		VALUETYPES.addMappings(ValueType.INTEGER, DataType.DT_LONG);
-		VALUETYPES.addMappings(ValueType.INTEGER_SEQUENCE, DataType.DS_LONG);
-		VALUETYPES.addMappings(ValueType.LONG, DataType.DT_LONGLONG);
-		VALUETYPES.addMappings(ValueType.LONG_SEQUENCE, DataType.DS_LONGLONG);
-		VALUETYPES.addMappings(ValueType.FLOAT, DataType.DT_FLOAT);
-		VALUETYPES.addMappings(ValueType.FLOAT_SEQUENCE, DataType.DS_FLOAT);
-		VALUETYPES.addMappings(ValueType.DOUBLE, DataType.DT_DOUBLE);
-		VALUETYPES.addMappings(ValueType.DOUBLE_SEQUENCE, DataType.DS_DOUBLE);
-		VALUETYPES.addMappings(ValueType.BYTE_STREAM, DataType.DT_BYTESTR);
-		VALUETYPES.addMappings(ValueType.BYTE_STREAM_SEQUENCE, DataType.DS_BYTESTR);
-		VALUETYPES.addMappings(ValueType.FLOAT_COMPLEX, DataType.DT_COMPLEX);
-		VALUETYPES.addMappings(ValueType.FLOAT_COMPLEX_SEQUENCE, DataType.DS_COMPLEX);
-		VALUETYPES.addMappings(ValueType.DOUBLE_COMPLEX, DataType.DT_DCOMPLEX);
-		VALUETYPES.addMappings(ValueType.DOUBLE_COMPLEX_SEQUENCE, DataType.DS_DCOMPLEX);
-		VALUETYPES.addMappings(ValueType.ENUMERATION, DataType.DT_ENUM);
-		VALUETYPES.addMappings(ValueType.ENUMERATION_SEQUENCE, DataType.DS_ENUM);
-		VALUETYPES.addMappings(ValueType.FILE_LINK, DataType.DT_EXTERNALREFERENCE);
-		VALUETYPES.addMappings(ValueType.FILE_LINK_SEQUENCE, DataType.DS_EXTERNALREFERENCE);
-		VALUETYPES.addMappings(ValueType.BLOB, DataType.DT_BLOB);
-
-		JOINS.addMappings(JoinType.INNER, org.asam.ods.JoinType.JTDEFAULT);
-		JOINS.addMappings(JoinType.OUTER, org.asam.ods.JoinType.JTOUTER);
-	}
-
-	public static boolean isValidID(String instanceID) {
-		return instanceID != null && !instanceID.isEmpty() && !"0".equals(instanceID);
-	}
+    public static boolean isValidID(String instanceID) {
+        return instanceID != null && !instanceID.isEmpty() && !"0".equals(instanceID);
+    }
 }

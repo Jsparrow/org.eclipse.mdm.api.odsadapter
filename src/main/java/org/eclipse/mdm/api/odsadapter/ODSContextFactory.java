@@ -11,6 +11,9 @@ package org.eclipse.mdm.api.odsadapter;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
@@ -52,9 +55,9 @@ public class ODSContextFactory implements ApplicationContextFactory {
 
 	public static final String PARAM_PASSWORD = "password";
 
-	public static final String PARAM_ELASTIC_SEARCH_URL = "elasticsearch.url";
+	private static final String PARAM_FOR_USER = "for_user";
 
-	private static final String AUTH_TEMPLATE = "USER=%s,PASSWORD=%s,CREATE_COSESSION_ALLOWED=TRUE";
+	private static final String AUTH_TEMPLATE = "USER=%s,PASSWORD=%s,CREATE_COSESSION_ALLOWED=TRUE,FOR_USER=%s";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSContextFactory.class);
 
@@ -84,7 +87,6 @@ public class ODSContextFactory implements ApplicationContextFactory {
 	 * <li>{@value #PARAM_SERVICENAME}</li>
 	 * <li>{@value #PARAM_USER}</li>
 	 * <li>{@value #PARAM_PASSWORD}</li>
-	 * <li>{@value #PARAM_ELASTIC_SEARCH_URL}</li>
 	 * </ul>
 	 *
 	 * Listed names are available via public fields of this class.
@@ -95,7 +97,11 @@ public class ODSContextFactory implements ApplicationContextFactory {
 		try (ServiceLocator serviceLocator = new ServiceLocator(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
 			String nameOfService = getParameter(parameters, PARAM_SERVICENAME).replace(".ASAM-ODS", "");
 
+
+
 			AoFactory aoFactory = serviceLocator.resolveFactory(nameOfService);
+			LOGGER.info("Connecting to ODS Server ...");
+
 			LOGGER.info("Connecting to ODS Server ...");
 
 			LOGGER.info("AoFactory name: {}", aoFactory.getName());
@@ -103,21 +109,36 @@ public class ODSContextFactory implements ApplicationContextFactory {
 			LOGGER.info("AoFactory interface version: {}", aoFactory.getInterfaceVersion());
 			LOGGER.info("AoFactory type: {}", aoFactory.getType());
 
-			aoSession = aoFactory.newSession(String.format(AUTH_TEMPLATE, getParameter(parameters, PARAM_USER),
-					getParameter(parameters, PARAM_PASSWORD)));
+			aoSession = aoFactory.newSession(sessionParametersAsString(parameters));
+
 			LOGGER.info("Connection to ODS server established.");
 
 			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
-		
+
 			// Create a parameters map without password (which should not be visible from this point onwards),
 			// leaving the original map untouched:
 			Map<String, String> mapParams = new HashMap<>(parameters);
 			mapParams.remove(PARAM_PASSWORD);
-			return new ODSContext(orb, aoSession, fileServer, mapParams); 
+			return new ODSContext(orb, aoSession, fileServer, mapParams);
 		} catch (AoException e) {
 			closeSession(aoSession);
 			throw new ConnectionException("Unable to connect to ODS server due to: " + e.reason, e);
 		}
+	}
+
+	private String sessionParametersAsString(Map<String, String> parameters) throws ConnectionException {
+		ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String>builder()
+				.put("USER", getParameter(parameters, PARAM_USER))
+				.put("PASSWORD", getParameter(parameters, PARAM_PASSWORD))
+				.put("CREATE_COSESSION_ALLOWED", "TRUE");
+
+		String forUserName = parameters.get(PARAM_FOR_USER);
+		if(!Strings.isNullOrEmpty(forUserName)) {
+			builder.put("FOR_USER", forUserName);
+		}
+		String result = Joiner.on(",").withKeyValueSeparator("=").join(builder.build());
+		LOGGER.debug("Connecting to ODS using the connection parameters: {}", result);
+		return result;
 	}
 
 	// ======================================================================

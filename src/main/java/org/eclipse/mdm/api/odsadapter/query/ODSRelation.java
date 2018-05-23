@@ -58,7 +58,7 @@ public final class ODSRelation implements Relation {
 		this.source = source;
 		this.target = target;
 		name = applRel.arName;
-		relationType = ODSUtils.RELATIONSHIPS.revert(applRel.arRelationType);
+		relationType = ODSUtils.RELATIONSHIPS.inverse().get(applRel.arRelationType);
 		rangeMax = applRel.arRelationRange.max;
 	}
 
