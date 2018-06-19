@@ -174,7 +174,7 @@ public class ODSSearchService implements SearchService {
 	 *            first filter to merge
 	 * @param query
 	 *            freetext query, which returns the ids to generate the second
-	 *            filer to merge
+	 *            filter to merge
 	 * @return conjunction of the first and second filter
 	 * @throws DataAccessException
 	 *             Thrown if {@link ODSFreeTextSearch} is unavailable or cannot
@@ -184,17 +184,19 @@ public class ODSSearchService implements SearchService {
 		Preconditions.checkNotNull(filter, "Filter cannot be null!");
 
 		Filter freetextIdsFilter = getFilterForFreetextQuery(query);
-		if (filter.isEmtpty()) {
+		// If freetext search query is provided but yields no results, return empty
+		// filter for compatibility with previous behaviour:
+		if (null == freetextIdsFilter) {
+			return Filter.or();
+		} else if (filter.isEmtpty()) {
 			return freetextIdsFilter;
-		} else if (freetextIdsFilter.isEmtpty()) {
-			return filter;
 		} else {
 			return Filter.and().merge(filter, freetextIdsFilter);
 		}
 	}
 
 	/**
-	 * Executes a free text search and returns the IDs of the matching enities.
+	 * Executes a free text search and returns the IDs of the matching entities.
 	 * 
 	 * @param query
 	 *            search query
@@ -216,28 +218,37 @@ public class ODSSearchService implements SearchService {
 	}
 
 	/**
-	 * Delegates to {@link ODSFreeTextSearch} to retrieves a map of all entity
-	 * IDs found by the given query. With the results a filter is generated,
-	 * which can be used to query the entity instances of result of the free
-	 * text query.
+	 * Delegates to {@link ODSFreeTextSearch} to retrieve a map of all entity IDs
+	 * found by the given query. With the results a filter is generated, which can
+	 * be used to query the entity instances of result of the free text query.
 	 * 
 	 * @param query
 	 *            fulltext search query
-	 * @return A map with the found entity IDs grouped by {@link Entity} class.
+	 * @return A map with the found entity IDs grouped by {@link Entity} class or
+	 *         null if a query was provided but yielded no results.
 	 * @throws DataAccessException
 	 *             Thrown if {@link ODSFreeTextSearch} is unavailable or cannot
 	 *             execute the query.
 	 */
 	private Filter getFilterForFreetextQuery(String query) throws DataAccessException {
 
-		Filter freeTextResultsFilter = Filter.or();
+		if (Strings.isNullOrEmpty(query)) {
+			// No query provided => return empty filter for merging with other filters:
+			return Filter.or();
+		}
+		
+		Filter freeTextResultsFilter = null;
 		for (Map.Entry<Class<? extends Entity>, List<String>> entry : fetchIds(query).entrySet()) {
 			if (!entry.getValue().isEmpty()) {
+				if (null == freeTextResultsFilter) {
+					freeTextResultsFilter = Filter.or();
+				}
+
 				freeTextResultsFilter.ids(context.getODSModelManager().getEntityType(entry.getKey()), entry.getValue());
 			}
 		}
 
-		return freeTextResultsFilter;
+		return freeTextResultsFilter; // null if query yielded no results
 	}
 
 	/**
