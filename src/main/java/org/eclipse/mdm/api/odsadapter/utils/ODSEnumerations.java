@@ -45,7 +45,7 @@ public final class ODSEnumerations {
 	// Constructors
 	// ======================================================================
 
-	/*o*
+	/**
 	 * Constructor.
 	 */
 	private ODSEnumerations() {
@@ -58,6 +58,7 @@ public final class ODSEnumerations {
 	/**
 	 * Returns the enumeration class identified by given name.
 	 *
+	 * @param <E>
 	 *            The enumeration type.
 	 * @param name
 	 *            The ODS name of the requested enumeration class.

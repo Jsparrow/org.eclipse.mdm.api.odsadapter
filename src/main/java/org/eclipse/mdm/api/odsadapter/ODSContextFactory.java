@@ -43,10 +43,6 @@ import com.highqsoft.corbafileserver.generated.CORBAFileServerIFHelper;
  */
 public class ODSContextFactory implements ApplicationContextFactory {
 
-	// ======================================================================
-	// Class variables
-	// ======================================================================
-
 	public static final String PARAM_NAMESERVICE = "nameservice";
 
 	public static final String PARAM_SERVICENAME = "servicename";
@@ -57,22 +53,11 @@ public class ODSContextFactory implements ApplicationContextFactory {
 
 	private static final String PARAM_FOR_USER = "for_user";
 
-	private static final String AUTH_TEMPLATE = "USER=%s,PASSWORD=%s,CREATE_COSESSION_ALLOWED=TRUE,FOR_USER=%s";
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(ODSContextFactory.class);
-
-	// ======================================================================
-	// Instance variables
-	// ======================================================================
 
 	private final ORB orb = ORB.init(new String[] {}, System.getProperties());
 
-	// ======================================================================
-	// Public methods
-	// ======================================================================
-
 	public ODSContextFactory() {
-		LOGGER.debug("Default constructor called.");
 	}
 
 	/**
@@ -97,29 +82,27 @@ public class ODSContextFactory implements ApplicationContextFactory {
 		try (ServiceLocator serviceLocator = new ServiceLocator(orb, getParameter(parameters, PARAM_NAMESERVICE))) {
 			String nameOfService = getParameter(parameters, PARAM_SERVICENAME).replace(".ASAM-ODS", "");
 
-
-
 			AoFactory aoFactory = serviceLocator.resolveFactory(nameOfService);
-			LOGGER.info("Connecting to ODS Server ...");
-
-			LOGGER.info("Connecting to ODS Server ...");
-
-			LOGGER.info("AoFactory name: {}", aoFactory.getName());
-			LOGGER.info("AoFactory description: {}", aoFactory.getDescription());
-			LOGGER.info("AoFactory interface version: {}", aoFactory.getInterfaceVersion());
-			LOGGER.info("AoFactory type: {}", aoFactory.getType());
-
-			aoSession = aoFactory.newSession(sessionParametersAsString(parameters));
-
-			LOGGER.info("Connection to ODS server established.");
-
-			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
+			String aoFactoryName = aoFactory.getName();
+			LOGGER.info("Connecting to ODS Server (name: {}, description: {}, interface version: {}, type: {}) ...", 
+					aoFactoryName, aoFactory.getDescription(), aoFactory.getInterfaceVersion(), aoFactory.getType());
 
 			// Create a parameters map without password (which should not be visible from this point onwards),
 			// leaving the original map untouched:
-			Map<String, String> mapParams = new HashMap<>(parameters);
-			mapParams.remove(PARAM_PASSWORD);
-			return new ODSContext(orb, aoSession, fileServer, mapParams);
+			Map<String, String> parametersWithoutPassword = new HashMap<>(parameters);
+			if (LOGGER.isDebugEnabled()) {
+				parametersWithoutPassword.put(PARAM_PASSWORD, "****");
+				LOGGER.debug("Connecting to ODS using the connection parameters: {}", sessionParametersAsString(parametersWithoutPassword));
+			}
+			parametersWithoutPassword.remove(PARAM_PASSWORD);
+			
+			aoSession = aoFactory.newSession(sessionParametersAsString(parameters));
+
+			LOGGER.info("Connection to ODS server '{}' established.", aoFactoryName);
+
+			CORBAFileServerIF fileServer = serviceLocator.resolveFileServer(nameOfService);
+
+			return new ODSContext(orb, aoSession, fileServer, parametersWithoutPassword);
 		} catch (AoException e) {
 			closeSession(aoSession);
 			throw new ConnectionException("Unable to connect to ODS server due to: " + e.reason, e);
@@ -136,14 +119,8 @@ public class ODSContextFactory implements ApplicationContextFactory {
 		if(!Strings.isNullOrEmpty(forUserName)) {
 			builder.put("FOR_USER", forUserName);
 		}
-		String result = Joiner.on(",").withKeyValueSeparator("=").join(builder.build());
-		LOGGER.debug("Connecting to ODS using the connection parameters: {}", result);
-		return result;
+		return Joiner.on(",").withKeyValueSeparator("=").join(builder.build());
 	}
-
-	// ======================================================================
-	// Private methods
-	// ======================================================================
 
 	/**
 	 * Closes given {@link AoSession} with catching and logging errors.
@@ -183,24 +160,12 @@ public class ODSContextFactory implements ApplicationContextFactory {
 		return value;
 	}
 
-	// ======================================================================
-	// Inner classes
-	// ======================================================================
-
 	/**
 	 * Used to resolve CORBA service object by ID and kind.
 	 */
 	private static final class ServiceLocator implements AutoCloseable {
 
-		// ======================================================================
-		// Instance variables
-		// ======================================================================
-
 		private NamingContextExt namingContext;
-
-		// ======================================================================
-		// Constructors
-		// ======================================================================
 
 		/**
 		 * Constructor.
@@ -218,10 +183,6 @@ public class ODSContextFactory implements ApplicationContextFactory {
 				throw new ConnectionException("Unable to resolve NameService '" + path + "'.");
 			}
 		}
-
-		// ======================================================================
-		// Public methods
-		// ======================================================================
 
 		/**
 		 * Resolves and returns the {@link AoFactory} service for given ID.
