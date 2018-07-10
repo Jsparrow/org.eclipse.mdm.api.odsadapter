@@ -53,6 +53,13 @@ sourceSets {
 configurations.all {
 	exclude group: 'javax.inject', module: 'javax.inject'
 	exclude group: 'commons-logging', module: 'commons-logging'
+	
+	// exclude guava dependencies
+	exclude group: 'com.google.code.findbugs', module: 'jsr305'
+	exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
+	exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
+	exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
+	exclude group: 'org.checkerframework', module: 'checker-compat-qual'
 }
 
 dependencies {
@@ -74,7 +81,7 @@ dependencies {
 	// Peak notification service
 	compile 'com.google.protobuf:protobuf-java:3.2.0'
 	compile 'com.google.protobuf:protobuf-java-util:3.2.0'
-	compile 'com.google.guava:guava:18.0'
+	compile 'com.google.guava:guava:25.0-jre'
 	compile 'org.glassfish.jersey.core:jersey-client:2.23.2'
 	compile 'org.glassfish.jersey.media:jersey-media-sse:2.23.2'
 	generatedCompile 'com.google.protobuf:protobuf-java:3.2.0'
