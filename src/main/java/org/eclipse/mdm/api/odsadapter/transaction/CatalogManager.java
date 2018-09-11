@@ -95,7 +95,7 @@ final class CatalogManager {
 				.collect(Collectors.groupingBy(CatalogComponent::getContextType));
 
 		for (Entry<ContextType, List<CatalogComponent>> entry : catalogComponentsByContextType.entrySet()) {
-			String odsContextTypeName = ODSUtils.CONTEXTTYPES.convert(entry.getKey());
+			String odsContextTypeName = ODSUtils.CONTEXTTYPES.get(entry.getKey());
 			ApplicationElement contextRootApplicationElement = getApplicationStructure()
 					.getElementByName(odsContextTypeName);
 			BaseElement contextRootBaseElement = contextRootApplicationElement.getBaseElement();
@@ -230,7 +230,7 @@ final class CatalogManager {
 			for (CatalogAttribute catalogAttribute : entry.getValue()) {
 
 				ApplicationAttribute applicationAttribute = applicationElement.createAttribute();
-				DataType dataType = ODSUtils.VALUETYPES.convert(catalogAttribute.getValueType());
+				DataType dataType = ODSUtils.VALUETYPES.get(catalogAttribute.getValueType());
 				applicationAttribute.setDataType(dataType);
 				applicationAttribute.setName(catalogAttribute.getName());
 				if (dataType == DataType.DT_ENUM) {

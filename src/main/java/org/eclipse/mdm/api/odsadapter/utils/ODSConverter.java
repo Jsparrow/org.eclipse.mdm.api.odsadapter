@@ -322,7 +322,7 @@ public final class ODSConverter {
 		if (Aggregation.NONE == aggregation) {
 			return attribute.createValue(unit, valid, input);
 		} else {
-			ValueType<?> valueType = ODSUtils.VALUETYPES.revert(dataType);
+			ValueType<?> valueType = ODSUtils.VALUETYPES.inverse().get(dataType);
 			if (valueType.isEnumerationType()
 					&& attribute.getValueType().isEnumerationType()
 					&& Sets.immutableEnumSet(Aggregation.MINIMUM, Aggregation.MAXIMUM, Aggregation.DISTINCT)

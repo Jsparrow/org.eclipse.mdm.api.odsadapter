@@ -17,10 +17,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
+import com.google.common.base.Stopwatch;
+import org.apache.commons.lang3.time.StopWatch;
 import org.asam.ods.AIDName;
 import org.asam.ods.AggrFunc;
 import org.asam.ods.AoException;
@@ -368,28 +371,10 @@ public class ODSModelManager implements ModelManager {
 	 */
 	private void loadApplicationModel() throws AoException {
 		LOGGER.debug("Reading the application model...");
+
+		Map<String, Map<String, Enumeration<?>>> enumClassMap = loadODSEnumerations();
+
 		long start = System.currentTimeMillis();
-		// enumeration mappings (aeID -> (aaName -> enumClass))
-		Map<String, Map<String, Enumeration<?>>> enumClassMap = new HashMap<>();
-		EnumRegistry er = EnumRegistry.getInstance();
-		ApplicationStructure applicationStructure = aoSession.getApplicationStructure();
-		for (EnumerationAttributeStructure eas : aoSession.getEnumerationAttributes()) {
-			// make sure the enumeration is found
-			if (ODSEnumerations.getEnumObj(eas.enumName) == null) {
-				Enumeration<ODSEnum> enumdyn = new Enumeration<>(ODSEnum.class, eas.enumName);
-				EnumerationDefinition enumdef = applicationStructure.getEnumerationDefinition(eas.enumName);
-				String[] listItemNames = enumdef.listItemNames();
-				for (String item : listItemNames) {
-					int ordinal=enumdef.getItem(item);
-					enumdyn.addValue(new ODSEnum(item, ordinal));
-				}
-				er.add(eas.enumName, enumdyn);
-			}
-
-			enumClassMap.computeIfAbsent(Long.toString(ODSConverter.fromODSLong(eas.aid)), k -> new HashMap<>())
-					.put(eas.aaName, ODSEnumerations.getEnumObj(eas.enumName));
-		}
-
 		ApplicationStructureValue applicationStructureValue = aoSession.getApplicationStructureValue();
 		Map<String, String> units = getUnitMapping(applicationStructureValue.applElems);
 
@@ -420,6 +405,40 @@ public class ODSModelManager implements ModelManager {
 		long stop = System.currentTimeMillis();
 		LOGGER.debug("{} entity types with {} relations found in {} ms.", entityTypesByName.size(), relations.size(),
 				stop - start);
+	}
+
+	private Map<String, Map<String, Enumeration<?>>> loadODSEnumerations() throws AoException {
+		LOGGER.debug("Loading ODS enumerations...");
+		long t1 = System.currentTimeMillis();
+
+		// enumeration mappings (aeID -> (aaName -> enumClass))
+		Map<String, Map<String, Enumeration<?>>> enumClassMap = new HashMap<>();
+		EnumRegistry er = EnumRegistry.getInstance();
+		ApplicationStructure applicationStructure = aoSession.getApplicationStructure();
+		for (EnumerationAttributeStructure eas : aoSession.getEnumerationAttributes()) {
+
+			EnumerationDefinition bubu = applicationStructure.getEnumerationDefinition(eas.enumName);
+			for (String itemName : bubu.listItemNames()) {
+				final int intValue = bubu.getItem(itemName);
+				LOGGER.debug("{}:{}:{}", eas.enumName, itemName, intValue);
+			}
+
+			// make sure the enumeration is found
+			if (ODSEnumerations.getEnumObj(eas.enumName) == null) {
+				Enumeration<ODSEnum> enumdyn = new Enumeration<>(ODSEnum.class, eas.enumName);
+				EnumerationDefinition enumdef = applicationStructure.getEnumerationDefinition(eas.enumName);
+				for (String itemName : enumdef.listItemNames()) {
+					final int intValue = enumdef.getItem(itemName);
+					enumdyn.addValue(new ODSEnum(itemName, intValue));
+				}
+				er.add(eas.enumName, enumdyn);
+			}
+
+			enumClassMap.computeIfAbsent(Long.toString(ODSConverter.fromODSLong(eas.aid)), k -> new HashMap<>())
+					.put(eas.aaName, ODSEnumerations.getEnumObj(eas.enumName));
+		}
+		LOGGER.debug("Loading enumerations took {}ms", System.currentTimeMillis() - t1);
+		return enumClassMap;
 	}
 
 	/**
@@ -582,7 +601,7 @@ public class ODSModelManager implements ModelManager {
 	 */
 	private void registerContextRoot(ContextType contextType) {
 		EntityConfig<ContextRoot> contextRootConfig = create(new Key<>(ContextRoot.class, contextType),
-				ODSUtils.CONTEXTTYPES.convert(contextType), true);
+				ODSUtils.CONTEXTTYPES.get(contextType), true);
 		contextRootConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, contextType)));
 		for (Relation contextComponentRelation : contextRootConfig.getEntityType().getChildRelations()) {
 			EntityType contextComponentEntityType = contextComponentRelation.getTarget();
@@ -613,7 +632,7 @@ public class ODSModelManager implements ModelManager {
 	 *            The {@code ContextType}.
 	 */
 	private void registerTemplateRoot(ContextType contextType) {
-		String odsName = ODSUtils.CONTEXTTYPES.convert(contextType);
+		String odsName = ODSUtils.CONTEXTTYPES.get(contextType);
 		EntityConfig<TemplateAttribute> templateAttributeConfig = create(
 				new Key<>(TemplateAttribute.class, contextType), "Tpl" + odsName + "Attr", true);
 		templateAttributeConfig
@@ -655,7 +674,7 @@ public class ODSModelManager implements ModelManager {
 	 *            The {@code ContextType}.
 	 */
 	private void registerCatalogComponent(ContextType contextType) {
-		String odsName = ODSUtils.CONTEXTTYPES.convert(contextType);
+		String odsName = ODSUtils.CONTEXTTYPES.get(contextType);
 		EntityConfig<CatalogAttribute> catalogAttributeConfig = create(new Key<>(CatalogAttribute.class, contextType),
 				"Cat" + odsName + "Attr", true);
 		catalogAttributeConfig.addOptional(entityConfigRepository.findRoot(new Key<>(ValueList.class)));
