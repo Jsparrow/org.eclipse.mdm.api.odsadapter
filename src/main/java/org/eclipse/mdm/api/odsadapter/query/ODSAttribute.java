@@ -53,7 +53,7 @@ public class ODSAttribute implements Attribute {
 	 *            The ODS meta data for this attribute.
 	 * @param unit
 	 *            The unit name.
-	 * @param enumClass
+	 * @param enumObj
 	 *            The enumeration class, may be null.
 	 */
 	ODSAttribute(EntityType entityType, ApplAttr applAttr, String unit, Enumeration<?> enumObj) {
@@ -65,7 +65,7 @@ public class ODSAttribute implements Attribute {
 			valueType = ValueType.STRING;
 			isIdAttribute = true;
 		} else {
-			valueType = ODSUtils.VALUETYPES.revert(applAttr.dType);
+			valueType = ODSUtils.VALUETYPES.inverse().get(applAttr.dType);
 			isIdAttribute = false;
 		}
 

@@ -194,9 +194,9 @@ public class ODSQuery implements Query {
 				if (conditionItem.isCondition()) {
 					selItem.value(createCondition(conditionItem.getCondition()));
 				} else if (conditionItem.isBracketOperator()){
-					selItem._operator(ODSUtils.BRACKETOPERATORS.convert(conditionItem.getBracketOperator()));
+					selItem._operator(ODSUtils.BRACKETOPERATORS.get(conditionItem.getBracketOperator()));
 				} else if (conditionItem.isBooleanOperator()) {
-					selItem._operator(ODSUtils.OPERATORS.convert(conditionItem.getBooleanOperator()));
+					selItem._operator(ODSUtils.OPERATORS.get(conditionItem.getBooleanOperator()));
 					condCount++;
 				} else {
 					throw new IllegalArgumentException("Passed filter item is neither an operator nor a condition.");
@@ -244,7 +244,7 @@ public class ODSQuery implements Query {
 	private SelAIDNameUnitId createSelect(Attribute attribute, Aggregation aggregation) {
 		SelAIDNameUnitId sanu = new SelAIDNameUnitId();
 
-		sanu.aggregate = ODSUtils.AGGREGATIONS.convert(aggregation);
+		sanu.aggregate = ODSUtils.AGGREGATIONS.get(aggregation);
 		sanu.attr = createAIDName(attribute);
 		sanu.unitId = new T_LONGLONG();
 
@@ -263,7 +263,7 @@ public class ODSQuery implements Query {
 	private SelValueExt createCondition(Condition condition) throws DataAccessException {
 		SelValueExt sve = new SelValueExt();
 
-		sve.oper = ODSUtils.OPERATIONS.convert(condition.getComparisonOperator());
+		sve.oper = ODSUtils.OPERATIONS.get(condition.getComparisonOperator());
 		sve.attr = new AIDNameUnitId();
 		sve.attr.unitId = new T_LONGLONG();
 		sve.attr.attr = createAIDName(condition.getAttribute());
@@ -278,7 +278,7 @@ public class ODSQuery implements Query {
 	 *
 	 * @param relation
 	 *            The {@code Relation}.
-	 * @param joinType
+	 * @param join
 	 *            The {@code JoinType}.
 	 * @return The corresponding {@code JoinDef} is returned.
 	 */
@@ -288,7 +288,7 @@ public class ODSQuery implements Query {
 		joinDef.fromAID = ((ODSEntityType) relation.getSource()).getODSID();
 		joinDef.toAID = ((ODSEntityType) relation.getTarget()).getODSID();
 		joinDef.refName = relation.getName();
-		joinDef.joiningType = ODSUtils.JOINS.convert(join);
+		joinDef.joiningType = ODSUtils.JOINS.get(join);
 
 		return joinDef;
 	}
