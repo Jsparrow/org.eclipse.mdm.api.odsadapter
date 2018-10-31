@@ -24,13 +24,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
-import com.google.common.base.Stopwatch;
-import org.apache.commons.lang3.time.StopWatch;
 import org.asam.ods.AIDName;
 import org.asam.ods.AggrFunc;
 import org.asam.ods.AoException;
@@ -75,8 +72,12 @@ import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.dflt.model.CatalogAttribute;
 import org.eclipse.mdm.api.dflt.model.CatalogComponent;
 import org.eclipse.mdm.api.dflt.model.CatalogSensor;
+import org.eclipse.mdm.api.dflt.model.Classification;
+import org.eclipse.mdm.api.dflt.model.Domain;
 import org.eclipse.mdm.api.dflt.model.Pool;
 import org.eclipse.mdm.api.dflt.model.Project;
+import org.eclipse.mdm.api.dflt.model.ProjectDomain;
+import org.eclipse.mdm.api.dflt.model.Status;
 import org.eclipse.mdm.api.dflt.model.TemplateAttribute;
 import org.eclipse.mdm.api.dflt.model.TemplateComponent;
 import org.eclipse.mdm.api.dflt.model.TemplateRoot;
@@ -498,8 +499,27 @@ public class ODSModelManager implements ModelManager {
 		entityConfigRepository.register(create(new Key<>(Pool.class), "StructureLevel", true));
 		entityConfigRepository.register(create(new Key<>(PhysicalDimension.class), "PhysDimension", false));
 		entityConfigRepository.register(create(new Key<>(User.class), "User", false));
-		entityConfigRepository.register(create(new Key<>(Measurement.class), "MeaResult", false));
 		entityConfigRepository.register(create(new Key<>(ChannelGroup.class), "SubMatrix", false));
+		entityConfigRepository.register(create(new Key<>(Status.class), "Status", true));
+
+		// Project Domain
+		EntityConfig<ProjectDomain> projectDomainEntityConfig = create(new Key<>(ProjectDomain.class), "ProjectDomain", true);
+		entityConfigRepository.register(projectDomainEntityConfig);
+
+		// Domain
+		EntityConfig<Domain> domainEntityConfig = create(new Key<>(Domain.class), "Domain", true);
+		entityConfigRepository.register(domainEntityConfig);
+
+		// Classification
+		EntityConfig<Classification> classificationEntityConfig = create(new Key<>(Classification.class), "Classification", true);
+		classificationEntityConfig.addOptional(entityConfigRepository.findRoot(new Key<>(ProjectDomain.class)));
+		classificationEntityConfig.addOptional(entityConfigRepository.findRoot(new Key<>(Domain.class)));
+		classificationEntityConfig.addOptional(entityConfigRepository.findRoot(new Key<>(Status.class)));
+		entityConfigRepository.register(classificationEntityConfig);
+
+		EntityConfig<Measurement> measurementEntityConfig = create(new Key<>(Measurement.class), "MeaResult", false);
+		measurementEntityConfig.addOptional(entityConfigRepository.findRoot(new Key<>(Classification.class)));
+		entityConfigRepository.register(measurementEntityConfig);
 
 		// Unit
 		EntityConfig<Unit> unitConfig = create(new Key<>(Unit.class), "Unit", false);
