@@ -67,7 +67,7 @@ final class CORBAFileServer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CORBAFileServer.class);
 	private static final int DEFAULT_BUFFER_SIZE = 100_000;
 	private static final int SOCKET_TIMEOUT = 5_000;
-    private static final String INTERFACE_NAME_PROPERTY = "org.eclipse.mdm.api.odsadapter.filetransfer.interfaceName";
+	private static final String INTERFACE_NAME_PROPERTY = "org.eclipse.mdm.api.odsadapter.filetransfer.interfaceName";
 
 	private final CORBAFileServerIF fileServer;
 	private final AoSession aoSession;
@@ -146,8 +146,8 @@ final class CORBAFileServer {
 			throw new IllegalStateException("Transfer state '" + transfer + "' is not supported.");
 		}
 
-        fileLink.setRemotePath(remotePath);
-    }
+		fileLink.setRemotePath(remotePath);
+	}
 
 	/**
 	 * Loads the file size for given {@link FileLink}.
@@ -242,79 +242,82 @@ final class CORBAFileServer {
 		}
 	}
 
-    private InetAddress getInterfaceAddress() throws SocketException {
-        String property = System.getProperty(INTERFACE_NAME_PROPERTY);
-        if (StringUtils.isEmpty(property)) {
-            LOGGER.debug("Using no specified interface for file transfer, property not set.");
-            return null;
-        }
-        List<NetworkInterface> interfaces = getInterfaceList();
-        List<NetworkInterface> filteredInterfaces = getFilteredInterfaces(interfaces);
-        for (NetworkInterface filteredInterface : filteredInterfaces) {
-            if (filteredInterface.getName().equals(property)
-                    && filteredInterface.getInetAddresses().hasMoreElements()) {
-                InetAddress inetAddress = filteredInterface.getInetAddresses().nextElement();
-                LOGGER.debug("Using interface {} with address {} for file transfer.", filteredInterface.getName(),
-                        inetAddress);
-                return inetAddress;
-            }
-        }
-        return getFallback(filteredInterfaces);
-    }
+	private InetAddress getInterfaceAddress() throws SocketException {
+		String property = System.getProperty(INTERFACE_NAME_PROPERTY);
+		if (StringUtils.isEmpty(property)) {
+			LOGGER.debug("Using no specified interface for file transfer, property not set.");
+			return null;
+		}
+		List<NetworkInterface> interfaces = getInterfaceList();
+		List<NetworkInterface> filteredInterfaces = getFilteredInterfaces(interfaces);
+		for (NetworkInterface filteredInterface : filteredInterfaces) {
+			if (filteredInterface.getName().equals(property)
+					&& filteredInterface.getInetAddresses().hasMoreElements()) {
+				InetAddress inetAddress = filteredInterface.getInetAddresses().nextElement();
+				LOGGER.debug("Using interface {} with address {} for file transfer.", filteredInterface.getName(),
+						inetAddress);
+				return inetAddress;
+			}
+		}
+		return getFallback(filteredInterfaces);
+	}
 
-    private InetAddress getFallback(List<NetworkInterface> filteredInterfaces) {
-        if(filteredInterfaces.isEmpty()){
-            LOGGER.debug("Using no specified interface for file transfer, property set but no running interface.");
-            return null;
-        }
-        NetworkInterface networkInterface = filteredInterfaces.get(0);
-        Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
-        if (inetAddresses.hasMoreElements()) {
-            InetAddress address = inetAddresses.nextElement();
-            LOGGER.debug("Using interface {} with address {} for file transfer.", networkInterface.getName(), address);
-            return address;
-        }
-        return null;
-    }
+	private InetAddress getFallback(List<NetworkInterface> filteredInterfaces) {
+		if (filteredInterfaces.isEmpty()) {
+			LOGGER.debug("Using no specified interface for file transfer, property set but no running interface.");
+			return null;
+		}
+		NetworkInterface networkInterface = filteredInterfaces.get(0);
+		Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
+		if (inetAddresses.hasMoreElements()) {
+			InetAddress address = inetAddresses.nextElement();
+			LOGGER.debug("Using interface {} with address {} for file transfer.", networkInterface.getName(), address);
+			return address;
+		}
+		return null;
+	}
 
-    private List<NetworkInterface> getFilteredInterfaces(List<NetworkInterface> interfaces) throws SocketException {
-        List<NetworkInterface> filteredInterfaces = new ArrayList<>();
-        for (NetworkInterface anInterface : interfaces) {
-            if (anInterface.isUp() && !anInterface.isLoopback() && !anInterface.isVirtual()) {
-                filteredInterfaces.add(anInterface);
-            }
-        }
-        return filteredInterfaces;
-    }
+	private List<NetworkInterface> getFilteredInterfaces(List<NetworkInterface> interfaces) throws SocketException {
+		List<NetworkInterface> filteredInterfaces = new ArrayList<>();
+		for (NetworkInterface anInterface : interfaces) {
+			if (anInterface.isUp() && !anInterface.isLoopback() && !anInterface.isVirtual()) {
+				filteredInterfaces.add(anInterface);
+			}
+		}
+		return filteredInterfaces;
+	}
 
-    private List<NetworkInterface> getInterfaceList() throws SocketException {
-        List<NetworkInterface> result = new ArrayList<>();
-        Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-        while (networkInterfaces.hasMoreElements()) {
-            result.add(networkInterfaces.nextElement());
-        }
-        return result;
-    }
+	private List<NetworkInterface> getInterfaceList() throws SocketException {
+		List<NetworkInterface> result = new ArrayList<>();
+		Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+		while (networkInterfaces.hasMoreElements()) {
+			result.add(networkInterfaces.nextElement());
+		}
+		return result;
+	}
 
-
-    /**
-     * Uploads given {@link InputStream} for given {@link FileLink} using the
-     * {@link CORBAFileServerIF}.
-     *
-     * @param inputStream The {@code InputStream} to be uploaded.
-     * @param fileLink    The associated {@code FileLink}.
-     * @param elemId      Used for security checks.
-     * @return The remote path of the uploaded {@code InputStream} is returned.
-     * @throws IOException Thrown if unable to upload given {@code InputStream}.
-     */
-    private String uploadVIAStream(InputStream inputStream, FileLink fileLink, ElemId elemId) throws IOException {
-        try (CORBAInputStreamAdapter stream = new CORBAInputStreamAdapter(orb, inputStream, fileLink.getSize())) {
-            return fileServer.saveForInstance(aoSession, fileLink.getFileName(), "", elemId.aid, elemId.iid,
-                    stream._this());
-        } catch (CORBAFileServerException e) {
-            throw new IOException("Unable to upload file via stream due to: " + e.reason, e);
-        }
-    }
+	/**
+	 * Uploads given {@link InputStream} for given {@link FileLink} using the
+	 * {@link CORBAFileServerIF}.
+	 *
+	 * @param inputStream
+	 *            The {@code InputStream} to be uploaded.
+	 * @param fileLink
+	 *            The associated {@code FileLink}.
+	 * @param elemId
+	 *            Used for security checks.
+	 * @return The remote path of the uploaded {@code InputStream} is returned.
+	 * @throws IOException
+	 *             Thrown if unable to upload given {@code InputStream}.
+	 */
+	private String uploadVIAStream(InputStream inputStream, FileLink fileLink, ElemId elemId) throws IOException {
+		try (CORBAInputStreamAdapter stream = new CORBAInputStreamAdapter(orb, inputStream, fileLink.getSize())) {
+			return fileServer.saveForInstance(aoSession, fileLink.getFileName(), "", elemId.aid, elemId.iid,
+					stream._this());
+		} catch (CORBAFileServerException e) {
+			throw new IOException("Unable to upload file via stream due to: " + e.reason, e);
+		}
+	}
 
 	/**
 	 * Uploads given {@link InputStream} for given {@link FileLink} via socket
@@ -348,12 +351,12 @@ final class CORBAFileServer {
 				}
 			}).start();
 
-            int localPort = serverSocket.getLocalPort();
-            String localHostName = serverSocket.getInetAddress().getHostName();
-            try {
-                return fileServer.saveForInstanceBySocket(aoSession, fileLink.getFileName(), "", elemId.aid, elemId.iid,
-                        localHostName, localPort);
-            } catch (CORBAFileServerException e) {
+			int localPort = serverSocket.getLocalPort();
+			String localHostName = serverSocket.getInetAddress().getHostName();
+			try {
+				return fileServer.saveForInstanceBySocket(aoSession, fileLink.getFileName(), "", elemId.aid, elemId.iid,
+						localHostName, localPort);
+			} catch (CORBAFileServerException e) {
 				String message = String.format("Unable to upload file via socket to %s:%d due to: %s", localHostName, localPort, e.reason);
 				throw new IOException(message, e);
 			}
