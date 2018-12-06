@@ -34,15 +34,7 @@ import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
-import org.eclipse.mdm.api.base.model.Channel;
-import org.eclipse.mdm.api.base.model.ChannelGroup;
-import org.eclipse.mdm.api.base.model.ContextDescribable;
-import org.eclipse.mdm.api.base.model.ContextRoot;
-import org.eclipse.mdm.api.base.model.ContextType;
-import org.eclipse.mdm.api.base.model.Entity;
-import org.eclipse.mdm.api.base.model.Environment;
-import org.eclipse.mdm.api.base.model.MeasuredValues;
-import org.eclipse.mdm.api.base.model.User;
+import org.eclipse.mdm.api.base.model.*;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.JoinType;
@@ -51,6 +43,8 @@ import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.dflt.EntityManager;
+import org.eclipse.mdm.api.dflt.model.Classification;
+import org.eclipse.mdm.api.dflt.model.Status;
 import org.eclipse.mdm.api.odsadapter.filetransfer.Transfer;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig.Key;
@@ -80,7 +74,7 @@ public class ODSEntityManager implements EntityManager {
 	// Instance variables
 	// ======================================================================
 	private final Transfer transfer = Transfer.SOCKET;
-	
+
 	private final ODSContext context;
 	private final ODSModelManager odsModelManager;
 	private final QueryService queryService;
@@ -199,35 +193,39 @@ public class ODSEntityManager implements EntityManager {
 		return entityLoader.loadAll(new Key<>(entityClass), pattern);
 	}
 
-	// /**
-	// * {@inheritDoc}
-	// */
-	// @Override
-	// public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass,
-	// Status status, String pattern)
-	// throws DataAccessException {
-	// EntityType entityType = modelManager.getEntityType(entityClass);
-	// EntityType statusEntityType =
-	// modelManager.getEntityType(status.getTypeName());
-	//
-	// List<String> instanceIDs = modelManager.createQuery()
-	// .join(entityType, statusEntityType).selectID(entityType)
-	// .fetch(Filter.and()
-	// .id(statusEntityType, status.getID())
-	// .name(entityType, pattern))
-	// .stream().map(r ->
-	// r.getRecord(entityType)).map(Record::getID).collect(Collectors.toList());
-	//
-	// return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
-	// }
-	//
-	// @Override
-	// public List<Status> loadAllStatus(Class<? extends StatusAttachable>
-	// entityClass, String pattern)
-	// throws DataAccessException {
-	// return entityLoader.loadAll(new Key<>(Status.class, entityClass),
-	// pattern);
-	// }
+	 /**
+	 * {@inheritDoc}
+	 */
+	 @Override
+	 public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern)
+	    throws DataAccessException {
+	 EntityType entityType = odsModelManager.getEntityType(entityClass);
+	 EntityType classificationType = odsModelManager.getEntityType(Classification.class);
+	 EntityType statusEntityType =
+			 odsModelManager.getEntityType(status.getTypeName());
+
+	 List<String> instanceIDs = queryService.createQuery()
+			 .join(entityType, classificationType)
+			 .join(classificationType, statusEntityType)
+			 .selectID(entityType)
+			 .fetch(Filter.and()
+					 .id(statusEntityType, status.getID())
+					 .name(entityType, pattern))
+			 .stream().map(r ->
+					 r.getRecord(entityType)).map(Record::getID).collect(Collectors.toList());
+
+	 return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
+	 }
+
+/*
+	 @Override
+	 public List<Status> loadAllStatus(Class<? extends StatusAttachable>
+	 entityClass, String pattern)
+	 throws DataAccessException {
+		 return entityLoader.loadAll(new Key<>(Status.class, entityClass),
+		 pattern);
+	 }
+	 */
 
 	/**
 	 * {@inheritDoc}
@@ -376,7 +374,7 @@ public class ODSEntityManager implements EntityManager {
 
 	/**
 	 * Retrives the ASAM paths for the given entities. The ASAM paths are prefixed with a servicename, in the form
-	 * <code>corbaloc:[iop|ssliop]:1.2@HOSTNAME:PORT/NameService/MDM.ASAM-ODS/</code> 
+	 * <code>corbaloc:[iop|ssliop]:1.2@HOSTNAME:PORT/NameService/MDM.ASAM-ODS/</code>
 	 * @returns returns a map with the ASAM paths to the given entities. If a entity is not found in the ODS server
 	 * the entity is not included in the result map.
 	 * @throws DataAccessException if links could not be loaded for the given entities
@@ -385,33 +383,33 @@ public class ODSEntityManager implements EntityManager {
 	 */
 	@Override
 	public Map<Entity, String> getLinks(Collection<Entity> entities) throws DataAccessException {
-		
+
 		Map<Entity, String> linkMap = new HashMap<>();
-		
+
 		ApplicationStructure appStructure;
 		try {
 			appStructure = odsModelManager.getAoSession().getApplicationStructure();
 		} catch (AoException e) {
 			throw new DataAccessException("Could not load application structure! Reason: " + e.reason, e);
 		}
-		
-		String serverRoot = context.getParameters().get(ODSContextFactory.PARAM_NAMESERVICE) 
+
+		String serverRoot = context.getParameters().get(ODSContextFactory.PARAM_NAMESERVICE)
 				+ "/" + context.getParameters().get(ODSContextFactory.PARAM_SERVICENAME);
-		
+
 		Map<String, List<Entity>> entitiesByTypeName = entities.stream()
 				.filter(e -> e.getTypeName() != null)
 				.collect(Collectors.groupingBy(Entity::getTypeName));
-		
+
 		for (Map.Entry<String, List<Entity>> entry : entitiesByTypeName.entrySet()) {
 			ODSEntityType et = (ODSEntityType) odsModelManager.getEntityType(entry.getKey());
-			
+
 			List<ElemId> elemIds = entry.getValue().stream()
 				.map(e -> new ElemId(et.getODSID(), ODSConverter.toODSLong(Long.parseLong(e.getID()))))
 				.collect(Collectors.toList());
-			
+
 			try {
 				InstanceElement[] instances = appStructure.getInstancesById(elemIds.toArray(new ElemId[0]));
-				
+
 				for (InstanceElement ie : instances) {
 					String id = Long.toString(ODSConverter.fromODSLong(ie.getId()));
 					String asamPath = serverRoot + ie.getAsamPath();
@@ -424,7 +422,7 @@ public class ODSEntityManager implements EntityManager {
 				LOGGER.debug("Could not load links for entities: " + entities + ". Reason: " + e.reason, e);
 			}
 		}
-		
+
 		return linkMap;
 	}
 }
