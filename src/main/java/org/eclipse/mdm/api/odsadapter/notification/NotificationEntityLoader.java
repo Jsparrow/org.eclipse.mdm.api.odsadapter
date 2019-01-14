@@ -121,12 +121,12 @@ public class NotificationEntityLoader {
 
 		List<String> testStepIDs = queryService.createQuery().selectID(testStep)
 				.join(testStep.getRelation(contextRoot), JoinType.OUTER)
-				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids)))
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids.toArray(new String[0]))))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
 		List<String> measurementIDs = queryService.createQuery().selectID(measurement)
 				.join(measurement.getRelation(contextRoot), JoinType.OUTER)
-				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids)))
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextRoot.getIDAttribute(), ids.toArray(new String[0]))))
 				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
 
 		List<ContextDescribable> list = new ArrayList<>();
@@ -159,13 +159,13 @@ public class NotificationEntityLoader {
 		List<String> testStepIDs = queryService.createQuery().selectID(testStep)
 				.join(testStep.getRelation(contextRoot), JoinType.OUTER)
 				.join(contextRoot.getRelation(contextComponent), JoinType.OUTER)
-				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids)))
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids.toArray(new String[0]))))
 				.stream().map(r -> r.getRecord(testStep)).map(Record::getID).collect(Collectors.toList());
 
 		List<String> measurementIDs = queryService.createQuery().selectID(measurement)
 				.join(measurement.getRelation(contextRoot), JoinType.OUTER)
 				.join(contextRoot.getRelation(contextComponent), JoinType.OUTER)
-				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids)))
+				.fetch(Filter.and().add(ComparisonOperator.IN_SET.create(contextComponent.getIDAttribute(), ids.toArray(new String[0]))))
 				.stream().map(r -> r.getRecord(measurement)).map(Record::getID).collect(Collectors.toList());
 
 		List<ContextDescribable> list = new ArrayList<>();

@@ -20,9 +20,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.AoSession;
 import org.asam.ods.ElemId;
 import org.eclipse.mdm.api.base.ServiceNotProvidedException;
@@ -61,6 +67,7 @@ final class CORBAFileServer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CORBAFileServer.class);
 	private static final int DEFAULT_BUFFER_SIZE = 100_000;
 	private static final int SOCKET_TIMEOUT = 5_000;
+	private static final String INTERFACE_NAME_PROPERTY = "org.eclipse.mdm.api.odsadapter.filetransfer.interfaceName";
 
 	private final CORBAFileServerIF fileServer;
 	private final AoSession aoSession;
@@ -73,7 +80,7 @@ final class CORBAFileServer {
 	/**
 	 * Constructor.
 	 *
-	 * @param modelManager
+	 * @param context
 	 *            Used for setup.
 	 * @param transfer
 	 *            The transfer type for up- and downloads.
@@ -83,7 +90,7 @@ final class CORBAFileServer {
 		if (!(mm instanceof ODSModelManager)) {
 			throw new IllegalArgumentException("The supplied ModelManager must be an ODSModelManager!");
 		}
-		
+
 		fileServer = context.getFileServer();
 		aoSession = context.getAoSession();
 		orb = context.getORB();
@@ -91,7 +98,7 @@ final class CORBAFileServer {
 
 		bufferSize = getBufferSize();
 	}
-	
+
 	/**
 	 * Opens a consumable download {@link InputStream} for given
 	 * {@link FileLink}.
@@ -212,7 +219,7 @@ final class CORBAFileServer {
 	 */
 	private InputStream openSocketStream(FileLink fileLink, ElemId elemId) throws IOException {
 		// auto assigned port with awaiting exactly ONE incoming connection
-		try (ServerSocket serverSocket = new ServerSocket(0, 1)) {
+		try (ServerSocket serverSocket = new ServerSocket(0, 1, getInterfaceAddress())) {
 			serverSocket.setSoTimeout(SOCKET_TIMEOUT * 6);
 
 			new Thread(() -> {
@@ -233,6 +240,60 @@ final class CORBAFileServer {
 			client.setSoTimeout(SOCKET_TIMEOUT);
 			return client.getInputStream();
 		}
+	}
+
+	private InetAddress getInterfaceAddress() throws SocketException {
+		String property = System.getProperty(INTERFACE_NAME_PROPERTY);
+		if (StringUtils.isEmpty(property)) {
+			LOGGER.debug("Using no specified interface for file transfer, property not set.");
+			return null;
+		}
+		List<NetworkInterface> interfaces = getInterfaceList();
+		List<NetworkInterface> filteredInterfaces = getFilteredInterfaces(interfaces);
+		for (NetworkInterface filteredInterface : filteredInterfaces) {
+			if (filteredInterface.getName().equals(property)
+					&& filteredInterface.getInetAddresses().hasMoreElements()) {
+				InetAddress inetAddress = filteredInterface.getInetAddresses().nextElement();
+				LOGGER.debug("Using interface {} with address {} for file transfer.", filteredInterface.getName(),
+						inetAddress);
+				return inetAddress;
+			}
+		}
+		return getFallback(filteredInterfaces);
+	}
+
+	private InetAddress getFallback(List<NetworkInterface> filteredInterfaces) {
+		if (filteredInterfaces.isEmpty()) {
+			LOGGER.debug("Using no specified interface for file transfer, property set but no running interface.");
+			return null;
+		}
+		NetworkInterface networkInterface = filteredInterfaces.get(0);
+		Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
+		if (inetAddresses.hasMoreElements()) {
+			InetAddress address = inetAddresses.nextElement();
+			LOGGER.debug("Using interface {} with address {} for file transfer.", networkInterface.getName(), address);
+			return address;
+		}
+		return null;
+	}
+
+	private List<NetworkInterface> getFilteredInterfaces(List<NetworkInterface> interfaces) throws SocketException {
+		List<NetworkInterface> filteredInterfaces = new ArrayList<>();
+		for (NetworkInterface anInterface : interfaces) {
+			if (anInterface.isUp() && !anInterface.isLoopback() && !anInterface.isVirtual()) {
+				filteredInterfaces.add(anInterface);
+			}
+		}
+		return filteredInterfaces;
+	}
+
+	private List<NetworkInterface> getInterfaceList() throws SocketException {
+		List<NetworkInterface> result = new ArrayList<>();
+		Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+		while (networkInterfaces.hasMoreElements()) {
+			result.add(networkInterfaces.nextElement());
+		}
+		return result;
 	}
 
 	/**
@@ -274,7 +335,7 @@ final class CORBAFileServer {
 	 */
 	private String uploadVIASocket(InputStream inputStream, FileLink fileLink, ElemId elemId) throws IOException {
 		// auto assigned port with awaiting exactly ONE incoming connection
-		try (ServerSocket serverSocket = new ServerSocket(0, 1)) {
+		try (ServerSocket serverSocket = new ServerSocket(0, 1, getInterfaceAddress())) {
 			serverSocket.setSoTimeout(SOCKET_TIMEOUT * 6);
 
 			new Thread(() -> {
@@ -290,11 +351,14 @@ final class CORBAFileServer {
 				}
 			}).start();
 
+			int localPort = serverSocket.getLocalPort();
+			String localHostName = serverSocket.getInetAddress().getHostName();
 			try {
 				return fileServer.saveForInstanceBySocket(aoSession, fileLink.getFileName(), "", elemId.aid, elemId.iid,
-						InetAddress.getLocalHost().getHostAddress(), serverSocket.getLocalPort());
+						localHostName, localPort);
 			} catch (CORBAFileServerException e) {
-				throw new IOException("Unable to upload file via socket due to: " + e.reason, e);
+				String message = String.format("Unable to upload file via socket to %s:%d due to: %s", localHostName, localPort, e.reason);
+				throw new IOException(message, e);
 			}
 		}
 	}
@@ -333,7 +397,7 @@ final class CORBAFileServer {
 		private InputStreamAdapter(InputStreamIF inputStream) {
 			this.inputStream = inputStream;
 		}
-		
+
 		/**
 		 * {@inheritDoc}
 		 */
