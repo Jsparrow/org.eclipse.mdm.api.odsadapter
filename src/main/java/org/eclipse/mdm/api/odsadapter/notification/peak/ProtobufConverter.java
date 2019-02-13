@@ -43,7 +43,7 @@ public class ProtobufConverter {
 		return Registration.newBuilder().setMode(NotificationMode.PUSH)
 				.addAllAid(
 						filter.getEntityTypes().stream().map(e -> Long.valueOf(e.getId())).collect(Collectors.toList()))
-				.addAllType(filter.getTypes().stream().map(t -> ProtobufConverter.from(t)).collect(Collectors.toList()))
+				.addAllType(filter.getTypes().stream().map(ProtobufConverter::from).collect(Collectors.toList()))
 				.build();
 	}
 

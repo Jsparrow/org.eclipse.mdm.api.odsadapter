@@ -52,13 +52,13 @@ abstract public class CORBAFileServerIFHelper
 
   public static com.highqsoft.corbafileserver.generated.CORBAFileServerIF narrow (org.omg.CORBA.Object obj)
   {
-    if (obj == null)
-      return null;
-    else if (obj instanceof com.highqsoft.corbafileserver.generated.CORBAFileServerIF)
-      return (com.highqsoft.corbafileserver.generated.CORBAFileServerIF)obj;
-    else if (!obj._is_a (id ()))
-      throw new org.omg.CORBA.BAD_PARAM ();
-    else
+    if (obj == null) {
+		return null;
+	} else if (obj instanceof com.highqsoft.corbafileserver.generated.CORBAFileServerIF) {
+		return (com.highqsoft.corbafileserver.generated.CORBAFileServerIF)obj;
+	} else if (!obj._is_a (id ())) {
+		throw new org.omg.CORBA.BAD_PARAM ();
+	} else
     {
       org.omg.CORBA.portable.Delegate delegate = ((org.omg.CORBA.portable.ObjectImpl)obj)._get_delegate ();
       com.highqsoft.corbafileserver.generated._CORBAFileServerIFStub stub = new com.highqsoft.corbafileserver.generated._CORBAFileServerIFStub ();
@@ -69,11 +69,11 @@ abstract public class CORBAFileServerIFHelper
 
   public static com.highqsoft.corbafileserver.generated.CORBAFileServerIF unchecked_narrow (org.omg.CORBA.Object obj)
   {
-    if (obj == null)
-      return null;
-    else if (obj instanceof com.highqsoft.corbafileserver.generated.CORBAFileServerIF)
-      return (com.highqsoft.corbafileserver.generated.CORBAFileServerIF)obj;
-    else
+    if (obj == null) {
+		return null;
+	} else if (obj instanceof com.highqsoft.corbafileserver.generated.CORBAFileServerIF) {
+		return (com.highqsoft.corbafileserver.generated.CORBAFileServerIF)obj;
+	} else
     {
       org.omg.CORBA.portable.Delegate delegate = ((org.omg.CORBA.portable.ObjectImpl)obj)._get_delegate ();
       com.highqsoft.corbafileserver.generated._CORBAFileServerIFStub stub = new com.highqsoft.corbafileserver.generated._CORBAFileServerIFStub ();

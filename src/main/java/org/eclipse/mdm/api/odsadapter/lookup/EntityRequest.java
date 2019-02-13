@@ -27,16 +27,15 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.eclipse.mdm.api.base.adapter.EntityType;
-import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.ContextComponent;
 import org.eclipse.mdm.api.base.model.ContextSensor;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Deletable;
 import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Record;
@@ -121,7 +120,7 @@ public class EntityRequest<T extends Entity> {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load entities.
 	 */
-	public List<T> loadAll(String pattern) throws DataAccessException {
+	public List<T> loadAll(String pattern) {
 		return load(Filter.nameOnly(entityConfig.getEntityType(), pattern)).getSortedEntities();
 	}
 
@@ -134,7 +133,7 @@ public class EntityRequest<T extends Entity> {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load entities.
 	 */
-	public List<T> loadAll(Collection<String> instanceIDs) throws DataAccessException {
+	public List<T> loadAll(Collection<String> instanceIDs) {
 		if (instanceIDs.isEmpty()) {
 			// just to be sure...
 			return Collections.emptyList();
@@ -198,19 +197,19 @@ public class EntityRequest<T extends Entity> {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load related entities.
 	 */
-	protected void loadRelatedEntities(List<RelationConfig> relationConfigs) throws DataAccessException {
+	protected void loadRelatedEntities(List<RelationConfig> relationConfigs) {
 		for (RelationConfig relationConfig : relationConfigs) {
 			EntityConfig<?> relatedConfig = relationConfig.entityConfig;
 
 			boolean isContextTypeDefined = entityConfig.getContextType().isPresent();
-			for (Entity relatedEntity : new EntityRequest<>(this, relatedConfig)
-					.loadAll(relationConfig.dependants.keySet())) {
-				boolean setByContextType = !isContextTypeDefined && relatedConfig.getContextType().isPresent();
-				for (EntityRecord<?> entityRecord : relationConfig.dependants.remove(relatedEntity.getID())) {
-					setRelatedEntity(entityRecord, relatedEntity,
-							setByContextType ? relatedConfig.getContextType().get() : null);
-				}
-			}
+			new EntityRequest<>(this, relatedConfig)
+					.loadAll(relationConfig.dependants.keySet()).forEach(relatedEntity -> {
+boolean setByContextType = !isContextTypeDefined && relatedConfig.getContextType().isPresent();
+for (EntityRecord<?> entityRecord : relationConfig.dependants.remove(relatedEntity.getID())) {
+			setRelatedEntity(entityRecord, relatedEntity,
+					setByContextType ? relatedConfig.getContextType().get() : null);
+}
+});
 
 			if (!relationConfig.dependants.isEmpty()) {
 				// this may occur if the instance id of the related entity
@@ -245,14 +244,15 @@ public class EntityRequest<T extends Entity> {
 			templateAttributes.addAll(((TemplateSensor) relatedEntity).getTemplateAttributes());
 		}
 
-		if (!templateAttributes.isEmpty()) {
-			// hide Value containers that are missing in the template
-			Set<String> names = new HashSet<>(entityRecord.core.getValues().keySet());
-			names.remove(Entity.ATTR_NAME);
-			names.remove(Entity.ATTR_MIMETYPE);
-			templateAttributes.stream().map(Entity::getName).forEach(names::remove);
-			entityRecord.core.hideValues(names);
+		if (templateAttributes.isEmpty()) {
+			return;
 		}
+		// hide Value containers that are missing in the template
+		Set<String> names = new HashSet<>(entityRecord.core.getValues().keySet());
+		names.remove(Entity.ATTR_NAME);
+		names.remove(Entity.ATTR_MIMETYPE);
+		templateAttributes.stream().map(Entity::getName).forEach(names::remove);
+		entityRecord.core.hideValues(names);
 	}
 
 	// ======================================================================
@@ -269,7 +269,7 @@ public class EntityRequest<T extends Entity> {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load entities.
 	 */
-	private EntityResult<T> load(Filter filter) throws DataAccessException {
+	private EntityResult<T> load(Filter filter) {
 		filtered = !filter.isEmtpty() || entityConfig.isReflexive();
 
 		EntityType entityType = entityConfig.getEntityType();

@@ -76,7 +76,7 @@ abstract class BaseStatement {
 	 * @throws IOException
 	 *             Thrown if a file transfer operation fails.
 	 */
-	public abstract void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException;
+	public abstract void execute(Collection<Entity> entities) throws AoException, IOException;
 
 	// ======================================================================
 	// Protected methods

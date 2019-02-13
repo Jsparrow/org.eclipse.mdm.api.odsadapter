@@ -38,9 +38,9 @@ import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Unit;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Result;
@@ -107,8 +107,8 @@ final class CatalogManager {
 					.getElementByName(odsContextTypeName);
 			BaseElement contextRootBaseElement = contextRootApplicationElement.getBaseElement();
 			ApplicationElement contextTemplateComponentApplicationElement = getApplicationStructure()
-					.getElementByName("Tpl" + odsContextTypeName + "Comp");
-			BaseElement baseElement = getBaseStructure().getElementByType("Ao" + odsContextTypeName + "Part");
+					.getElementByName(new StringBuilder().append("Tpl").append(odsContextTypeName).append("Comp").toString());
+			BaseElement baseElement = getBaseStructure().getElementByType(new StringBuilder().append("Ao").append(odsContextTypeName).append("Part").toString());
 
 			for (CatalogComponent catalogComponent : entry.getValue()) {
 				ApplicationElement applicationElement = createApplicationElement(catalogComponent.getName(),
@@ -129,7 +129,7 @@ final class CatalogManager {
 				applicationRelation.setElem1(contextTemplateComponentApplicationElement);
 				applicationRelation.setElem2(applicationElement);
 				applicationRelation.setRelationName(catalogComponent.getName());
-				applicationRelation.setInverseRelationName("Tpl" + odsContextTypeName + "Comp");
+				applicationRelation.setInverseRelationName(new StringBuilder().append("Tpl").append(odsContextTypeName).append("Comp").toString());
 				applicationRelation.setRelationRange(new RelationRange((short) 0, (short) -1));
 				applicationRelation.setInverseRelationRange(new RelationRange((short) 1, (short) 1));
 
@@ -311,13 +311,13 @@ final class CatalogManager {
 	 *             Thrown in case of errors.
 	 */
 	public void deleteCatalogComponents(Collection<CatalogComponent> catalogComponents)
-			throws AoException, DataAccessException {
+			throws AoException {
 		List<CatalogAttribute> attributes = new ArrayList<>();
 		List<CatalogSensor> sensors = new ArrayList<>();
-		for (CatalogComponent catalogComponent : catalogComponents) {
+		catalogComponents.forEach(catalogComponent -> {
 			attributes.addAll(catalogComponent.getCatalogAttributes());
 			sensors.addAll(catalogComponent.getCatalogSensors());
-		}
+		});
 		transaction.delete(sensors);
 		transaction.delete(attributes);
 
@@ -357,11 +357,9 @@ final class CatalogManager {
 	 * @throws DataAccessException
 	 *             Thrown in case of errors.
 	 */
-	public void deleteCatalogSensors(Collection<CatalogSensor> catalogSensors) throws AoException, DataAccessException {
+	public void deleteCatalogSensors(Collection<CatalogSensor> catalogSensors) throws AoException {
 		List<CatalogAttribute> attributes = new ArrayList<>();
-		for (CatalogSensor catalogSensor : catalogSensors) {
-			attributes.addAll(catalogSensor.getCatalogAttributes());
-		}
+		catalogSensors.forEach(catalogSensor -> attributes.addAll(catalogSensor.getCatalogAttributes()));
 		transaction.delete(attributes);
 
 		if (areReferencedInTemplates(catalogSensors)) {
@@ -400,7 +398,7 @@ final class CatalogManager {
 	 *             Thrown in case of errors.
 	 */
 	public void deleteCatalogAttributes(Collection<CatalogAttribute> catalogAttributes)
-			throws AoException, DataAccessException {
+			throws AoException {
 		if (areReferencedInTemplates(catalogAttributes)) {
 			throw new DataAccessException(
 					"Unable to delete given catalog attributes since at least " + "one is used in templates.");
@@ -537,7 +535,7 @@ final class CatalogManager {
 	 *             Thrown on errors.
 	 */
 	private boolean areReferencedInTemplates(Collection<? extends Entity> entities)
-			throws AoException, DataAccessException {
+			throws AoException {
 		Map<EntityType, List<Entity>> entitiesByEntityType = entities.stream()
 				.collect(Collectors.groupingBy(transaction.getModelManager()::getEntityType));
 

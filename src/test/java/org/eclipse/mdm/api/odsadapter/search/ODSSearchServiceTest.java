@@ -20,28 +20,19 @@ import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_NAMESERVICE
 import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_PASSWORD;
 import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_SERVICENAME;
 import static org.eclipse.mdm.api.odsadapter.ODSContextFactory.PARAM_USER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.iterable.Extractor;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.ServiceNotProvidedException;
-import org.eclipse.mdm.api.base.Transaction;
-import org.eclipse.mdm.api.base.adapter.Core;
-import org.eclipse.mdm.api.base.adapter.EntityStore;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.adapter.ModelManager;
-import org.eclipse.mdm.api.base.model.BaseEntity;
 import org.eclipse.mdm.api.base.model.Channel;
 import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Measurement;
@@ -54,15 +45,12 @@ import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.FilterItem;
 import org.eclipse.mdm.api.base.query.QueryService;
-import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.search.SearchService;
 import org.eclipse.mdm.api.dflt.ApplicationContext;
 import org.eclipse.mdm.api.dflt.EntityManager;
 import org.eclipse.mdm.api.dflt.model.Pool;
 import org.eclipse.mdm.api.dflt.model.Project;
 import org.eclipse.mdm.api.odsadapter.ODSContextFactory;
-import org.eclipse.mdm.api.odsadapter.ODSEntityManager;
 import org.eclipse.mdm.api.odsadapter.query.ODSModelManager;
 import org.eclipse.mdm.api.odsadapter.search.JoinTree.JoinConfig;
 import org.junit.AfterClass;
@@ -102,16 +90,16 @@ public class ODSSearchServiceTest {
 		String nameServicePort = System.getProperty("port");
 		String serviceName = System.getProperty("service");
 
-		if (nameServiceHost == null || nameServiceHost.isEmpty()) {
+		if (nameServiceHost == null || StringUtils.isEmpty(nameServiceHost)) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
 		}
 
-		nameServicePort = nameServicePort == null || nameServicePort.isEmpty() ? String.valueOf(2809) : nameServicePort;
-		if (nameServicePort == null || nameServicePort.isEmpty()) {
+		nameServicePort = nameServicePort == null || StringUtils.isEmpty(nameServicePort) ? String.valueOf(2809) : nameServicePort;
+		if (nameServicePort == null || StringUtils.isEmpty(nameServicePort)) {
 			throw new IllegalArgumentException("name service port is unknown: define system property 'port'");
 		}
 
-		if (serviceName == null || serviceName.isEmpty()) {
+		if (serviceName == null || StringUtils.isEmpty(serviceName)) {
 			throw new IllegalArgumentException("service name is unknown: define system property 'service'");
 		}
 
@@ -167,17 +155,11 @@ public class ODSSearchServiceTest {
 
 	}
 		
-	private Extractor<FilterItem, Tuple> filterExtractors = new Extractor<FilterItem, Tuple>() {
-
-		@Override
-		public Tuple extract(FilterItem f) {
-			return tuple(f.isBooleanOperator() ? f.getBooleanOperator() : null,
-					f.isCondition() ? f.getCondition().getAttribute().getName() : null,
-					f.isCondition() ? f.getCondition().getComparisonOperator() : null,
-					f.isCondition() ? f.getCondition().getValue().extract() : null,
-					f.isBracketOperator() ?f.getBracketOperator() : null);
-		}
-	};
+	private Extractor<FilterItem, Tuple> filterExtractors = (FilterItem f) -> tuple(f.isBooleanOperator() ? f.getBooleanOperator() : null,
+			f.isCondition() ? f.getCondition().getAttribute().getName() : null,
+			f.isCondition() ? f.getCondition().getComparisonOperator() : null,
+			f.isCondition() ? f.getCondition().getValue().extract() : null,
+			f.isBracketOperator() ? f.getBracketOperator() : null);
 
 	@org.junit.Test
 	public void testGetMergedFilter() throws Exception {

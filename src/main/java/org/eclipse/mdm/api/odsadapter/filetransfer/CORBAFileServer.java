@@ -118,7 +118,7 @@ final class CORBAFileServer {
 		} else if (transfer.isSocket()) {
 			inputStream = openSocketStream(fileLink, elemId);
 		} else {
-			throw new IllegalStateException("Transfer state '" + transfer + "' is not supported.");
+			throw new IllegalStateException(new StringBuilder().append("Transfer state '").append(transfer).append("' is not supported.").toString());
 		}
 
 		return new BufferedInputStream(inputStream, bufferSize);
@@ -143,7 +143,7 @@ final class CORBAFileServer {
 		} else if (transfer.isSocket()) {
 			remotePath = uploadVIASocket(inputStream, fileLink, elemId);
 		} else {
-			throw new IllegalStateException("Transfer state '" + transfer + "' is not supported.");
+			throw new IllegalStateException(new StringBuilder().append("Transfer state '").append(transfer).append("' is not supported.").toString());
 		}
 
 		fileLink.setRemotePath(remotePath);
@@ -269,12 +269,12 @@ final class CORBAFileServer {
 		}
 		NetworkInterface networkInterface = filteredInterfaces.get(0);
 		Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
-		if (inetAddresses.hasMoreElements()) {
-			InetAddress address = inetAddresses.nextElement();
-			LOGGER.debug("Using interface {} with address {} for file transfer.", networkInterface.getName(), address);
-			return address;
+		if (!inetAddresses.hasMoreElements()) {
+			return null;
 		}
-		return null;
+		InetAddress address = inetAddresses.nextElement();
+		LOGGER.debug("Using interface {} with address {} for file transfer.", networkInterface.getName(), address);
+		return address;
 	}
 
 	private List<NetworkInterface> getFilteredInterfaces(List<NetworkInterface> interfaces) throws SocketException {

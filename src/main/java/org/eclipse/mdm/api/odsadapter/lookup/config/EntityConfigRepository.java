@@ -134,7 +134,7 @@ public final class EntityConfigRepository {
 
 		EntityConfig<?> config = contextConfigs.get(entityType.getName());
 		if (config == null) {
-			throw new IllegalArgumentException("Entity configuration for type '" + entityType + "' not found.");
+			throw new IllegalArgumentException(new StringBuilder().append("Entity configuration for type '").append(entityType).append("' not found.").toString());
 		}
 
 		// config is either a context component or context sensor type

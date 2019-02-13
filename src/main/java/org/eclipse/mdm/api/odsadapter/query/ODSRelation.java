@@ -131,13 +131,12 @@ public final class ODSRelation implements Relation {
 	 */
 	@Override
 	public boolean equals(Object object) {
-		if (object instanceof ODSRelation) {
-			Relation relation = (Relation) object;
-			return getSource().equals(relation.getSource()) && getTarget().equals(relation.getTarget())
-					&& getName().equals(relation.getName());
+		if (!(object instanceof ODSRelation)) {
+			return false;
 		}
-
-		return false;
+		Relation relation = (Relation) object;
+		return getSource().equals(relation.getSource()) && getTarget().equals(relation.getTarget())
+				&& getName().equals(relation.getName());
 	}
 
 	/**
@@ -154,7 +153,7 @@ public final class ODSRelation implements Relation {
 	 */
 	@Override
 	public boolean isOutgoing(RelationType relationType) {
-		return relationType.equals(getRelationType()) && rangeMax == 1;
+		return relationType == getRelationType() && rangeMax == 1;
 	}
 
 	/**
@@ -162,7 +161,7 @@ public final class ODSRelation implements Relation {
 	 */
 	@Override
 	public boolean isIncoming(RelationType relationType) {
-		return relationType.equals(getRelationType()) && rangeMax == -1;
+		return relationType == getRelationType() && rangeMax == -1;
 	}
 
 }

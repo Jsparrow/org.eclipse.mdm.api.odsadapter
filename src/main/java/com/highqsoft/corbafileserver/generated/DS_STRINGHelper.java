@@ -47,16 +47,18 @@ abstract public class DS_STRINGHelper
     String value[] = null;
     int _len0 = istream.read_long ();
     value = new String[_len0];
-    for (int _o1 = 0;_o1 < value.length; ++_o1)
-      value[_o1] = istream.read_string ();
+    for (int _o1 = 0;_o1 < value.length; ++_o1) {
+		value[_o1] = istream.read_string ();
+	}
     return value;
   }
 
   public static void write (org.omg.CORBA.portable.OutputStream ostream, String[] value)
   {
     ostream.write_long (value.length);
-    for (int _i0 = 0;_i0 < value.length; ++_i0)
-      ostream.write_string (value[_i0]);
+    for (String aValue : value) {
+		ostream.write_string (aValue);
+	}
   }
 
 }

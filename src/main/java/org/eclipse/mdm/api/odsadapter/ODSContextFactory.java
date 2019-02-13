@@ -18,9 +18,7 @@ package org.eclipse.mdm.api.odsadapter;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.AoException;
 import org.asam.ods.AoFactory;
 import org.asam.ods.AoFactoryHelper;
@@ -39,6 +37,9 @@ import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
 import com.highqsoft.corbafileserver.generated.CORBAFileServerIFHelper;
 
@@ -160,8 +161,8 @@ public class ODSContextFactory implements ApplicationContextFactory {
 	 */
 	private static String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
 		String value = parameters.get(name);
-		if (value == null || value.isEmpty()) {
-			throw new ConnectionException("Connection parameter with name '" + name + "' is either missing or empty.");
+		if (value == null || StringUtils.isEmpty(value)) {
+			throw new ConnectionException(new StringBuilder().append("Connection parameter with name '").append(name).append("' is either missing or empty.").toString());
 		}
 
 		return value;
@@ -187,7 +188,7 @@ public class ODSContextFactory implements ApplicationContextFactory {
 		public ServiceLocator(ORB orb, String path) throws ConnectionException {
 			namingContext = NamingContextExtHelper.narrow(orb.string_to_object(path));
 			if (namingContext == null) {
-				throw new ConnectionException("Unable to resolve NameService '" + path + "'.");
+				throw new ConnectionException(new StringBuilder().append("Unable to resolve NameService '").append(path).append("'.").toString());
 			}
 		}
 
@@ -238,7 +239,7 @@ public class ODSContextFactory implements ApplicationContextFactory {
 			try {
 				return namingContext.resolve(new NameComponent[] { new NameComponent(id, kind) });
 			} catch (NotFound | CannotProceed | InvalidName e) {
-				throw new ConnectionException("Unable to resolve service '" + id + "." + kind + "'.", e);
+				throw new ConnectionException(new StringBuilder().append("Unable to resolve service '").append(id).append(".").append(kind).append("'.").toString(), e);
 			}
 		}
 

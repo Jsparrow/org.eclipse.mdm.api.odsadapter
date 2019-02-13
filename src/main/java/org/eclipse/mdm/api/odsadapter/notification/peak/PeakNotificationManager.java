@@ -92,7 +92,7 @@ public class PeakNotificationManager implements NotificationService {
 
 			endpoint = client.target(url).path("events");
 		} catch (Exception e) {
-			throw new NotificationException("Could not create " + PeakNotificationManager.class.getName() + "!", e);
+			throw new NotificationException(new StringBuilder().append("Could not create ").append(PeakNotificationManager.class.getName()).append("!").toString(), e);
 		}
 	}
 
@@ -172,7 +172,7 @@ public class PeakNotificationManager implements NotificationService {
 	public void close(boolean isDeregisterAll) throws NotificationException {
 		LOGGER.info("Closing NotificationManager...");
 
-		for (String registration : processors.keySet()) {
+		processors.keySet().forEach(registration -> {
 			if (isDeregisterAll) {
 				LOGGER.debug("Deregistering '{}'.", registration);
 				deregister(registration);
@@ -180,15 +180,16 @@ public class PeakNotificationManager implements NotificationService {
 				LOGGER.debug("Disconnecting '{}'.", registration);
 				close(registration);
 			}
-		}
+		});
 	}
 
 	private void close(String registration) {
-		if (processors.containsKey(registration)) {
-			EventProcessor processor = processors.get(registration);
-			processor.stop();
-			processors.remove(registration);
+		if (!processors.containsKey(registration)) {
+			return;
 		}
+		EventProcessor processor = processors.get(registration);
+		processor.stop();
+		processors.remove(registration);
 	}
 
 	/**
@@ -220,7 +221,7 @@ public class PeakNotificationManager implements NotificationService {
 			EntityType entityType = modelManager.getEntityTypeById(Long.toString(n.getAid()));
 
 			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);
+				LOGGER.trace(new StringBuilder().append("Notification event with: entityType=").append(entityType).append(", user=").append(user).toString());
 			}
 			switch (n.getType()) {
 			case NEW:

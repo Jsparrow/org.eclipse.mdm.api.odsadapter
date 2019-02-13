@@ -26,7 +26,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -139,12 +138,12 @@ public final class ODSEntityType implements EntityType {
 	@Override
 	public Attribute getAttribute(String name) {
 		Attribute attribute = attributeByName.get(name);
-		if (attribute == null) {
-			Optional<Relation> relation = getRelations().stream().filter(r -> r.getName().equals(name)).findAny();
-			return relation.map(Relation::getAttribute).orElseThrow(() -> new IllegalArgumentException(
-					"Attribute with name '" + name + "' not found at entity type '" + getName() + "'."));
+		if (attribute != null) {
+			return attribute;
 		}
-		return attribute;
+		Optional<Relation> relation = getRelations().stream().filter(r -> r.getName().equals(name)).findAny();
+		return relation.map(Relation::getAttribute).orElseThrow(() -> new IllegalArgumentException(
+				new StringBuilder().append("Attribute with name '").append(name).append("' not found at entity type '").append(getName()).append("'.").toString()));
 	}
 
 	/**
@@ -215,7 +214,7 @@ public final class ODSEntityType implements EntityType {
 			// multiple relations to target exist, try to use a default
 			Map<String, Relation> relationsByName = relationsByEntityName.get(target);
 			if (relationsByName == null) {
-				throw new IllegalArgumentException("Relations to '" + target + "' not found!");
+				throw new IllegalArgumentException(new StringBuilder().append("Relations to '").append(target).append("' not found!").toString());
 			}
 
 			relation = relationsByName.get(target.getName());
@@ -230,12 +229,12 @@ public final class ODSEntityType implements EntityType {
 	public Relation getRelation(EntityType target, String name) {
 		Map<String, Relation> relationsByName = relationsByEntityName.get(target);
 		if (relationsByName == null) {
-			throw new IllegalArgumentException("Relations to '" + target + "' not found!");
+			throw new IllegalArgumentException(new StringBuilder().append("Relations to '").append(target).append("' not found!").toString());
 		}
 
 		Relation relation = relationsByName.get(name);
 		if (relation == null) {
-			throw new IllegalArgumentException("Relation to '" + target + "' with name '" + name + "' not found!");
+			throw new IllegalArgumentException(new StringBuilder().append("Relation to '").append(target).append("' with name '").append(name).append("' not found!").toString());
 		}
 		return relation;
 	}
@@ -282,7 +281,7 @@ public final class ODSEntityType implements EntityType {
 		Map<EntityType, List<Relation>> entityRelationsByTarget = relations.stream().distinct()
 				.filter(r -> equals(r.getSource())).collect(groupingBy(Relation::getTarget));
 
-		for (Entry<EntityType, List<Relation>> entry : entityRelationsByTarget.entrySet()) {
+		entityRelationsByTarget.entrySet().forEach(entry -> {
 			List<Relation> entityTypeRelations = entry.getValue();
 			EntityType target = entry.getKey();
 
@@ -294,7 +293,7 @@ public final class ODSEntityType implements EntityType {
 			} else {
 				relationsByEntity.put(target, entityTypeRelations.get(0));
 			}
-		}
+		});
 	}
 
 	// ======================================================================
@@ -313,7 +312,7 @@ public final class ODSEntityType implements EntityType {
 	 */
 	private Relation getParentRelation(EntityType target) {
 		return getParentRelations().stream().filter(et -> et.getTarget().equals(target)).findAny().orElseThrow(
-				() -> new IllegalArgumentException("Relation to entity type '" + target + "' does not exist."));
+				() -> new IllegalArgumentException(new StringBuilder().append("Relation to entity type '").append(target).append("' does not exist.").toString()));
 	}
 
 	/**

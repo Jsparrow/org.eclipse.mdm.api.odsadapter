@@ -107,10 +107,8 @@ final class UpdateStatement extends BaseStatement {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
-		for (Entity entity : entities) {
-			readEntityCore(ODSEntityFactory.extract(entity));
-		}
+	public void execute(Collection<Entity> entities) throws AoException, IOException {
+		entities.forEach(entity -> readEntityCore(ODSEntityFactory.extract(entity)));
 
 		// TODO tracing progress in this method...
 
@@ -140,18 +138,12 @@ final class UpdateStatement extends BaseStatement {
 		getApplElemAccess().updateInstances(anvsuList.toArray(new AIDNameValueSeqUnitId[anvsuList.size()]));
 		long stop = System.currentTimeMillis();
 
-		LOGGER.debug("{} " + getEntityType() + " instances updated in {} ms.", entities.size(), stop - start);
+		LOGGER.debug(new StringBuilder().append("{} ").append(getEntityType()).append(" instances updated in {} ms.").toString(), entities.size(), stop - start);
 
 		// delete first to make sure naming collisions do not occur!
-		for (List<Deletable> children : childrenToRemove.values()) {
-			getTransaction().delete(children);
-		}
-		for (List<Entity> children : childrenToCreate.values()) {
-			getTransaction().create(children);
-		}
-		for (List<Entity> children : childrenToUpdate.values()) {
-			getTransaction().update(children);
-		}
+		childrenToRemove.values().forEach(children -> getTransaction().delete(children));
+		childrenToCreate.values().forEach(children -> getTransaction().create(children));
+		childrenToUpdate.values().forEach(children -> getTransaction().update(children));
 	}
 
 	// ======================================================================
@@ -173,16 +165,13 @@ final class UpdateStatement extends BaseStatement {
 	 * @throws DataAccessException
 	 *             Thrown in case of errors.
 	 */
-	private void readEntityCore(Core core) throws DataAccessException {
+	private void readEntityCore(Core core) {
 		if (!core.getTypeName().equals(getEntityType().getName())) {
-			throw new IllegalArgumentException("Entity core '" + core.getTypeName()
-					+ "' is incompatible with current update statement for entity type '" + getEntityType() + "'.");
+			throw new IllegalArgumentException(new StringBuilder().append("Entity core '").append(core.getTypeName()).append("' is incompatible with current update statement for entity type '").append(getEntityType()).append("'.").toString());
 		}
 
 		// add all entity values
-		for (Value value : core.getAllValues().values()) {
-			updateMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
-		}
+		core.getAllValues().values().forEach(value -> updateMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value));
 
 		// collect file links
 		fileLinkToUpload.addAll(core.getAddedFileLinks());
@@ -195,9 +184,7 @@ final class UpdateStatement extends BaseStatement {
 				.add(getEntityType().getIDAttribute().createValue(core.getID()));
 
 		// define "empty" values for ALL informative relations
-		for (Relation relation : getEntityType().getInfoRelations()) {
-			updateMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
-		}
+		getEntityType().getInfoRelations().forEach(relation -> updateMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue()));
 
 		// preserve "empty" relation values for removed related entities
 		EntityStore mutableStore = core.getMutableStore();
@@ -261,8 +248,7 @@ final class UpdateStatement extends BaseStatement {
 			Relation relation = getEntityType().getRelation(getModelManager().getEntityType(relatedEntity));
 			List<Value> relationValues = updateMap.get(relation.getName());
 			if (relationValues == null) {
-				throw new IllegalStateException("Relation '" + relation
-						+ "' is incompatible with update statement for entity type '" + getEntityType() + "'");
+				throw new IllegalStateException(new StringBuilder().append("Relation '").append(relation).append("' is incompatible with update statement for entity type '").append(getEntityType()).append("'").toString());
 			}
 			relationValues.get(relationValues.size() - 1).set(relatedEntity.getID());
 			nonUpdatableRelationNames.remove(relation.getName());

@@ -34,10 +34,11 @@ public class SeverityFlag implements org.omg.CORBA.portable.IDLEntity
 
   public static com.highqsoft.corbafileserver.generated.SeverityFlag from_int (int value)
   {
-    if (value >= 0 && value < __size)
-      return __array[value];
-    else
-      throw new org.omg.CORBA.BAD_PARAM ();
+    if (value >= 0 && value < __size) {
+		return __array[value];
+	} else {
+		throw new org.omg.CORBA.BAD_PARAM ();
+	}
   }
 
   protected SeverityFlag (int value)

@@ -121,7 +121,7 @@ public final class ODSTransaction implements Transaction {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> void create(Collection<T> entities) throws DataAccessException {
+	public <T extends Entity> void create(Collection<T> entities) {
 		if (entities.isEmpty()) {
 			return;
 		} else if (entities.stream().filter(e -> ODSUtils.isValidID(e.getID())).findAny().isPresent()) {
@@ -130,7 +130,7 @@ public final class ODSTransaction implements Transaction {
 
 		try {
 			Map<Class<?>, List<T>> entitiesByClassType = entities.stream()
-					.collect(Collectors.groupingBy(e -> e.getClass()));
+					.collect(Collectors.groupingBy(Entity::getClass));
 
 			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType
 					.get(CatalogComponent.class);
@@ -179,9 +179,7 @@ public final class ODSTransaction implements Transaction {
 
 			List<ContextRoot> roots = (List<ContextRoot>) entitiesByClassType.get(ContextRoot.class);
 			if (roots != null) {
-				roots.forEach(contextRoot -> {
-					contextRoot.setVersion(contextRoot.getID().toString());
-				});
+				roots.forEach(contextRoot -> contextRoot.setVersion(contextRoot.getID()));
 
 				// this will restore the ASAM path of each context root
 				executeStatements(et -> new UpdateStatement(this, et, true), roots);
@@ -199,7 +197,7 @@ public final class ODSTransaction implements Transaction {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> void update(Collection<T> entities) throws DataAccessException {
+	public <T extends Entity> void update(Collection<T> entities) {
 		if (entities.isEmpty()) {
 			return;
 		} else if (entities.stream().filter(e -> !ODSUtils.isValidID(e.getID())).findAny().isPresent()) {
@@ -208,7 +206,7 @@ public final class ODSTransaction implements Transaction {
 
 		try {
 			Map<Class<?>, List<T>> entitiesByClassType = entities.stream()
-					.collect(Collectors.groupingBy(e -> e.getClass()));
+					.collect(Collectors.groupingBy(Entity::getClass));
 			List<CatalogAttribute> catalogAttributes = (List<CatalogAttribute>) entitiesByClassType
 					.get(CatalogAttribute.class);
 			if (catalogAttributes != null) {
@@ -236,7 +234,7 @@ public final class ODSTransaction implements Transaction {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends Deletable> void delete(Collection<T> entities) throws DataAccessException {
+	public <T extends Deletable> void delete(Collection<T> entities) {
 		if (entities.isEmpty()) {
 			return;
 		}
@@ -246,7 +244,7 @@ public final class ODSTransaction implements Transaction {
 
 		try {
 			Map<Class<?>, List<T>> entitiesByClassType = filteredEntities.stream()
-					.collect(Collectors.groupingBy(e -> e.getClass()));
+					.collect(Collectors.groupingBy(Deletable::getClass));
 
 			List<CatalogComponent> catalogComponents = (List<CatalogComponent>) entitiesByClassType
 					.get(CatalogComponent.class);
@@ -287,7 +285,7 @@ public final class ODSTransaction implements Transaction {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void writeMeasuredValues(Collection<WriteRequest> writeRequests) throws DataAccessException {
+	public void writeMeasuredValues(Collection<WriteRequest> writeRequests) {
 		if (writeRequests.isEmpty()) {
 			return;
 		}
@@ -300,14 +298,14 @@ public final class ODSTransaction implements Transaction {
 				WriteRequestHandler writeRequestHandler = new WriteRequestHandler(this);
 				List<Channel> channels = new ArrayList<>();
 
-				for (WriteRequest writeRequest : writeRequestGroup) {
+				writeRequestGroup.forEach(writeRequest -> {
 					Channel channel = writeRequest.getChannel();
 					channel.setScalarType(writeRequest.getCalculatedScalarType());
 					// TODO it might be required to change relation to another
 					// unit?!??
 					channels.add(channel);
 					writeRequestHandler.addRequest(writeRequest);
-				}
+				});
 
 				update(channels);
 				writeRequestHandler.execute();
@@ -323,7 +321,7 @@ public final class ODSTransaction implements Transaction {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void commit() throws DataAccessException {
+	public void commit() {
 		try {
 			context.getAoSession().commitTransaction();
 
@@ -343,7 +341,7 @@ public final class ODSTransaction implements Transaction {
 			LOGGER.debug("Transaction '{}' committed.", id);
 			closeSession();
 		} catch (AoException e) {
-			throw new DataAccessException("Unable to commit transaction '" + id + "' due to: " + e.reason, e);
+			throw new DataAccessException(new StringBuilder().append("Unable to commit transaction '").append(id).append("' due to: ").append(e.reason).toString(), e);
 		}
 	}
 
@@ -368,7 +366,7 @@ public final class ODSTransaction implements Transaction {
 
 			LOGGER.debug("Transaction '{}' aborted.", id);
 		} catch (AoException e) {
-			LOGGER.error("Unable to abort transaction '" + id + "' due to: " + e.reason, e);
+			LOGGER.error(new StringBuilder().append("Unable to abort transaction '").append(id).append("' due to: ").append(e.reason).toString(), e);
 		} finally {
 			closeSession();
 		}
@@ -422,7 +420,7 @@ public final class ODSTransaction implements Transaction {
 	 * @throws DataAccessException
 	 *             Thrown if file transfer is not possible.
 	 */
-	UploadService getUploadService() throws DataAccessException {
+	UploadService getUploadService() {
 		if (uploadService == null) {
 			if (context.getFileServer() == null) {
 				throw new DataAccessException("CORBA file server is not available.");
@@ -482,7 +480,7 @@ public final class ODSTransaction implements Transaction {
 	 *             Thrown if a file transfer operation fails.
 	 */
 	private <T extends Entity> void executeStatements(Function<EntityType, BaseStatement> statementFactory,
-			Collection<T> entities) throws AoException, DataAccessException, IOException {
+			Collection<T> entities) throws AoException, IOException {
 		Map<EntityType, List<Entity>> entitiesByType = entities.stream()
 				.collect(Collectors.groupingBy(context.getODSModelManager()::getEntityType));
 		for (Entry<EntityType, List<Entity>> entry : entitiesByType.entrySet()) {

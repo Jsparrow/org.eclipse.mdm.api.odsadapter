@@ -14,7 +14,9 @@
 
 package org.eclipse.mdm.api.odsadapter;
 
-import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
+import java.util.Map;
+import java.util.Optional;
+
 import org.asam.ods.AoException;
 import org.asam.ods.AoSession;
 import org.eclipse.mdm.api.base.ConnectionException;
@@ -39,8 +41,7 @@ import org.omg.CORBA.ORB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Optional;
+import com.highqsoft.corbafileserver.generated.CORBAFileServerIF;
 
 /**
  * ODSContext encapsulates a session to the ASAM ODS CORBA API and 

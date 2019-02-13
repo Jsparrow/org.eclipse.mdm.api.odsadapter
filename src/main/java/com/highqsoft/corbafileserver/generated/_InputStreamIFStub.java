@@ -60,7 +60,8 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
         *         of the stream has been reached.
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public int read (com.highqsoft.corbafileserver.generated.DS_BYTEHolder b, int off, int len) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public int read (com.highqsoft.corbafileserver.generated.DS_BYTEHolder b, int off, int len) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -74,10 +75,11 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return read (b, off, len        );
             } finally {
@@ -91,7 +93,8 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
         *
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public void close () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void close () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -101,10 +104,11 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 close (        );
             } finally {
@@ -119,7 +123,8 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
         * @return the length of the file to be transferd.
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public int length () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public int length () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -130,10 +135,11 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return length (        );
             } finally {
@@ -147,7 +153,8 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
         *
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public void reset () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void reset () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -157,10 +164,11 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 reset (        );
             } finally {
@@ -172,7 +180,8 @@ public class _InputStreamIFStub extends org.omg.CORBA.portable.ObjectImpl implem
   private static String[] __ids = {
     "IDL:com/highqsoft/corbafileserver/generated/InputStreamIF:1.0"};
 
-  public String[] _ids ()
+  @Override
+public String[] _ids ()
   {
     return (String[])__ids.clone ();
   }

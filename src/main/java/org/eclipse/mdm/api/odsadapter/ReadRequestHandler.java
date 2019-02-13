@@ -78,7 +78,7 @@ final class ReadRequestHandler {
 	 *             Thrown if unable to load {@code
 	 * 		MeasuredValues}.
 	 */
-	public List<MeasuredValues> execute(ReadRequest readRequest) throws DataAccessException {
+	public List<MeasuredValues> execute(ReadRequest readRequest) {
 		ValueMatrix valueMatrix = null;
 		Column[] columns = null;
 
@@ -117,7 +117,7 @@ final class ReadRequestHandler {
 	 *             Thrown on wrong {@code ReadRequest} setup.
 	 */
 	private Column[] getODSColumns(ReadRequest readRequest, ValueMatrix valueMatrix)
-			throws AoException, DataAccessException {
+			throws AoException {
 		if (readRequest.isLoadAllChannels()) {
 			// TODO should it be possible to overwrite the unit of some
 			// channels?!
@@ -135,7 +135,7 @@ final class ReadRequestHandler {
 				Column[] columns = valueMatrix.getColumns(channel.getName());
 				if (columns == null || columns.length != 1) {
 					releaseColumns(columns);
-					throw new DataAccessException("Column with name '" + channel.getName() + "' not found.");
+					throw new DataAccessException(new StringBuilder().append("Column with name '").append(channel.getName()).append("' not found.").toString());
 				}
 				Column column = columns[0];
 				if (!unit.nameEquals(channel.getUnit().getName())) {

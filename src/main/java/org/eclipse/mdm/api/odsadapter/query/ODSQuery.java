@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.AIDName;
 import org.asam.ods.AIDNameUnitId;
 import org.asam.ods.AoException;
@@ -78,7 +79,7 @@ public class ODSQuery implements Query {
 	private static final String GROUP_NAME = "name";
 	private static final String GROUP_AGGRFUNC = "aggrfunc";
 	private static final Pattern AGGREGATION_NAME_PATTERN = Pattern
-			.compile("(?<" + GROUP_AGGRFUNC + ">\\S+)\\((?<" + GROUP_NAME + ">\\S+)\\)");
+			.compile(new StringBuilder().append("(?<").append(GROUP_AGGRFUNC).append(">\\S+)\\((?<").append(GROUP_NAME).append(">\\S+)\\)").toString());
 
 	// ======================================================================
 	// Instance variables
@@ -148,9 +149,7 @@ public class ODSQuery implements Query {
 	 */
 	@Override
 	public Query group(List<Attribute> attributes) {
-		for (Attribute attribute : attributes) {
-			group(attribute);
-		}
+		attributes.forEach(this::group);
 		return this;
 	}
 
@@ -176,7 +175,7 @@ public class ODSQuery implements Query {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Optional<Result> fetchSingleton(Filter filter) throws DataAccessException {
+	public Optional<Result> fetchSingleton(Filter filter) {
 		List<Result> results = fetch(filter);
 		if (results.isEmpty()) {
 			return Optional.empty();
@@ -191,7 +190,7 @@ public class ODSQuery implements Query {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<Result> fetch(Filter filter) throws DataAccessException {
+	public List<Result> fetch(Filter filter) {
 		try {
 
 			List<SelItem> condSeq = new ArrayList<>();
@@ -267,7 +266,7 @@ public class ODSQuery implements Query {
 	 * @throws DataAccessException
 	 *             Thrown in case of errors.
 	 */
-	private SelValueExt createCondition(Condition condition) throws DataAccessException {
+	private SelValueExt createCondition(Condition condition) {
 		SelValueExt sve = new SelValueExt();
 
 		sve.oper = ODSUtils.OPERATIONS.get(condition.getComparisonOperator());
@@ -336,7 +335,7 @@ public class ODSQuery implements Query {
 	}
 	
 	private static Aggregation getAggregation(String odsAggrFunc) {		  
-		switch (Strings.nullToEmpty(odsAggrFunc).trim().toUpperCase()) {
+		switch (StringUtils.upperCase(Strings.nullToEmpty(odsAggrFunc).trim())) {
 		case "COUNT": return Aggregation.COUNT;
 		case "DCOUNT": return Aggregation.DISTINCT_COUNT;
 		case "MIN": return Aggregation.MINIMUM;
@@ -346,8 +345,7 @@ public class ODSQuery implements Query {
 		case "SUM": return Aggregation.SUM;
 		case "DISTINCT": return Aggregation.DISTINCT;
 		default: 
-			throw new IllegalArgumentException("Unsupported aggregate function '" + 
-					Strings.nullToEmpty(odsAggrFunc).trim().toUpperCase() + "'!");
+			throw new IllegalArgumentException(new StringBuilder().append("Unsupported aggregate function '").append(StringUtils.upperCase(Strings.nullToEmpty(odsAggrFunc).trim())).append("'!").toString());
 		}
 		
 	}
@@ -384,8 +382,7 @@ public class ODSQuery implements Query {
 		 * @throws DataAccessException
 		 *             Thrown on conversion errors.
 		 */
-		public ResultFactory(Map<String, EntityType> entityTypes, ResultSetExt resultSetExt)
-				throws DataAccessException {
+		public ResultFactory(Map<String, EntityType> entityTypes, ResultSetExt resultSetExt) {
 			for (ElemResultSetExt elemResultSetExt : resultSetExt.firstElems) {
 				EntityType entityType = entityTypes.get(Long.toString(ODSConverter.fromODSLong(elemResultSetExt.aid)));
 				recordFactories.add(new RecordFactory(entityType, elemResultSetExt.values));
@@ -416,9 +413,7 @@ public class ODSQuery implements Query {
 			}
 			Result result = new Result();
 
-			for (RecordFactory recordFactory : recordFactories) {
-				result.addRecord(recordFactory.createRecord(index));
-			}
+			recordFactories.forEach(recordFactory -> result.addRecord(recordFactory.createRecord(index)));
 
 			index++;
 			return result;
@@ -461,7 +456,7 @@ public class ODSQuery implements Query {
 		 * @throws DataAccessException
 		 *             Thrown on conversion errors.
 		 */
-		private RecordFactory(EntityType entityType, NameValueSeqUnitId[] nvsuis) throws DataAccessException {
+		private RecordFactory(EntityType entityType, NameValueSeqUnitId[] nvsuis) {
 			this.entityType = entityType;
 			for (NameValueSeqUnitId nvsui : nvsuis) {
 				String attributeName = nvsui.valName;
@@ -486,9 +481,7 @@ public class ODSQuery implements Query {
 
 		private Record createRecord(int index) {
 			Record record = new Record(entityType);
-			for (ValueFactory valueFactory : valueFactories) {
-				record.addValue(valueFactory.createValue(index));
-			}
+			valueFactories.forEach(valueFactory -> record.addValue(valueFactory.createValue(index)));
 
 			return record;
 		}
@@ -523,7 +516,7 @@ public class ODSQuery implements Query {
 		 * @throws DataAccessException
 		 *             Thrown on conversion errors.
 		 */
-		private ValueFactory(Attribute attribute, Aggregation aggregation, NameValueSeqUnitId nvsui) throws DataAccessException {
+		private ValueFactory(Attribute attribute, Aggregation aggregation, NameValueSeqUnitId nvsui) {
 			length = nvsui.value.flag.length;
 			unit = attribute.getUnit();
 			values = ODSConverter.fromODSValueSeq(attribute, aggregation, unit, nvsui.value);

@@ -30,7 +30,7 @@ public final class CORBAFileServerException extends org.omg.CORBA.UserException
 
   public CORBAFileServerException (String $reason, com.highqsoft.corbafileserver.generated.ErrorCode _errCode, com.highqsoft.corbafileserver.generated.SeverityFlag _sevFlag, String _reason)
   {
-    super(CORBAFileServerExceptionHelper.id() + "  " + $reason);
+    super(new StringBuilder().append(CORBAFileServerExceptionHelper.id()).append("  ").append($reason).toString());
     errCode = _errCode;
     sevFlag = _sevFlag;
     reason = _reason;

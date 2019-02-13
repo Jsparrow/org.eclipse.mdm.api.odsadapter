@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.AoException;
 import org.eclipse.mdm.api.base.file.FileService.ProgressListener;
 import org.eclipse.mdm.api.base.model.Entity;
@@ -129,11 +130,12 @@ final class UploadService {
 			templateAttributeFileLinks.put(templateAttribute, defaultValue);
 		}
 
-		if (!fileLinks.isEmpty()) {
-			uploadParallel(fileLinks, progressListener);
-			// remote paths available -> update template attribute
-			templateAttributeFileLinks.forEach((ta, v) -> ta.setDefaultValue(v.extract()));
+		if (fileLinks.isEmpty()) {
+			return;
 		}
+		uploadParallel(fileLinks, progressListener);
+		// remote paths available -> update template attribute
+		templateAttributeFileLinks.forEach((ta, v) -> ta.setDefaultValue(v.extract()));
 	}
 
 	/**
@@ -202,14 +204,14 @@ final class UploadService {
 	 */
 	private List<FileLink> retainForUpload(Collection<FileLink> fileLinks) {
 		List<FileLink> filtered = new ArrayList<>(fileLinks);
-		for (FileLink fileLink : fileLinks) {
+		fileLinks.forEach(fileLink -> {
 			String remotePath = remotePaths.get(fileLink.getLocalPath());
-			if (remotePath != null && !remotePath.isEmpty()) {
+			if (remotePath != null && !StringUtils.isEmpty(remotePath)) {
 				fileLink.setRemotePath(remotePath);
 				filtered.remove(fileLink);
 				uploaded.add(fileLink);
 			}
-		}
+		});
 
 		return filtered;
 	}

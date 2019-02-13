@@ -24,10 +24,9 @@ import java.util.Optional;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Deletable;
-import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
-import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Query;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
@@ -77,7 +76,7 @@ final class ChildRequest<T extends Deletable> extends EntityRequest<T> {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load entities.
 	 */
-	public EntityResult<T> load() throws DataAccessException {
+	public EntityResult<T> load() {
 		filtered = parent.filtered;
 
 		EntityType entityType = entityConfig.getEntityType();
@@ -187,12 +186,12 @@ final class ChildRequest<T extends Deletable> extends EntityRequest<T> {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load related entities.
 	 */
-	private void assignRelatedEntities(List<RelationConfig> relationConfigs) throws DataAccessException {
+	private void assignRelatedEntities(List<RelationConfig> relationConfigs) {
 		for (RelationConfig relationConfig : relationConfigs) {
 			EntityConfig<?> relatedConfig = relationConfig.entityConfig;
 
 			boolean isContextTypeDefined = entityConfig.getContextType().isPresent();
-			for (Entity relatedEntity : cache.get(relatedConfig).getEntities()) {
+			cache.get(relatedConfig).getEntities().forEach(relatedEntity -> {
 				boolean setByContextType = !isContextTypeDefined && relatedConfig.getContextType().isPresent();
 				List<EntityRecord<?>> entityRecords = relationConfig.dependants.remove(relatedEntity.getID());
 				entityRecords = entityRecords == null ? new ArrayList<EntityRecord<?>>() : entityRecords;
@@ -200,7 +199,7 @@ final class ChildRequest<T extends Deletable> extends EntityRequest<T> {
 					setRelatedEntity(entityRecord, relatedEntity,
 							setByContextType ? relatedConfig.getContextType().get() : null);
 				}
-			}
+			});
 
 			if (!relationConfig.dependants.isEmpty()) {
 				// this may occur if the instance id of the related entity

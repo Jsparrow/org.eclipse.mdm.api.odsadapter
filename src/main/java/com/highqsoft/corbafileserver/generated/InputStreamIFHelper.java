@@ -52,13 +52,13 @@ abstract public class InputStreamIFHelper
 
   public static com.highqsoft.corbafileserver.generated.InputStreamIF narrow (org.omg.CORBA.Object obj)
   {
-    if (obj == null)
-      return null;
-    else if (obj instanceof com.highqsoft.corbafileserver.generated.InputStreamIF)
-      return (com.highqsoft.corbafileserver.generated.InputStreamIF)obj;
-    else if (!obj._is_a (id ()))
-      throw new org.omg.CORBA.BAD_PARAM ();
-    else
+    if (obj == null) {
+		return null;
+	} else if (obj instanceof com.highqsoft.corbafileserver.generated.InputStreamIF) {
+		return (com.highqsoft.corbafileserver.generated.InputStreamIF)obj;
+	} else if (!obj._is_a (id ())) {
+		throw new org.omg.CORBA.BAD_PARAM ();
+	} else
     {
       org.omg.CORBA.portable.Delegate delegate = ((org.omg.CORBA.portable.ObjectImpl)obj)._get_delegate ();
       com.highqsoft.corbafileserver.generated._InputStreamIFStub stub = new com.highqsoft.corbafileserver.generated._InputStreamIFStub ();
@@ -69,11 +69,11 @@ abstract public class InputStreamIFHelper
 
   public static com.highqsoft.corbafileserver.generated.InputStreamIF unchecked_narrow (org.omg.CORBA.Object obj)
   {
-    if (obj == null)
-      return null;
-    else if (obj instanceof com.highqsoft.corbafileserver.generated.InputStreamIF)
-      return (com.highqsoft.corbafileserver.generated.InputStreamIF)obj;
-    else
+    if (obj == null) {
+		return null;
+	} else if (obj instanceof com.highqsoft.corbafileserver.generated.InputStreamIF) {
+		return (com.highqsoft.corbafileserver.generated.InputStreamIF)obj;
+	} else
     {
       org.omg.CORBA.portable.Delegate delegate = ((org.omg.CORBA.portable.ObjectImpl)obj)._get_delegate ();
       com.highqsoft.corbafileserver.generated._InputStreamIFStub stub = new com.highqsoft.corbafileserver.generated._InputStreamIFStub ();

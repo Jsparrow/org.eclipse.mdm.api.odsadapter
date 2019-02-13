@@ -102,7 +102,7 @@ public final class WriteRequestHandler {
 	 * @throws IOException
 	 *             Thrown if a file transfer operation fails.
 	 */
-	public void execute() throws AoException, DataAccessException, IOException {
+	public void execute() throws AoException, IOException {
 		insertStatement.executeWithCores(cores);
 	}
 

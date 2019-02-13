@@ -82,7 +82,7 @@ final class JoinTree {
 	public JoinNode getJoinNode(String target) {
 		JoinNode joinNode = joinNodes.get(target);
 		if (joinNode == null) {
-			throw new IllegalArgumentException("Relation to '" + target + "' not possible.");
+			throw new IllegalArgumentException(new StringBuilder().append("Relation to '").append(target).append("' not possible.").toString());
 		}
 
 		return joinNode;

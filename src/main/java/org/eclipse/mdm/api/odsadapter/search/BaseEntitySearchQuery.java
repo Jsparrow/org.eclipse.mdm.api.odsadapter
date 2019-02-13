@@ -21,14 +21,12 @@ import static java.util.stream.Collectors.reducing;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.mdm.api.base.adapter.Attribute;
 import org.eclipse.mdm.api.base.adapter.EntityType;
-import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Entity;
@@ -93,13 +91,9 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		EntityConfig<?> entityConfig = modelManager.getEntityConfig(new Key<>(entityClass));
 		EntityType source = entityConfig.getEntityType();
 
-		entityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(source, entityType, true, JoinType.OUTER);
-		});
+		entityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> joinTree.addNode(source, entityType, true, JoinType.OUTER));
 
-		entityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(source, entityType, true, JoinType.INNER);
-		});
+		entityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> joinTree.addNode(source, entityType, true, JoinType.INNER));
 	}
 
 	// ======================================================================
@@ -119,18 +113,14 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 */
 	@Override
 	public final Searchable getSearchableRoot() {
-		Function<String, SearchableNode> factory = k -> {
-			return new SearchableNode(modelManager.getEntityType(k));
-		};
+		Function<String, SearchableNode> factory = k -> new SearchableNode(modelManager.getEntityType(k));
 
 		Map<String, SearchableNode> nodes = new HashMap<>();
-		for (Entry<String, List<String>> entry : joinTree.getTree().entrySet()) {
+		joinTree.getTree().entrySet().forEach(entry -> {
 			SearchableNode parent = nodes.computeIfAbsent(entry.getKey(), factory);
 
-			for (String childName : entry.getValue()) {
-				parent.addRelated(nodes.computeIfAbsent(childName, factory));
-			}
-		}
+			entry.getValue().forEach(childName -> parent.addRelated(nodes.computeIfAbsent(childName, factory)));
+		});
 
 		return nodes.get(modelManager.getEntityType(rootEntityClass).getName());
 	}
@@ -139,13 +129,11 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final List<Value> getFilterValues(Attribute attribute, Filter filter) throws DataAccessException {
+	public final List<Value> getFilterValues(Attribute attribute, Filter filter) {
 		Query query = queryService.createQuery().select(attribute, Aggregation.DISTINCT).group(attribute);
 
 		// add required joins
-		filter.stream().filter(FilterItem::isCondition).map(FilterItem::getCondition).forEach(c -> {
-			addJoins(query, c.getAttribute().getEntityType());
-		});
+		filter.stream().filter(FilterItem::isCondition).map(FilterItem::getCondition).forEach(c -> addJoins(query, c.getAttribute().getEntityType()));
 
 		return query.fetch(filter).stream().map(r -> r.getValue(attribute)).collect(Collectors.toList());
 	}
@@ -154,7 +142,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) throws DataAccessException {
+	public final List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) {
 		Query query = queryService.createQuery().selectID(modelManager.getEntityType(entityClass));
 
 		// add required joins
@@ -170,7 +158,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final List<Result> fetch(List<Attribute> attributes, Filter filter) throws DataAccessException {
+	public final List<Result> fetch(List<Attribute> attributes, Filter filter) {
 		Query query = queryService.createQuery().selectID(modelManager.getEntityType(entityClass));
 
 		// add required joins
@@ -200,14 +188,10 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		joinTree.addNode(modelManager.getEntityType(joinConfig.source), target, joinConfig.viaParent, JoinType.INNER);
 
 		// add target's optional dependencies
-		targetEntityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(target, entityType, true, JoinType.OUTER);
-		});
+		targetEntityConfig.getOptionalConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> joinTree.addNode(target, entityType, true, JoinType.OUTER));
 
 		// add target's mandatory dependencies
-		targetEntityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> {
-			joinTree.addNode(target, entityType, true, JoinType.INNER);
-		});
+		targetEntityConfig.getMandatoryConfigs().stream().map(EntityConfig::getEntityType).forEach(entityType -> joinTree.addNode(target, entityType, true, JoinType.INNER));
 	}
 
 	/**
@@ -225,13 +209,11 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 		Class<? extends Entity> source = contextState.isOrdered() ? TestStep.class : Measurement.class;
 		for (ContextType contextType : ContextType.values()) {
 			EntityType rootEntityType = modelManager.getEntityType(ContextRoot.class, contextType);
-			for (Relation componentRelation : rootEntityType.getChildRelations()) {
+			rootEntityType.getChildRelations().forEach(componentRelation -> {
 				joinTree.addNode(componentRelation.getSource(), componentRelation.getTarget(), true, JoinType.OUTER);
 
-				for (Relation sensorRelation : componentRelation.getTarget().getChildRelations()) {
-					joinTree.addNode(sensorRelation.getSource(), sensorRelation.getTarget(), true, JoinType.OUTER);
-				}
-			}
+				componentRelation.getTarget().getChildRelations().forEach(sensorRelation -> joinTree.addNode(sensorRelation.getSource(), sensorRelation.getTarget(), true, JoinType.OUTER));
+			});
 
 			joinTree.addNode(modelManager.getEntityType(source), rootEntityType, true, JoinType.OUTER);
 		}
@@ -253,7 +235,7 @@ abstract class BaseEntitySearchQuery implements SearchQuery {
 	 * @throws DataAccessException
 	 *             Thrown if failed to execute given {@code Query}.
 	 */
-	private List<Result> fetch(Query query, Filter filter) throws DataAccessException {
+	private List<Result> fetch(Query query, Filter filter) {
 		filter.stream().filter(FilterItem::isCondition).map(FilterItem::getCondition)
 				.forEach(c -> addJoins(query, c.getAttribute().getEntityType()));
 

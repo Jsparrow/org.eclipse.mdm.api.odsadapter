@@ -22,7 +22,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -34,7 +33,16 @@ import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.massdata.ReadRequest;
-import org.eclipse.mdm.api.base.model.*;
+import org.eclipse.mdm.api.base.model.Channel;
+import org.eclipse.mdm.api.base.model.ChannelGroup;
+import org.eclipse.mdm.api.base.model.ContextDescribable;
+import org.eclipse.mdm.api.base.model.ContextRoot;
+import org.eclipse.mdm.api.base.model.ContextType;
+import org.eclipse.mdm.api.base.model.Entity;
+import org.eclipse.mdm.api.base.model.Environment;
+import org.eclipse.mdm.api.base.model.MeasuredValues;
+import org.eclipse.mdm.api.base.model.StatusAttachable;
+import org.eclipse.mdm.api.base.model.User;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.JoinType;
@@ -107,7 +115,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Environment loadEnvironment() throws DataAccessException {
+	public Environment loadEnvironment() {
 		List<Environment> environments = loadAll(Environment.class);
 		if (environments.size() != 1) {
 			throw new DataAccessException("Unable to laod the environment entity.");
@@ -120,7 +128,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Optional<User> loadLoggedOnUser() throws DataAccessException {
+	public Optional<User> loadLoggedOnUser() {
 		InstanceElement ieUser = null;
 		try {
 			ieUser = odsModelManager.getAoSession().getUser();
@@ -145,7 +153,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> load(Class<T> entityClass, Collection<String> instanceIDs) throws DataAccessException {
+	public <T extends Entity> List<T> load(Class<T> entityClass, Collection<String> instanceIDs) {
 		return entityLoader.loadAll(new Key<>(entityClass), instanceIDs);
 	}
 
@@ -153,8 +161,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> load(Class<T> entityClass, ContextType contextType, Collection<String> instanceIDs)
-			throws DataAccessException {
+	public <T extends Entity> List<T> load(Class<T> entityClass, ContextType contextType, Collection<String> instanceIDs) {
 		return entityLoader.loadAll(new Key<>(entityClass, contextType), instanceIDs);
 	}
 
@@ -162,7 +169,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> Optional<T> loadParent(Entity child, Class<T> entityClass) throws DataAccessException {
+	public <T extends Entity> Optional<T> loadParent(Entity child, Class<T> entityClass) {
 		EntityType parentEntityType = odsModelManager.getEntityType(entityClass);
 		EntityType childEntityType = odsModelManager.getEntityType(child);
 		Query query = queryService.createQuery().selectID(parentEntityType);
@@ -189,7 +196,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> loadAll(Class<T> entityClass, String pattern) throws DataAccessException {
+	public <T extends Entity> List<T> loadAll(Class<T> entityClass, String pattern) {
 		return entityLoader.loadAll(new Key<>(entityClass), pattern);
 	}
 
@@ -197,8 +204,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	 @Override
-	 public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern)
-	    throws DataAccessException {
+	 public <T extends StatusAttachable> List<T> loadAll(Class<T> entityClass, Status status, String pattern) {
 	 EntityType entityType = odsModelManager.getEntityType(entityClass);
 	 EntityType classificationType = odsModelManager.getEntityType(Classification.class);
 	 EntityType statusEntityType =
@@ -231,8 +237,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> loadAll(Class<T> entityClass, ContextType contextType, String pattern)
-			throws DataAccessException {
+	public <T extends Entity> List<T> loadAll(Class<T> entityClass, ContextType contextType, String pattern) {
 		return entityLoader.loadAll(new Key<>(entityClass, contextType), pattern);
 	}
 
@@ -240,8 +245,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> loadChildren(Entity parent, Class<T> entityClass, String pattern)
-			throws DataAccessException {
+	public <T extends Entity> List<T> loadChildren(Entity parent, Class<T> entityClass, String pattern) {
 		EntityType parentEntityType = odsModelManager.getEntityType(parent);
 		EntityType childEntityType = odsModelManager.getEntityType(entityClass);
 		Query query = queryService.createQuery();
@@ -290,7 +294,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<ContextType> loadContextTypes(ContextDescribable contextDescribable) throws DataAccessException {
+	public List<ContextType> loadContextTypes(ContextDescribable contextDescribable) {
 		EntityType contextDescribableEntityType = odsModelManager.getEntityType(contextDescribable);
 		Query query = queryService.createQuery();
 
@@ -303,19 +307,17 @@ public class ODSEntityManager implements EntityManager {
 
 		Optional<Result> result = query
 				.fetchSingleton(Filter.idOnly(contextDescribableEntityType, contextDescribable.getID()));
-		if (result.isPresent()) {
-			List<ContextType> contextTypes = new ArrayList<>();
-			for (Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
-				Optional<String> instanceID = result.map(r -> r.getRecord(entry.getValue())).map(Record::getID);
-				if (instanceID.isPresent()) {
-					contextTypes.add(entry.getKey());
-				}
-			}
-
-			return contextTypes;
+		if (!result.isPresent()) {
+			return Collections.emptyList();
 		}
-
-		return Collections.emptyList();
+		List<ContextType> contextTypes = new ArrayList<>();
+		contextRootEntityTypes.entrySet().forEach(entry -> {
+			Optional<String> instanceID = result.map(r -> r.getRecord(entry.getValue())).map(Record::getID);
+			if (instanceID.isPresent()) {
+				contextTypes.add(entry.getKey());
+			}
+		});
+		return contextTypes;
 	}
 
 	/**
@@ -323,7 +325,7 @@ public class ODSEntityManager implements EntityManager {
 	 */
 	@Override
 	public Map<ContextType, ContextRoot> loadContexts(ContextDescribable contextDescribable,
-			ContextType... contextTypes) throws DataAccessException {
+			ContextType... contextTypes) {
 		EntityType contextDescribableEntityType = odsModelManager.getEntityType(contextDescribable);
 		Query query = queryService.createQuery();
 
@@ -336,27 +338,25 @@ public class ODSEntityManager implements EntityManager {
 
 		Optional<Result> result = query
 				.fetchSingleton(Filter.idOnly(contextDescribableEntityType, contextDescribable.getID()));
-		if (result.isPresent()) {
-			Map<ContextType, ContextRoot> contextRoots = new EnumMap<>(ContextType.class);
-			for (Entry<ContextType, EntityType> entry : contextRootEntityTypes.entrySet()) {
-				String instanceID = result.get().getRecord(entry.getValue()).getID();
-				if (ODSUtils.isValidID(instanceID)) {
-					contextRoots.put(entry.getKey(),
-							entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
-				}
-			}
-
-			return contextRoots;
+		if (!result.isPresent()) {
+			return Collections.emptyMap();
 		}
-
-		return Collections.emptyMap();
+		Map<ContextType, ContextRoot> contextRoots = new EnumMap<>(ContextType.class);
+		contextRootEntityTypes.entrySet().forEach(entry -> {
+			String instanceID = result.get().getRecord(entry.getValue()).getID();
+			if (ODSUtils.isValidID(instanceID)) {
+				contextRoots.put(entry.getKey(),
+						entityLoader.load(new Key<>(ContextRoot.class, entry.getKey()), instanceID));
+			}
+		});
+		return contextRoots;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<MeasuredValues> readMeasuredValues(ReadRequest readRequest) throws DataAccessException {
+	public List<MeasuredValues> readMeasuredValues(ReadRequest readRequest) {
 		return new ReadRequestHandler(odsModelManager).execute(readRequest);
 	}
 
@@ -364,7 +364,7 @@ public class ODSEntityManager implements EntityManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Transaction startTransaction() throws DataAccessException {
+	public Transaction startTransaction() {
 		try {
 			return new ODSTransaction(context, loadEnvironment(), transfer);
 		} catch (AoException e) {
@@ -382,7 +382,7 @@ public class ODSEntityManager implements EntityManager {
 	 * @see org.eclipse.mdm.api.base.BaseEntityManager#getLinks(Collection)
 	 */
 	@Override
-	public Map<Entity, String> getLinks(Collection<Entity> entities) throws DataAccessException {
+	public Map<Entity, String> getLinks(Collection<Entity> entities) {
 
 		Map<Entity, String> linkMap = new HashMap<>();
 
@@ -393,8 +393,7 @@ public class ODSEntityManager implements EntityManager {
 			throw new DataAccessException("Could not load application structure! Reason: " + e.reason, e);
 		}
 
-		String serverRoot = context.getParameters().get(ODSContextFactory.PARAM_NAMESERVICE)
-				+ "/" + context.getParameters().get(ODSContextFactory.PARAM_SERVICENAME);
+		String serverRoot = new StringBuilder().append(context.getParameters().get(ODSContextFactory.PARAM_NAMESERVICE)).append("/").append(context.getParameters().get(ODSContextFactory.PARAM_SERVICENAME)).toString();
 
 		Map<String, List<Entity>> entitiesByTypeName = entities.stream()
 				.filter(e -> e.getTypeName() != null)
@@ -419,7 +418,7 @@ public class ODSEntityManager implements EntityManager {
 							.ifPresent(e -> linkMap.put(e, asamPath));
 				}
 			} catch (AoException e) {
-				LOGGER.debug("Could not load links for entities: " + entities + ". Reason: " + e.reason, e);
+				LOGGER.debug(new StringBuilder().append("Could not load links for entities: ").append(entities).append(". Reason: ").append(e.reason).toString(), e);
 			}
 		}
 

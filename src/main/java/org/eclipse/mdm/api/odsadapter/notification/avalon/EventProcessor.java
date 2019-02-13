@@ -26,8 +26,8 @@ import org.eclipse.mdm.api.base.notification.NotificationListener;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.omg.CosNaming.NamingContextExtHelper;
-import org.omg.CosNotification._EventType;
 import org.omg.CosNotification.StructuredEvent;
+import org.omg.CosNotification._EventType;
 import org.omg.CosNotifyChannelAdmin.ClientType;
 import org.omg.CosNotifyChannelAdmin.EventChannel;
 import org.omg.CosNotifyChannelAdmin.EventChannelHelper;
@@ -122,18 +122,16 @@ public class EventProcessor extends StructuredPullConsumerPOA implements Runnabl
 	 * Disconnect the event processor from the notification service.
 	 */
 	public synchronized void disconnect() {
-		if (isConnected()) {
-			if (future != null) {
-				future.cancel(false);
-			}
-
-			proxyPullSupplier = null;
-
-			eventChannel._release();
-			eventChannel = null;
-
-			connected = false;
+		if (!isConnected()) {
+			return;
 		}
+		if (future != null) {
+			future.cancel(false);
+		}
+		proxyPullSupplier = null;
+		eventChannel._release();
+		eventChannel = null;
+		connected = false;
 	}
 
 	/**

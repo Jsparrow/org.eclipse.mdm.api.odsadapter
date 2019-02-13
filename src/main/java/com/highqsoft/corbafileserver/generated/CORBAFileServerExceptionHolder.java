@@ -20,17 +20,20 @@ public final class CORBAFileServerExceptionHolder implements org.omg.CORBA.porta
     value = initialValue;
   }
 
-  public void _read (org.omg.CORBA.portable.InputStream i)
+  @Override
+public void _read (org.omg.CORBA.portable.InputStream i)
   {
     value = com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read (i);
   }
 
-  public void _write (org.omg.CORBA.portable.OutputStream o)
+  @Override
+public void _write (org.omg.CORBA.portable.OutputStream o)
   {
     com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.write (o, value);
   }
 
-  public org.omg.CORBA.TypeCode _type ()
+  @Override
+public org.omg.CORBA.TypeCode _type ()
   {
     return com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.type ();
   }

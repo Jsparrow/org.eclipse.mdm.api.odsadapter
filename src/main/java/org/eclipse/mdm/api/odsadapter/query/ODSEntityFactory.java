@@ -114,8 +114,7 @@ public final class ODSEntityFactory extends EntityFactory {
 		if (entity instanceof BaseEntity) {
 			return getCore((BaseEntity) entity);
 		} else {
-			throw new IllegalArgumentException("Entity of type '" + entity.getClass().getSimpleName()
-					+ "' does not extend '" + BaseEntity.class.getName() + "'");
+			throw new IllegalArgumentException(new StringBuilder().append("Entity of type '").append(entity.getClass().getSimpleName()).append("' does not extend '").append(BaseEntity.class.getName()).append("'").toString());
 		}
 	}
 
@@ -139,7 +138,7 @@ public final class ODSEntityFactory extends EntityFactory {
 			return (T) createBaseEntity(clazz.asSubclass(BaseEntity.class), core);
 		} else {
 			throw new IllegalArgumentException(
-					"Class '" + clazz.getSimpleName() + "' does not extend '" + BaseEntity.class.getName() + "'");
+					new StringBuilder().append("Class '").append(clazz.getSimpleName()).append("' does not extend '").append(BaseEntity.class.getName()).append("'").toString());
 		}
 
 	}
@@ -200,8 +199,7 @@ public final class ODSEntityFactory extends EntityFactory {
 	protected <T extends Entity> Core createCore(String name, Class<T> entityClass) {
 		EntityConfig<?> entityConfig = modelManager.getEntityConfig(modelManager.getEntityType(name));
 		if (!entityClass.equals(entityConfig.getEntityClass())) {
-			throw new IllegalArgumentException("Incompatible entity class expected '" + entityClass.getName()
-					+ "' but got '" + entityConfig.getEntityClass().getName() + "'");
+			throw new IllegalArgumentException(new StringBuilder().append("Incompatible entity class expected '").append(entityClass.getName()).append("' but got '").append(entityConfig.getEntityClass().getName()).append("'").toString());
 		}
 		Core core = new DefaultCore(entityConfig.getEntityType());
 		core.getValues().get(Entity.ATTR_MIMETYPE).set(entityConfig.getMimeType());
@@ -217,7 +215,7 @@ public final class ODSEntityFactory extends EntityFactory {
 		EnumRegistry er = EnumRegistry.getInstance();
 		// check if enum is properly registered
         if (er.get(enumerationObj.getName())==null) {
-		  throw new IllegalArgumentException("Given enum class '" + enumerationObj.getName() + "' is not supported.");
+		  throw new IllegalArgumentException(new StringBuilder().append("Given enum class '").append(enumerationObj.getName()).append("' is not supported.").toString());
         }
 	}
 	

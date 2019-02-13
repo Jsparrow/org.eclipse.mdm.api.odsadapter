@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.adapter.ModelManager;
@@ -33,7 +34,6 @@ import org.eclipse.mdm.api.base.model.ChannelGroup;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
 import org.eclipse.mdm.api.base.model.TestStep;
-import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.search.SearchService;
 import org.eclipse.mdm.api.dflt.ApplicationContext;
@@ -65,16 +65,16 @@ public class JoinTest {
 		String nameServicePort = System.getProperty("port");
 		String serviceName = System.getProperty("service");
 
-		if (nameServiceHost == null || nameServiceHost.isEmpty()) {
+		if (nameServiceHost == null || StringUtils.isEmpty(nameServiceHost)) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
 		}
 
-		nameServicePort = nameServicePort == null || nameServicePort.isEmpty() ? String.valueOf(2809) : nameServicePort;
-		if (nameServicePort == null || nameServicePort.isEmpty()) {
+		nameServicePort = nameServicePort == null || StringUtils.isEmpty(nameServicePort) ? String.valueOf(2809) : nameServicePort;
+		if (nameServicePort == null || StringUtils.isEmpty(nameServicePort)) {
 			throw new IllegalArgumentException("name service port is unknown: define system property 'port'");
 		}
 
-		if (serviceName == null || serviceName.isEmpty()) {
+		if (serviceName == null || StringUtils.isEmpty(serviceName)) {
 			throw new IllegalArgumentException("service name is unknown: define system property 'service'");
 		}
 
@@ -95,7 +95,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestFromTestStepId() throws DataAccessException {
+	public void findTestFromTestStepId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -108,7 +108,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestFromMeasurementId() throws DataAccessException {
+	public void findTestFromMeasurementId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -121,7 +121,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestFromChannelGroupId() throws DataAccessException {
+	public void findTestFromChannelGroupId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -134,7 +134,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestFromChannelId() throws DataAccessException {
+	public void findTestFromChannelId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -147,7 +147,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestStepFromTestId() throws DataAccessException {
+	public void findTestStepFromTestId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -160,7 +160,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestStepFromMeasurementId() throws DataAccessException {
+	public void findTestStepFromMeasurementId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -173,7 +173,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestStepFromChannelGroupId() throws DataAccessException {
+	public void findTestStepFromChannelGroupId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -186,7 +186,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findTestStepFromChannelId() throws DataAccessException {
+	public void findTestStepFromChannelId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -199,7 +199,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findMeasurementFromTestId() throws DataAccessException {
+	public void findMeasurementFromTestId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -212,7 +212,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findMeasurementFromTestStepId() throws DataAccessException {
+	public void findMeasurementFromTestStepId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -225,7 +225,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findMeasurementFromChannelGroupId() throws DataAccessException {
+	public void findMeasurementFromChannelGroupId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -238,7 +238,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findMeasurementFromChannelId() throws DataAccessException {
+	public void findMeasurementFromChannelId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -251,7 +251,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelGroupFromTestId() throws DataAccessException {
+	public void findChannelGroupFromTestId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -264,7 +264,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelGroupFromTestStepId() throws DataAccessException {
+	public void findChannelGroupFromTestStepId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -277,7 +277,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelGroupFromMeasurementId() throws DataAccessException {
+	public void findChannelGroupFromMeasurementId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -290,7 +290,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelGroupFromChannelId() throws DataAccessException {
+	public void findChannelGroupFromChannelId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -303,7 +303,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelFromTestId() throws DataAccessException {
+	public void findChannelFromTestId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -316,7 +316,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelFromTestStepId() throws DataAccessException {
+	public void findChannelFromTestStepId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -329,7 +329,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelFromMeasurementId() throws DataAccessException {
+	public void findChannelFromMeasurementId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 
@@ -342,7 +342,7 @@ public class JoinTest {
 	}
 
 	@org.junit.Test
-	public void findChannelFromChannelGroupId() throws DataAccessException {
+	public void findChannelFromChannelGroupId() {
 		ModelManager modelManager = context.getModelManager().get();
 		SearchService searchService = context.getSearchService().get();
 

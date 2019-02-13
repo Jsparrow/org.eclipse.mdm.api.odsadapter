@@ -27,11 +27,11 @@ import org.eclipse.mdm.api.base.model.ContextRoot;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.TestStep;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.JoinType;
 import org.eclipse.mdm.api.base.query.QueryService;
-import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.Record;
 import org.eclipse.mdm.api.odsadapter.lookup.EntityLoader;
 import org.eclipse.mdm.api.odsadapter.lookup.config.EntityConfig;
@@ -57,11 +57,11 @@ public class NotificationEntityLoader {
 		this.loadContextDescribable = loadContextDescribable;
 	}
 
-	public <T extends Entity> T load(Key<T> key, String userId) throws DataAccessException {
+	public <T extends Entity> T load(Key<T> key, String userId) {
 		return loader.load(key, userId);
 	}
 
-	public List<? extends Entity> loadEntities(String aid, List<String> ids) throws DataAccessException {
+	public List<? extends Entity> loadEntities(String aid, List<String> ids) {
 		return loadEntities(modelManager.getEntityType(aid), ids);
 	}
 
@@ -74,7 +74,7 @@ public class NotificationEntityLoader {
 	 * @throws DataAccessException
 	 *             Throw if the entities cannot be loaded.
 	 */
-	public List<? extends Entity> loadEntities(EntityType entityType, List<String> ids) throws DataAccessException {
+	public List<? extends Entity> loadEntities(EntityType entityType, List<String> ids) {
 
 		if (ids.isEmpty()) {
 			return Collections.emptyList();
@@ -94,7 +94,7 @@ public class NotificationEntityLoader {
 					modelManager.getEntityType("TestSequence"), modelManager.getEntityType("TestEquipment"))) {
 				return loadEntityForContextComponent(entityType, ids);
 			} else {
-				LOGGER.debug("Cannot load entitis for entityType " + entityType + " and ids " + ids);
+				LOGGER.debug(new StringBuilder().append("Cannot load entitis for entityType ").append(entityType).append(" and ids ").append(ids).toString());
 				return Collections.emptyList();
 			}
 		} else {
@@ -113,8 +113,7 @@ public class NotificationEntityLoader {
 	 * @throws DataAccessException
 	 *             Throw if the ContextDescribables cannot be loaded.
 	 */
-	private List<ContextDescribable> loadEntityForContextRoot(EntityType contextRoot, List<String> ids)
-			throws DataAccessException {
+	private List<ContextDescribable> loadEntityForContextRoot(EntityType contextRoot, List<String> ids) {
 
 		final EntityType testStep = modelManager.getEntityType(TestStep.class);
 		final EntityType measurement = modelManager.getEntityType(Measurement.class);
@@ -147,8 +146,7 @@ public class NotificationEntityLoader {
 	 * @throws DataAccessException
 	 *             Throw if the ContextDescribables cannot be loaded.
 	 */
-	private List<ContextDescribable> loadEntityForContextComponent(EntityType contextComponent, List<String> ids)
-			throws DataAccessException {
+	private List<ContextDescribable> loadEntityForContextComponent(EntityType contextComponent, List<String> ids) {
 
 		// ContextComponent can only have one parent
 		final EntityType contextRoot = contextComponent.getParentRelations().get(0).getTarget();

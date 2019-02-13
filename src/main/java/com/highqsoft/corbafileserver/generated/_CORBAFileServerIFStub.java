@@ -31,7 +31,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  stream the input stream, ready to read by the server.
         * @return the url string of the created file.
         */
-  public String save (org.asam.ods.AoSession aoSess, String name, String subDir, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String save (org.asam.ods.AoSession aoSess, String name, String subDir, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -46,10 +47,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return save (aoSess, name, subDir, stream        );
             } finally {
@@ -81,7 +83,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  stream the input stream, ready to read by the server.
         * @return the url string of the created file.
         */
-  public String saveForInstance (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstance (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -98,10 +101,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return saveForInstance (aoSess, name, subDir, aid, iid, stream        );
             } finally {
@@ -133,7 +137,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  stream the input stream, ready to read by the server.
         * @return the url string of the created file.
         */
-  public String saveForInstanceName (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstanceName (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -150,10 +155,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return saveForInstanceName (aoSess, name, subDir, aeName, ieName, stream        );
             } finally {
@@ -177,7 +183,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  aoSess the ASAM ODS session.
         * @param  name the name of the file.
         */
-  public void delete (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void delete (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -189,10 +196,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 delete (aoSess, name        );
             } finally {
@@ -216,7 +224,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  aoSess the ASAM ODS session.
         * @param  urlo the url of the file.
         */
-  public void move (org.asam.ods.AoSession aoSess, String url) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void move (org.asam.ods.AoSession aoSess, String url) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -228,10 +237,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 move (aoSess, url        );
             } finally {
@@ -259,7 +269,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  aid the application element id.
         * @param  iid the instance element id.
         */
-  public void deleteForInstance (org.asam.ods.AoSession aoSess, String url, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void deleteForInstance (org.asam.ods.AoSession aoSess, String url, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -273,10 +284,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 deleteForInstance (aoSess, url, aid, iid        );
             } finally {
@@ -304,7 +316,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  aid the application element id.
         * @param  iid the instance element id.
         */
-  public void moveForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void moveForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -318,10 +331,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 moveForInstance (aoSess, name, aid, iid        );
             } finally {
@@ -347,7 +361,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
          * @param  host the hostname for the socket connection.
          * @param  port the port for the socket connection.
          */
-  public void getBySocket (org.asam.ods.AoSession aoSess, String name, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void getBySocket (org.asam.ods.AoSession aoSess, String name, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -361,10 +376,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 getBySocket (aoSess, name, host, aPort        );
             } finally {
@@ -392,7 +408,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
          * @param  host the hostname for the socket connection.
          * @param  port the port for the socket connection.
          */
-  public void getForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void getForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -408,10 +425,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 getForInstanceBySocket (aoSess, name, aid, iid, host, aPort        );
             } finally {
@@ -440,7 +458,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
          * @param  port the port for the socket connection.
          * @return the url string of the created file.
          */
-  public String saveBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -456,10 +475,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return saveBySocket (aoSess, name, subDir, host, aPort        );
             } finally {
@@ -490,7 +510,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
          * @param  port the port for the socket connection.
          * @return the url string of the created file.
          */
-  public String saveForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -508,10 +529,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return saveForInstanceBySocket (aoSess, name, subDir, aid, iid, host, aPort        );
             } finally {
@@ -542,7 +564,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
          * @param  port the port for the socket connection.
          * @return the url string of the created file.
          */
-  public String saveForInstanceNameBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstanceNameBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -560,10 +583,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return saveForInstanceNameBySocket (aoSess, name, subDir, aeName, ieName, host, aPort        );
             } finally {
@@ -588,7 +612,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  name the name of the file.
         * @param  stream the input stream, ready to read by the server.
         */
-  public com.highqsoft.corbafileserver.generated.InputStreamIF read (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public com.highqsoft.corbafileserver.generated.InputStreamIF read (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -601,10 +626,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return read (aoSess, name        );
             } finally {
@@ -631,7 +657,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  iid the instance element id.
         * @param  stream the input stream, ready to read by the server.
         */
-  public com.highqsoft.corbafileserver.generated.InputStreamIF readForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public com.highqsoft.corbafileserver.generated.InputStreamIF readForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -646,10 +673,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return readForInstance (aoSess, name, aid, iid        );
             } finally {
@@ -674,7 +702,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  name the name of the file.
         * @param  size the size of the input stream.
         */
-  public long getSize (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public long getSize (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -687,10 +716,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return getSize (aoSess, name        );
             } finally {
@@ -717,7 +747,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  iid the instance element id.
         * @param  size the size of the input stream.
         */
-  public long getSizeForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public long getSizeForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -732,10 +763,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return getSizeForInstance (aoSess, name, aid, iid        );
             } finally {
@@ -761,7 +793,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  parameter the parameter string. The content depends on the
         *         server side terminate implementation.
         */
-  public void terminate (org.asam.ods.AoSession aoSess, String name, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void terminate (org.asam.ods.AoSession aoSess, String name, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -774,10 +807,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 terminate (aoSess, name, parameter        );
             } finally {
@@ -805,7 +839,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @param  parameter the parameter string. The content depends on the
         *         server side terminate implementation.
         */
-  public void terminateForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void terminateForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -820,10 +855,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 terminateForInstance (aoSess, name, aid, iid, parameter        );
             } finally {
@@ -844,7 +880,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public String getHostname (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String getHostname (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -856,10 +893,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return getHostname (aoSess        );
             } finally {
@@ -882,7 +920,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         *    FILESERVER_NO_MEMORY,
         *    FILESERVER_NOT_FOUND
         */
-  public String getContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String getContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -895,10 +934,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return getContext (aoSess, key        );
             } finally {
@@ -920,7 +960,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public void setContext (org.asam.ods.AoSession aoSess, String key, String value) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void setContext (org.asam.ods.AoSession aoSess, String key, String value) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -933,10 +974,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 setContext (aoSess, key, value        );
             } finally {
@@ -957,7 +999,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public void removeContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void removeContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -969,10 +1012,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 removeContext (aoSess, key        );
             } finally {
@@ -993,7 +1037,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public String[] listContext (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String[] listContext (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -1005,10 +1050,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return listContext (aoSess        );
             } finally {
@@ -1031,7 +1077,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         * @return  The interface version of the CorbaFileServerIF.
         *
         */
-  public String getInterfaceVersion () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String getInterfaceVersion () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -1042,10 +1089,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return getInterfaceVersion (        );
             } finally {
@@ -1073,7 +1121,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
         *
         *
         */
-  public long[] getSizes (org.asam.ods.AoSession aoSess, String[] names) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public long[] getSizes (org.asam.ods.AoSession aoSess, String[] names) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
             org.omg.CORBA.portable.InputStream $in = null;
             try {
@@ -1086,10 +1135,11 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
             } catch (org.omg.CORBA.portable.ApplicationException $ex) {
                 $in = $ex.getInputStream ();
                 String _id = $ex.getId ();
-                if (_id.equals ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0"))
-                    throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
-                else
-                    throw new org.omg.CORBA.MARSHAL (_id);
+                if ("IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerException:1.0".equals (_id)) {
+					throw com.highqsoft.corbafileserver.generated.CORBAFileServerExceptionHelper.read ($in);
+				} else {
+					throw new org.omg.CORBA.MARSHAL (_id);
+				}
             } catch (org.omg.CORBA.portable.RemarshalException $rm) {
                 return getSizes (aoSess, names        );
             } finally {
@@ -1101,7 +1151,8 @@ public class _CORBAFileServerIFStub extends org.omg.CORBA.portable.ObjectImpl im
   private static String[] __ids = {
     "IDL:com/highqsoft/corbafileserver/generated/CORBAFileServerIF:1.0"};
 
-  public String[] _ids ()
+  @Override
+public String[] _ids ()
   {
     return (String[])__ids.clone ();
   }

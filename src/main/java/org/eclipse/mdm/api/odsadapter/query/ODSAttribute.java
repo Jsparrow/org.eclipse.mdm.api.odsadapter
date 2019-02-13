@@ -19,12 +19,13 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.ApplAttr;
-import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.adapter.Attribute;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.adapter.Relation;
 import org.eclipse.mdm.api.base.model.Enumeration;
+import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
 
@@ -86,11 +87,11 @@ public class ODSAttribute implements Attribute {
 
 	private boolean isIDAttribute(EntityType entityType, ApplAttr applAttr) {
 		for (Relation r : entityType.getRelations()) {
-			if (applAttr.aaName.equalsIgnoreCase(r.getName())) {
+			if (StringUtils.equalsIgnoreCase(applAttr.aaName, r.getName())) {
 				return true;
 			}
 		}
-		return "id".equalsIgnoreCase(applAttr.baName);
+		return StringUtils.equalsIgnoreCase("id", applAttr.baName);
 	}
 
 	public boolean isIdAttribute() {
@@ -189,12 +190,11 @@ public class ODSAttribute implements Attribute {
 	 */
 	@Override
 	public boolean equals(Object object) {
-		if (object instanceof ODSAttribute) {
-			Attribute attribute = (Attribute) object;
-			return getEntityType().equals(attribute.getEntityType()) && getName().equals(attribute.getName());
+		if (!(object instanceof ODSAttribute)) {
+			return false;
 		}
-
-		return false;
+		Attribute attribute = (Attribute) object;
+		return getEntityType().equals(attribute.getEntityType()) && getName().equals(attribute.getName());
 	}
 
 	/**

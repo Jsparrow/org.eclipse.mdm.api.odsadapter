@@ -135,14 +135,15 @@ public class PeakNotificationTest {
 			context.close();
 		}
 
-		if (notificationManager != null) {
-			notificationManager.deregister(NOTIFICATION_REGISTRATION_NAME);
-			notificationManager.close(true);
+		if (notificationManager == null) {
+			return;
 		}
+		notificationManager.deregister(NOTIFICATION_REGISTRATION_NAME);
+		notificationManager.close(true);
 	}
 
 	@org.junit.Test
-	public void testCreateTestStep() throws NotificationException, DataAccessException, InterruptedException {
+	public void testCreateTestStep() throws NotificationException, InterruptedException {
 		String testStepName = USER + "_TestStep";
 
 		NotificationListener l = Mockito.mock(NotificationListener.class);
@@ -172,7 +173,7 @@ public class PeakNotificationTest {
 
 	@org.junit.Test
 	public void testModifyContextRoot()
-			throws NotificationException, DataAccessException, InterruptedException, IOException {
+			throws NotificationException, InterruptedException, IOException {
 		NotificationListener l = Mockito.mock(NotificationListener.class);
 
 		notificationManager.register(NOTIFICATION_REGISTRATION_NAME, new NotificationFilter(), l);
@@ -199,7 +200,7 @@ public class PeakNotificationTest {
 
 	@org.junit.Test
 	public void testModifyContextComponent()
-			throws NotificationException, DataAccessException, InterruptedException, IOException {
+			throws NotificationException, InterruptedException, IOException {
 		NotificationListener l = Mockito.mock(NotificationListener.class);
 
 		notificationManager.register(NOTIFICATION_REGISTRATION_NAME, new NotificationFilter(), l);
@@ -224,7 +225,7 @@ public class PeakNotificationTest {
 		}
 	}
 
-	private void createTestStep(String parentName, String name) throws DataAccessException {
+	private void createTestStep(String parentName, String name) {
 		Transaction transaction = entityManager.startTransaction();
 
 		List<Test> tests = entityManager.loadAll(Test.class, parentName);
@@ -244,7 +245,7 @@ public class PeakNotificationTest {
 		transaction.commit();
 	}
 
-	private void deleteTestStep(String name) throws DataAccessException {
+	private void deleteTestStep(String name) {
 		Transaction transaction = entityManager.startTransaction();
 
 		List<TestStep> testSteps = entityManager.loadAll(TestStep.class, name);
@@ -254,7 +255,7 @@ public class PeakNotificationTest {
 		transaction.commit();
 	}
 
-	private void updateUUT(int uutId, String newValue) throws DataAccessException {
+	private void updateUUT(int uutId, String newValue) {
 
 		AoSession session = null;
 		try {
@@ -292,7 +293,7 @@ public class PeakNotificationTest {
 		}
 	}
 
-	private void updateUUTP(int tyreId, String newValue) throws DataAccessException {
+	private void updateUUTP(int tyreId, String newValue) {
 
 		AoSession session = null;
 		try {

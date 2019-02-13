@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.Deletable;
@@ -223,7 +224,7 @@ public class EntityConfig<T extends Entity> {
 	 *             Thrown if default MIME type is already defined.
 	 */
 	public void setMimeType(String mimeType) {
-		if (this.mimeType != null && !this.mimeType.isEmpty()) {
+		if (this.mimeType != null && !StringUtils.isEmpty(this.mimeType)) {
 			throw new IllegalStateException("It is not allowed to override the default MIME type.");
 		}
 
@@ -356,14 +357,13 @@ public class EntityConfig<T extends Entity> {
 		@Override
 		public boolean equals(Object object) {
 			// reference check (this == object) omitted
-			if (object instanceof Key) {
-				Key<?> other = (Key<?>) object;
-				return Objects.equals(entityClass, other.entityClass)
-						&& Objects.equals(statusAttachableClass, other.statusAttachableClass)
-						&& Objects.equals(contextType, other.contextType);
+			if (!(object instanceof Key)) {
+				return false;
 			}
-
-			return false;
+			Key<?> other = (Key<?>) object;
+			return Objects.equals(entityClass, other.entityClass)
+					&& Objects.equals(statusAttachableClass, other.statusAttachableClass)
+					&& Objects.equals(contextType, other.contextType);
 		}
 
 		/**

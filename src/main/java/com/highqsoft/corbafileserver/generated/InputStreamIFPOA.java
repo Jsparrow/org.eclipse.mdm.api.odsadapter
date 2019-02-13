@@ -23,14 +23,16 @@ public abstract class InputStreamIFPOA extends org.omg.PortableServer.Servant
     _methods.put ("reset", new java.lang.Integer (3));
   }
 
-  public org.omg.CORBA.portable.OutputStream _invoke (String $method,
+  @Override
+public org.omg.CORBA.portable.OutputStream _invoke (String $method,
                                 org.omg.CORBA.portable.InputStream in,
                                 org.omg.CORBA.portable.ResponseHandler $rh)
   {
     org.omg.CORBA.portable.OutputStream out = null;
     java.lang.Integer __method = (java.lang.Integer)_methods.get ($method);
-    if (__method == null)
-      throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
+    if (__method == null) {
+		throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
+	}
 
     switch (__method.intValue ())
     {
@@ -169,7 +171,8 @@ public abstract class InputStreamIFPOA extends org.omg.PortableServer.Servant
   private static String[] __ids = {
     "IDL:com/highqsoft/corbafileserver/generated/InputStreamIF:1.0"};
 
-  public String[] _all_interfaces (org.omg.PortableServer.POA poa, byte[] objectId)
+  @Override
+public String[] _all_interfaces (org.omg.PortableServer.POA poa, byte[] objectId)
   {
     return (String[])__ids.clone ();
   }

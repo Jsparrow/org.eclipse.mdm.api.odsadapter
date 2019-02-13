@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.adapter.Attribute;
 import org.eclipse.mdm.api.base.adapter.EntityType;
@@ -32,7 +33,6 @@ import org.eclipse.mdm.api.base.adapter.ModelManager;
 import org.eclipse.mdm.api.base.model.Unit;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Aggregation;
-import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.QueryService;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.dflt.ApplicationContext;
@@ -64,16 +64,16 @@ public class AggregationTest {
 		String nameServicePort = System.getProperty("port");
 		String serviceName = System.getProperty("service");
 
-		if (nameServiceHost == null || nameServiceHost.isEmpty()) {
+		if (nameServiceHost == null || StringUtils.isEmpty(nameServiceHost)) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
 		}
 
-		nameServicePort = nameServicePort == null || nameServicePort.isEmpty() ? String.valueOf(2809) : nameServicePort;
-		if (nameServicePort == null || nameServicePort.isEmpty()) {
+		nameServicePort = nameServicePort == null || StringUtils.isEmpty(nameServicePort) ? String.valueOf(2809) : nameServicePort;
+		if (nameServicePort == null || StringUtils.isEmpty(nameServicePort)) {
 			throw new IllegalArgumentException("name service port is unknown: define system property 'port'");
 		}
 
-		if (serviceName == null || serviceName.isEmpty()) {
+		if (serviceName == null || StringUtils.isEmpty(serviceName)) {
 			throw new IllegalArgumentException("service name is unknown: define system property 'service'");
 		}
 
@@ -94,7 +94,7 @@ public class AggregationTest {
 	}
 	
 	@org.junit.Test
-	public void testQueryIdAndNameNoAggregation() throws DataAccessException {
+	public void testQueryIdAndNameNoAggregation() {
 		ModelManager modelManager = context.getModelManager().get();
 		QueryService queryService = context.getQueryService().get();
 
@@ -115,7 +115,7 @@ public class AggregationTest {
 	}
 	
 	@org.junit.Test
-	public void testQueryIdWithAggregation() throws DataAccessException {
+	public void testQueryIdWithAggregation() {
 		ModelManager modelManager = context.getModelManager().get();
 		QueryService queryService = context.getQueryService().get();
 
@@ -133,7 +133,7 @@ public class AggregationTest {
 	}
 	
 	@org.junit.Test
-	public void testQueryFactorWithAggregation() throws DataAccessException {
+	public void testQueryFactorWithAggregation() {
 		ModelManager modelManager = context.getModelManager().get();
 		QueryService queryService = context.getQueryService().get();
 
@@ -150,7 +150,7 @@ public class AggregationTest {
 	}
 	
 	@org.junit.Test
-	public void testQueryFactorWithAndWithoutAggregation() throws DataAccessException {
+	public void testQueryFactorWithAndWithoutAggregation() {
 		ModelManager modelManager = context.getModelManager().get();
 		QueryService queryService = context.getQueryService().get();
 

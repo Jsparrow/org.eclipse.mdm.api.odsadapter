@@ -116,8 +116,7 @@ public class ODSSearchService implements SearchService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<Value> getFilterValues(Class<? extends Entity> entityClass, Attribute attribute, Filter filter)
-			throws DataAccessException {
+	public List<Value> getFilterValues(Class<? extends Entity> entityClass, Attribute attribute, Filter filter) {
 		return findSearchQuery(entityClass).getFilterValues(attribute, filter);
 	}
 
@@ -126,7 +125,7 @@ public class ODSSearchService implements SearchService {
 	 */
 	@Override
 	public <T extends Entity> List<T> fetchComplete(Class<T> entityClass, List<EntityType> entityTypes,
-			Filter filter) throws DataAccessException {
+			Filter filter) {
 		return createResult(entityClass, findSearchQuery(entityClass).fetchComplete(entityTypes, filter));
 	}
 
@@ -134,8 +133,7 @@ public class ODSSearchService implements SearchService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public <T extends Entity> List<T> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter)
-			throws DataAccessException {
+	public <T extends Entity> List<T> fetch(Class<T> entityClass, List<Attribute> attributes, Filter filter) {
 		return createResult(entityClass, findSearchQuery(entityClass).fetch(attributes, filter));
 	}
 
@@ -144,7 +142,7 @@ public class ODSSearchService implements SearchService {
 	 */
 	@Override
 	public List<Result> fetchResults(Class<? extends Entity> entityClass, List<Attribute> attributes, Filter filter,
-			String query) throws DataAccessException {
+			String query) {
 		Filter mergedFilter = getMergedFilter(filter, query);
 		if (mergedFilter.isEmtpty()) {
 			return Collections.emptyList();
@@ -152,15 +150,13 @@ public class ODSSearchService implements SearchService {
 
 		EntityType entityType = context.getODSModelManager().getEntityType(entityClass);
 		Map<String, Result> recordsByEntityID = new HashMap<>();
-		for (Result result : findSearchQuery(entityClass).fetch(attributes, mergedFilter)) {
-			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
-		}
+		findSearchQuery(entityClass).fetch(attributes, mergedFilter).forEach(result -> recordsByEntityID.put(result.getRecord(entityType).getID(), result));
 
 		return new ArrayList<>(recordsByEntityID.values());
 	}
 
 	@Override
-	public Map<Class<? extends Entity>, List<Entity>> fetch(String query) throws DataAccessException {
+	public Map<Class<? extends Entity>, List<Entity>> fetch(String query) {
 		if (freeTextSearch == null) {
 			initFreetextSearch();
 		}
@@ -187,7 +183,7 @@ public class ODSSearchService implements SearchService {
 	 *             Thrown if {@link ODSFreeTextSearch} is unavailable or cannot
 	 *             execute the query.
 	 */
-	protected Filter getMergedFilter(Filter filter, String query) throws DataAccessException {
+	protected Filter getMergedFilter(Filter filter, String query) {
 		Preconditions.checkNotNull(filter, "Filter cannot be null!");
 
 		Filter freetextIdsFilter = getFilterForFreetextQuery(query);
@@ -212,7 +208,7 @@ public class ODSSearchService implements SearchService {
 	 *             Thrown if {@link ODSFreeTextSearch} is unavailable or cannot
 	 *             execute the query.
 	 */
-	protected Map<Class<? extends Entity>, List<String>> fetchIds(String query) throws DataAccessException {
+	protected Map<Class<? extends Entity>, List<String>> fetchIds(String query) {
 		if (Strings.isNullOrEmpty(query)) {
 			return Collections.emptyMap();
 		}
@@ -237,7 +233,7 @@ public class ODSSearchService implements SearchService {
 	 *             Thrown if {@link ODSFreeTextSearch} is unavailable or cannot
 	 *             execute the query.
 	 */
-	private Filter getFilterForFreetextQuery(String query) throws DataAccessException {
+	private Filter getFilterForFreetextQuery(String query) {
 
 		if (Strings.isNullOrEmpty(query)) {
 			// No query provided => return empty filter for merging with other filters:
@@ -271,18 +267,13 @@ public class ODSSearchService implements SearchService {
 	 * @throws DataAccessException
 	 *             Thrown if unable to load the {@code Entity}s.
 	 */
-	private <T extends Entity> List<T> createResult(Class<T> entityClass, List<Result> results)
-			throws DataAccessException {
+	private <T extends Entity> List<T> createResult(Class<T> entityClass, List<Result> results) {
 		EntityType entityType = context.getODSModelManager().getEntityType(entityClass);
 		Map<String, Result> recordsByEntityID = new HashMap<>();
-		for (Result result : results) {
-			recordsByEntityID.put(result.getRecord(entityType).getID(), result);
-		}
+		results.forEach(result -> recordsByEntityID.put(result.getRecord(entityType).getID(), result));
 
 		Map<T, Result> resultsByEntity = new HashMap<>();
-		for (T entity : entityLoader.loadAll(new Key<>(entityClass), recordsByEntityID.keySet())) {
-			resultsByEntity.put(entity, recordsByEntityID.get(entity.getID()));
-		}
+		entityLoader.loadAll(new Key<>(entityClass), recordsByEntityID.keySet()).forEach(entity -> resultsByEntity.put(entity, recordsByEntityID.get(entity.getID())));
 
 		return new ArrayList<>(resultsByEntity.keySet());
 	}
@@ -298,7 +289,7 @@ public class ODSSearchService implements SearchService {
 		SearchQuery searchQuery = searchQueries.get(entityClass);
 		if (searchQuery == null) {
 			throw new IllegalArgumentException(
-					"Search query for type '" + entityClass.getSimpleName() + "' not found.");
+					new StringBuilder().append("Search query for type '").append(entityClass.getSimpleName()).append("' not found.").toString());
 		}
 
 		return searchQuery;
@@ -317,7 +308,7 @@ public class ODSSearchService implements SearchService {
 		searchQueries.put(entityClass, new MergedSearchQuery(context.getODSModelManager().getEntityType(entityClass), factory));
 	}
 
-	private void initFreetextSearch() throws DataAccessException {
+	private void initFreetextSearch() {
 		List<Environment> all = entityLoader.loadAll(new Key<>(Environment.class), "*");
 		if (all.isEmpty()) {
 			throw new DataAccessException("No environment loaded. So the Search does not know where to search");

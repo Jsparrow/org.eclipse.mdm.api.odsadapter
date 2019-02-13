@@ -21,8 +21,8 @@ import java.util.List;
 
 import org.eclipse.mdm.api.base.model.AxisType;
 import org.eclipse.mdm.api.base.model.EnumRegistry;
-import org.eclipse.mdm.api.base.model.EnumerationValue;
 import org.eclipse.mdm.api.base.model.Enumeration;
+import org.eclipse.mdm.api.base.model.EnumerationValue;
 import org.eclipse.mdm.api.base.model.Interpolation;
 import org.eclipse.mdm.api.base.model.ScalarType;
 import org.eclipse.mdm.api.base.model.SequenceRepresentation;
@@ -216,7 +216,7 @@ public final class ODSEnumerations {
 		}
 
 		throw new IllegalArgumentException(
-				"EnumerationValue mapping for type '" + constant.getClass().getSimpleName() + "' does not exist.");
+				new StringBuilder().append("EnumerationValue mapping for type '").append(constant.getClass().getSimpleName()).append("' does not exist.").toString());
 	}
 
 	/**
@@ -254,8 +254,7 @@ public final class ODSEnumerations {
 				values[i] = toODSSequenceRepresentation((SequenceRepresentation) constants[i]);
 			}
 		} else {
-			throw new IllegalArgumentException("EnumerationValue mapping for type '"
-					+ constants.getClass().getComponentType().getSimpleName() + "' does not exist.");
+			throw new IllegalArgumentException(new StringBuilder().append("EnumerationValue mapping for type '").append(constants.getClass().getComponentType().getSimpleName()).append("' does not exist.").toString());
 		}
 
 		return values;
@@ -310,8 +309,7 @@ public final class ODSEnumerations {
 			return ScalarType.ENUMERATION;
 		}
 
-		throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
-				+ ScalarType.class.getSimpleName() + "'.");
+		throw new IllegalArgumentException(new StringBuilder().append("Unable to map ODS enumeration vaue '").append(value).append("' to constant of type '").append(ScalarType.class.getSimpleName()).append("'.").toString());
 	}
 
 	/**
@@ -359,8 +357,7 @@ public final class ODSEnumerations {
 			return 30;
 		}
 
-		throw new IllegalArgumentException("Unable to map enumeration constant '" + scalarType + "' of type '"
-				+ ScalarType.class.getSimpleName() + "' to ODS enumeration value.");
+		throw new IllegalArgumentException(new StringBuilder().append("Unable to map enumeration constant '").append(scalarType).append("' of type '").append(ScalarType.class.getSimpleName()).append("' to ODS enumeration value.").toString());
 	}
 
 	/**
@@ -399,8 +396,7 @@ public final class ODSEnumerations {
 			return SequenceRepresentation.RAW_LINEAR_CALIBRATED_EXTERNAL;
 		}
 
-		throw new IllegalArgumentException("Unable to map ODS enumeration vaue '" + value + "' to constant of type '"
-				+ SequenceRepresentation.class.getSimpleName() + "'.");
+		throw new IllegalArgumentException(new StringBuilder().append("Unable to map ODS enumeration vaue '").append(value).append("' to constant of type '").append(SequenceRepresentation.class.getSimpleName()).append("'.").toString());
 	}
 
 	/**
@@ -438,8 +434,7 @@ public final class ODSEnumerations {
 			return 11;
 		}
 
-		throw new IllegalArgumentException("Unable to map enumeration constant '" + sequenceRepresentation
-				+ "' of type '" + SequenceRepresentation.class.getSimpleName() + "' to ODS enumeration value.");
+		throw new IllegalArgumentException(new StringBuilder().append("Unable to map enumeration constant '").append(sequenceRepresentation).append("' of type '").append(SequenceRepresentation.class.getSimpleName()).append("' to ODS enumeration value.").toString());
 	}
 
 	/**

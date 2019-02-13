@@ -118,9 +118,7 @@ public class CORBAFileService implements FileService {
 				}
 			});
 
-			for (FileLink other : group.subList(1, group.size())) {
-				other.setLocalPath(fileLink.getLocalPath());
-			}
+			group.subList(1, group.size()).forEach(other -> other.setLocalPath(fileLink.getLocalPath()));
 		}
 		LOGGER.debug("Sequential download with id '{}' finished in {}.", id, Duration.between(start, LocalTime.now()));
 	}
@@ -148,9 +146,7 @@ public class CORBAFileService implements FileService {
 					}
 				});
 
-				for (FileLink other : group.subList(1, group.size())) {
-					other.setLocalPath(fileLink.getLocalPath());
-				}
+				group.subList(1, group.size()).forEach(other -> other.setLocalPath(fileLink.getLocalPath()));
 
 				return null;
 			});
@@ -172,7 +168,7 @@ public class CORBAFileService implements FileService {
 			}).filter(Objects::nonNull).collect(Collectors.toList());
 
 			if (!errors.isEmpty()) {
-				throw new IOException("Download faild for '" + errors.size() + "' files.");
+				throw new IOException(new StringBuilder().append("Download faild for '").append(errors.size()).append("' files.").toString());
 			}
 			LOGGER.debug("Parallel download with id '{}' finished in {}.", id,
 					Duration.between(start, LocalTime.now()));
@@ -226,14 +222,13 @@ public class CORBAFileService implements FileService {
 		}
 
 		// NOTE: Access to immediate input stream is buffered.
-		if (progressListener != null) {
-			loadSize(entity, fileLink);
-			// NOTE: Progress updates immediately triggered by the stream
-			// consumer.
-			return new TracedInputStream(sourceStream, progressListener, fileLink.getSize());
+		if (progressListener == null) {
+			return sourceStream;
 		}
-
-		return sourceStream;
+		loadSize(entity, fileLink);
+		// NOTE: Progress updates immediately triggered by the stream
+		// consumer.
+		return new TracedInputStream(sourceStream, progressListener, fileLink.getSize());
 	}
 
 	/**
@@ -287,9 +282,7 @@ public class CORBAFileService implements FileService {
 				}
 			});
 
-			for (FileLink other : group.subList(1, group.size())) {
-				other.setRemotePath(fileLink.getRemotePath());
-			}
+			group.subList(1, group.size()).forEach(other -> other.setRemotePath(fileLink.getRemotePath()));
 		}
 		LOGGER.debug("Sequential upload with id '{}' finished in {}.", id, Duration.between(start, LocalTime.now()));
 	}
@@ -327,9 +320,7 @@ public class CORBAFileService implements FileService {
 					}
 				});
 
-				for (FileLink other : group.subList(1, group.size())) {
-					other.setRemotePath(fileLink.getRemotePath());
-				}
+				group.subList(1, group.size()).forEach(other -> other.setRemotePath(fileLink.getRemotePath()));
 
 				return null;
 			});
@@ -351,7 +342,7 @@ public class CORBAFileService implements FileService {
 			}).filter(Objects::nonNull).collect(Collectors.toList());
 
 			if (!errors.isEmpty()) {
-				throw new IOException("Upload faild for '" + errors.size() + "' files.");
+				throw new IOException(new StringBuilder().append("Upload faild for '").append(errors.size()).append("' files.").toString());
 			}
 			LOGGER.debug("Parallel upload with id '{}' finished in {}.", id, Duration.between(start, LocalTime.now()));
 		} catch (InterruptedException e) {

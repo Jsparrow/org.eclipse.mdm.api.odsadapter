@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.AoException;
 import org.asam.ods.InstanceElement;
 import org.assertj.core.api.Condition;
@@ -71,16 +72,16 @@ public class ODSContextTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConnectionException {
 
-		if (nameServiceHost == null || nameServiceHost.isEmpty()) {
+		if (nameServiceHost == null || StringUtils.isEmpty(nameServiceHost)) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
 		}
 
-		nameServicePort = nameServicePort == null || nameServicePort.isEmpty() ? String.valueOf(2809) : nameServicePort;
-		if (nameServicePort == null || nameServicePort.isEmpty()) {
+		nameServicePort = nameServicePort == null || StringUtils.isEmpty(nameServicePort) ? String.valueOf(2809) : nameServicePort;
+		if (nameServicePort == null || StringUtils.isEmpty(nameServicePort)) {
 			throw new IllegalArgumentException("name service port is unknown: define system property 'port'");
 		}
 
-		if (serviceName == null || serviceName.isEmpty()) {
+		if (serviceName == null || StringUtils.isEmpty(serviceName)) {
 			throw new IllegalArgumentException("service name is unknown: define system property 'service'");
 		}
 
@@ -117,7 +118,7 @@ public class ODSContextTest {
 		assertThat(asamPaths)
 			.hasSize(1)
 			.containsOnlyKeys(test)
-			.hasEntrySatisfying(test, new Condition<String>(s -> s.startsWith(getLinkPrefix()), ""));
+			.hasEntrySatisfying(test, new Condition<String>(s -> StringUtils.startsWith(s, getLinkPrefix()), ""));
 	}
 	
 	@org.junit.Test
@@ -131,7 +132,7 @@ public class ODSContextTest {
 		assertThat(asamPaths)
 			.hasSize(1)
 			.containsOnlyKeys(test)
-			.hasEntrySatisfying(test, new Condition<String>(s -> s.startsWith(getLinkPrefix()), ""));
+			.hasEntrySatisfying(test, new Condition<String>(s -> StringUtils.startsWith(s, getLinkPrefix()), ""));
 		// We try to load the instance from the ODS Server with the AsamPath, but without the service prefix
 		String asamPathWithoutService = asamPaths.get(test).replace(getLinkPrefix(), "");
 		
@@ -139,7 +140,7 @@ public class ODSContextTest {
 			InstanceElement ie = ((ODSContext) context).getAoSession().getApplicationStructure().getInstanceByAsamPath(asamPathWithoutService);
 			assertThat(ODSConverter.fromODSLong(ie.getId())).isEqualTo(testId);
 		} catch (AoException e) {
-			Fail.fail("Instance with AsamPath '" + asamPathWithoutService + "' could not be loaded. Reason: " + e.reason, e);
+			Fail.fail(new StringBuilder().append("Instance with AsamPath '").append(asamPathWithoutService).append("' could not be loaded. Reason: ").append(e.reason).toString(), e);
 		}
 	}
 	
@@ -168,7 +169,7 @@ public class ODSContextTest {
 		assertThat(asamPaths)
 			.hasSize(1)
 			.containsOnlyKeys(test)
-			.hasEntrySatisfying(test, new Condition<String>(s -> s.startsWith(getLinkPrefix()), ""));
+			.hasEntrySatisfying(test, new Condition<String>(s -> StringUtils.startsWith(s, getLinkPrefix()), ""));
 	}
 	
 	private String getLinkPrefix() {

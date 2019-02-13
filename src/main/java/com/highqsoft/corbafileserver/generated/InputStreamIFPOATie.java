@@ -26,7 +26,8 @@ public class InputStreamIFPOATie extends InputStreamIFPOA
   public void _delegate (com.highqsoft.corbafileserver.generated.InputStreamIFOperations delegate ) {
       this._impl = delegate;
   }
-  public org.omg.PortableServer.POA _default_POA() {
+  @Override
+public org.omg.PortableServer.POA _default_POA() {
       if(_poa != null) {
           return _poa;
       }
@@ -83,7 +84,8 @@ public class InputStreamIFPOATie extends InputStreamIFPOA
         *         of the stream has been reached.
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public int read (com.highqsoft.corbafileserver.generated.DS_BYTEHolder b, int off, int len) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public int read (com.highqsoft.corbafileserver.generated.DS_BYTEHolder b, int off, int len) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.read(b, off, len);
   } // read
@@ -94,7 +96,8 @@ public class InputStreamIFPOATie extends InputStreamIFPOA
         *
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public void close () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void close () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.close();
   } // close
@@ -106,7 +109,8 @@ public class InputStreamIFPOATie extends InputStreamIFPOA
         * @return the length of the file to be transferd.
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public int length () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public int length () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.length();
   } // length
@@ -117,7 +121,8 @@ public class InputStreamIFPOATie extends InputStreamIFPOA
         *
         * @throws CORBAFileServerException if an IO exception occurs.
         */
-  public void reset () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void reset () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.reset();
   } // reset

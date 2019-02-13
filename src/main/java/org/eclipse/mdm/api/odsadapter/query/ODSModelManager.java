@@ -28,6 +28,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.AIDName;
 import org.asam.ods.AggrFunc;
 import org.asam.ods.AoException;
@@ -262,7 +263,7 @@ public class ODSModelManager implements ModelManager {
 		try {
 			EntityType entityType = entityTypesByName.get(name);
 			if (entityType == null) {
-				throw new IllegalArgumentException("Entity with name '" + name + "' not found.");
+				throw new IllegalArgumentException(new StringBuilder().append("Entity with name '").append(name).append("' not found.").toString());
 			}
 
 			return entityType;
@@ -275,7 +276,7 @@ public class ODSModelManager implements ModelManager {
 	public EntityType getEntityTypeById(String id) {
 		Optional<EntityType> entityType = listEntityTypes().stream().filter(et -> et.getId().equals(id)).findFirst();
 		if (!entityType.isPresent()) {
-			throw new IllegalArgumentException("Entity with id '" + id + "' not found.");
+			throw new IllegalArgumentException(new StringBuilder().append("Entity with id '").append(id).append("' not found.").toString());
 		}
 
 		return entityType.get();
@@ -459,7 +460,7 @@ public class ODSModelManager implements ModelManager {
 	 *             Thrown if unable to load the unit mappings.
 	 */
 	private Map<String, String> getUnitMapping(ApplElem[] applElems) throws AoException {
-		ApplElem unitElem = Stream.of(applElems).filter(ae -> ae.beName.equals("AoUnit")).findAny()
+		ApplElem unitElem = Stream.of(applElems).filter(ae -> "AoUnit".equals(ae.beName)).findAny()
 				.orElseThrow(() -> new IllegalStateException("Application element 'Unit' is not defined."));
 
 		QueryStructureExt qse = new QueryStructureExt();
@@ -630,24 +631,22 @@ public class ODSModelManager implements ModelManager {
 		EntityConfig<ContextRoot> contextRootConfig = create(new Key<>(ContextRoot.class, contextType),
 				ODSUtils.CONTEXTTYPES.get(contextType), true);
 		contextRootConfig.addMandatory(entityConfigRepository.findRoot(new Key<>(TemplateRoot.class, contextType)));
-		for (Relation contextComponentRelation : contextRootConfig.getEntityType().getChildRelations()) {
-			EntityType contextComponentEntityType = contextComponentRelation.getTarget();
+		contextRootConfig.getEntityType().getChildRelations().stream().map(Relation::getTarget).forEach(contextComponentEntityType -> {
 			EntityConfig<ContextComponent> contextComponentConfig = create(
 					new Key<>(ContextComponent.class, contextType), contextComponentEntityType.getName(), true);
 			contextComponentConfig
 					.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateComponent.class, contextType)));
 			contextRootConfig.addChild(contextComponentConfig);
 			if (contextType.isTestEquipment()) {
-				for (Relation contextSensorRelation : contextComponentEntityType.getChildRelations()) {
-					EntityType contextSensorEntityType = contextSensorRelation.getTarget();
+				contextComponentEntityType.getChildRelations().stream().map(Relation::getTarget).forEach(contextSensorEntityType -> {
 					EntityConfig<ContextSensor> contextSensorConfig = create(new Key<>(ContextSensor.class),
 							contextSensorEntityType.getName(), true);
 					contextSensorConfig
 							.addInherited(entityConfigRepository.findImplicit(new Key<>(TemplateSensor.class)));
 					contextComponentConfig.addChild(contextSensorConfig);
-				}
+				});
 			}
-		}
+		});
 		entityConfigRepository.register(contextRootConfig);
 	}
 
@@ -661,12 +660,12 @@ public class ODSModelManager implements ModelManager {
 	private void registerTemplateRoot(ContextType contextType) {
 		String odsName = ODSUtils.CONTEXTTYPES.get(contextType);
 		EntityConfig<TemplateAttribute> templateAttributeConfig = create(
-				new Key<>(TemplateAttribute.class, contextType), "Tpl" + odsName + "Attr", true);
+				new Key<>(TemplateAttribute.class, contextType), new StringBuilder().append("Tpl").append(odsName).append("Attr").toString(), true);
 		templateAttributeConfig
 				.addInherited(entityConfigRepository.findImplicit(new Key<>(CatalogAttribute.class, contextType)));
 		templateAttributeConfig.setComparator(TemplateAttribute.COMPARATOR);
 		EntityConfig<TemplateComponent> templateComponentConfig = create(
-				new Key<>(TemplateComponent.class, contextType), "Tpl" + odsName + "Comp", true);
+				new Key<>(TemplateComponent.class, contextType), new StringBuilder().append("Tpl").append(odsName).append("Comp").toString(), true);
 		templateComponentConfig.addChild(templateAttributeConfig);
 		templateComponentConfig
 				.addMandatory(entityConfigRepository.findRoot(new Key<>(CatalogComponent.class, contextType)));
@@ -687,7 +686,7 @@ public class ODSModelManager implements ModelManager {
 			templateComponentConfig.addChild(templateSensorConfig);
 		}
 		EntityConfig<TemplateRoot> templateRootConfig = create(new Key<>(TemplateRoot.class, contextType),
-				"Tpl" + odsName + "Root", true);
+				new StringBuilder().append("Tpl").append(odsName).append("Root").toString(), true);
 		templateRootConfig.addChild(templateComponentConfig);
 		templateRootConfig.setComparator(Versionable.COMPARATOR);
 		entityConfigRepository.register(templateRootConfig);
@@ -703,11 +702,11 @@ public class ODSModelManager implements ModelManager {
 	private void registerCatalogComponent(ContextType contextType) {
 		String odsName = ODSUtils.CONTEXTTYPES.get(contextType);
 		EntityConfig<CatalogAttribute> catalogAttributeConfig = create(new Key<>(CatalogAttribute.class, contextType),
-				"Cat" + odsName + "Attr", true);
+				new StringBuilder().append("Cat").append(odsName).append("Attr").toString(), true);
 		catalogAttributeConfig.addOptional(entityConfigRepository.findRoot(new Key<>(ValueList.class)));
 		catalogAttributeConfig.setComparator(Sortable.COMPARATOR);
 		EntityConfig<CatalogComponent> catalogComponentConfig = create(new Key<>(CatalogComponent.class, contextType),
-				"Cat" + odsName + "Comp", true);
+				new StringBuilder().append("Cat").append(odsName).append("Comp").toString(), true);
 		catalogComponentConfig.addChild(catalogAttributeConfig);
 		if (contextType.isTestEquipment()) {
 			EntityConfig<CatalogAttribute> catalogSensorAttributeConfig = create(new Key<>(CatalogAttribute.class),
@@ -755,9 +754,9 @@ public class ODSModelManager implements ModelManager {
 	private String buildDefaultMimeType(ODSEntityType entityType, boolean appendName) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("application/x-asam.");
-		sb.append(entityType.getBaseName().toLowerCase(Locale.ROOT));
+		sb.append(StringUtils.lowerCase(entityType.getBaseName(), Locale.ROOT));
 		if (appendName) {
-			sb.append('.').append(entityType.getName().toLowerCase(Locale.ROOT));
+			sb.append('.').append(StringUtils.lowerCase(entityType.getName(), Locale.ROOT));
 		}
 		return sb.toString();
 	}

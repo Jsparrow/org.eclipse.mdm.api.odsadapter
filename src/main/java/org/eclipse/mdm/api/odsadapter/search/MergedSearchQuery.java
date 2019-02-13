@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import org.eclipse.mdm.api.base.adapter.Attribute;
 import org.eclipse.mdm.api.base.adapter.EntityType;
 import org.eclipse.mdm.api.base.model.Value;
-import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.base.search.SearchQuery;
@@ -86,13 +85,13 @@ final class MergedSearchQuery implements SearchQuery {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<Value> getFilterValues(Attribute attribute, Filter filter) throws DataAccessException {
+	public List<Value> getFilterValues(Attribute attribute, Filter filter) {
 		List<Value> orderValues = byOrder.getFilterValues(attribute, filter);
 		List<Value> resultValues = byResult.getFilterValues(attribute, filter);
 
 		return Stream.concat(orderValues.stream(), resultValues.stream())
 				// group by value and merge values
-				.collect(groupingBy(v -> v.extract(), reducing((v1, v2) -> v1)))
+				.collect(groupingBy(Value::extract, reducing((v1, v2) -> v1)))
 				// collect merged results
 				.values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
@@ -101,7 +100,7 @@ final class MergedSearchQuery implements SearchQuery {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) throws DataAccessException {
+	public List<Result> fetchComplete(List<EntityType> entityTypes, Filter filter) {
 		return mergeResults(byOrder.fetchComplete(entityTypes, filter), byResult.fetchComplete(entityTypes, filter));
 	}
 
@@ -109,7 +108,7 @@ final class MergedSearchQuery implements SearchQuery {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<Result> fetch(List<Attribute> attributes, Filter filter) throws DataAccessException {
+	public List<Result> fetch(List<Attribute> attributes, Filter filter) {
 		return mergeResults(byOrder.fetch(attributes, filter), byResult.fetch(attributes, filter));
 	}
 

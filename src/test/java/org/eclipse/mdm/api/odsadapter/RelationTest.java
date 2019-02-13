@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
@@ -79,16 +80,16 @@ public class RelationTest {
 		String nameServicePort = System.getProperty("port");
 		String serviceName = System.getProperty("service");
 
-		if (nameServiceHost == null || nameServiceHost.isEmpty()) {
+		if (nameServiceHost == null || StringUtils.isEmpty(nameServiceHost)) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
 		}
 
-		nameServicePort = nameServicePort == null || nameServicePort.isEmpty() ? String.valueOf(2809) : nameServicePort;
-		if (nameServicePort == null || nameServicePort.isEmpty()) {
+		nameServicePort = nameServicePort == null || StringUtils.isEmpty(nameServicePort) ? String.valueOf(2809) : nameServicePort;
+		if (nameServicePort == null || StringUtils.isEmpty(nameServicePort)) {
 			throw new IllegalArgumentException("name service port is unknown: define system property 'port'");
 		}
 
-		if (serviceName == null || serviceName.isEmpty()) {
+		if (serviceName == null || StringUtils.isEmpty(serviceName)) {
 			throw new IllegalArgumentException("service name is unknown: define system property 'service'");
 		}
 

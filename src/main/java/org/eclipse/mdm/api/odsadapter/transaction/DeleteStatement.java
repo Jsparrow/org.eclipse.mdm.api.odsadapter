@@ -40,7 +40,6 @@ import org.eclipse.mdm.api.base.model.FilesAttachable;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.ParameterSet;
 import org.eclipse.mdm.api.base.model.TestStep;
-import org.eclipse.mdm.api.base.model.Value;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.JoinType;
@@ -98,7 +97,7 @@ final class DeleteStatement extends BaseStatement {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void execute(Collection<Entity> entities) throws AoException, DataAccessException {
+	public void execute(Collection<Entity> entities) throws AoException {
 		if (entities.stream().filter(e -> !e.getTypeName().equals(getEntityType().getName())).findAny().isPresent()) {
 			throw new IllegalArgumentException("At least one given entity is of incompatible type.");
 		}
@@ -130,7 +129,7 @@ final class DeleteStatement extends BaseStatement {
 	 *             Thrown if unable to query child entities.
 	 */
 	private int delete(EntityType entityType, Collection<String> instanceIDs, boolean ignoreSiblings)
-			throws AoException, DataAccessException {
+			throws AoException {
 		if (instanceIDs.isEmpty()) {
 			return 0;
 		}
@@ -188,19 +187,17 @@ final class DeleteStatement extends BaseStatement {
 		Map<EntityType, Set<String>> children = new HashMap<>();
 		for (Result result : query.fetch(filter)) {
 			// load children of other types
-			result.stream().filter(r -> r.getID() != null && r.getID().length() > 0).forEach(r -> {
-				children.computeIfAbsent(r.getEntityType(), k -> new HashSet<>()).add(r.getID());
-			});
+			result.stream().filter(r -> r.getID() != null && r.getID().length() > 0).forEach(r -> children.computeIfAbsent(r.getEntityType(), k -> new HashSet<>()).add(r.getID()));
 
 			// collect file links to remove
 			List<FileLink> fileLinks = new ArrayList<>();
-			for (Value value : result.getRecord(entityType).getValues().values()) {
+			result.getRecord(entityType).getValues().values().forEach(value -> {
 				if (value.getValueType().isFileLink()) {
 					fileLinks.add(value.extract());
 				} else if (value.getValueType().isFileLinkSequence()) {
 					fileLinks.addAll(Arrays.asList((FileLink[]) value.extract()));
 				}
-			}
+			});
 
 			if (!fileLinks.isEmpty()) {
 				getTransaction().getUploadService().addToRemove(fileLinks);

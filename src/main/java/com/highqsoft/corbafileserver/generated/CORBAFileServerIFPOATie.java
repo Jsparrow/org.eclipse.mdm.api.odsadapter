@@ -26,7 +26,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
   public void _delegate (com.highqsoft.corbafileserver.generated.CORBAFileServerIFOperations delegate ) {
       this._impl = delegate;
   }
-  public org.omg.PortableServer.POA _default_POA() {
+  @Override
+public org.omg.PortableServer.POA _default_POA() {
       if(_poa != null) {
           return _poa;
       }
@@ -54,7 +55,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  stream the input stream, ready to read by the server.
         * @return the url string of the created file.
         */
-  public String save (org.asam.ods.AoSession aoSess, String name, String subDir, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String save (org.asam.ods.AoSession aoSess, String name, String subDir, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.save(aoSess, name, subDir, stream);
   } // save
@@ -83,7 +85,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  stream the input stream, ready to read by the server.
         * @return the url string of the created file.
         */
-  public String saveForInstance (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstance (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.saveForInstance(aoSess, name, subDir, aid, iid, stream);
   } // saveForInstance
@@ -112,7 +115,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  stream the input stream, ready to read by the server.
         * @return the url string of the created file.
         */
-  public String saveForInstanceName (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstanceName (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, com.highqsoft.corbafileserver.generated.InputStreamIF stream) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.saveForInstanceName(aoSess, name, subDir, aeName, ieName, stream);
   } // saveForInstanceName
@@ -133,7 +137,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  aoSess the ASAM ODS session.
         * @param  name the name of the file.
         */
-  public void delete (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void delete (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.delete(aoSess, name);
   } // delete
@@ -154,7 +159,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  aoSess the ASAM ODS session.
         * @param  urlo the url of the file.
         */
-  public void move (org.asam.ods.AoSession aoSess, String url) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void move (org.asam.ods.AoSession aoSess, String url) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.move(aoSess, url);
   } // move
@@ -179,7 +185,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  aid the application element id.
         * @param  iid the instance element id.
         */
-  public void deleteForInstance (org.asam.ods.AoSession aoSess, String url, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void deleteForInstance (org.asam.ods.AoSession aoSess, String url, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.deleteForInstance(aoSess, url, aid, iid);
   } // deleteForInstance
@@ -204,7 +211,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  aid the application element id.
         * @param  iid the instance element id.
         */
-  public void moveForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void moveForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.moveForInstance(aoSess, name, aid, iid);
   } // moveForInstance
@@ -227,7 +235,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
          * @param  host the hostname for the socket connection.
          * @param  port the port for the socket connection.
          */
-  public void getBySocket (org.asam.ods.AoSession aoSess, String name, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void getBySocket (org.asam.ods.AoSession aoSess, String name, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.getBySocket(aoSess, name, host, aPort);
   } // getBySocket
@@ -252,7 +261,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
          * @param  host the hostname for the socket connection.
          * @param  port the port for the socket connection.
          */
-  public void getForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void getForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.getForInstanceBySocket(aoSess, name, aid, iid, host, aPort);
   } // getForInstanceBySocket
@@ -278,7 +288,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
          * @param  port the port for the socket connection.
          * @return the url string of the created file.
          */
-  public String saveBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.saveBySocket(aoSess, name, subDir, host, aPort);
   } // saveBySocket
@@ -306,7 +317,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
          * @param  port the port for the socket connection.
          * @return the url string of the created file.
          */
-  public String saveForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstanceBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.saveForInstanceBySocket(aoSess, name, subDir, aid, iid, host, aPort);
   } // saveForInstanceBySocket
@@ -334,7 +346,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
          * @param  port the port for the socket connection.
          * @return the url string of the created file.
          */
-  public String saveForInstanceNameBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String saveForInstanceNameBySocket (org.asam.ods.AoSession aoSess, String name, String subDir, String aeName, String ieName, String host, int aPort) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.saveForInstanceNameBySocket(aoSess, name, subDir, aeName, ieName, host, aPort);
   } // saveForInstanceNameBySocket
@@ -356,7 +369,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  name the name of the file.
         * @param  stream the input stream, ready to read by the server.
         */
-  public com.highqsoft.corbafileserver.generated.InputStreamIF read (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public com.highqsoft.corbafileserver.generated.InputStreamIF read (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.read(aoSess, name);
   } // read
@@ -380,7 +394,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  iid the instance element id.
         * @param  stream the input stream, ready to read by the server.
         */
-  public com.highqsoft.corbafileserver.generated.InputStreamIF readForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public com.highqsoft.corbafileserver.generated.InputStreamIF readForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.readForInstance(aoSess, name, aid, iid);
   } // readForInstance
@@ -402,7 +417,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  name the name of the file.
         * @param  size the size of the input stream.
         */
-  public long getSize (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public long getSize (org.asam.ods.AoSession aoSess, String name) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.getSize(aoSess, name);
   } // getSize
@@ -426,7 +442,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  iid the instance element id.
         * @param  size the size of the input stream.
         */
-  public long getSizeForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public long getSizeForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.getSizeForInstance(aoSess, name, aid, iid);
   } // getSizeForInstance
@@ -449,7 +466,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  parameter the parameter string. The content depends on the
         *         server side terminate implementation.
         */
-  public void terminate (org.asam.ods.AoSession aoSess, String name, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void terminate (org.asam.ods.AoSession aoSess, String name, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.terminate(aoSess, name, parameter);
   } // terminate
@@ -474,7 +492,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @param  parameter the parameter string. The content depends on the
         *         server side terminate implementation.
         */
-  public void terminateForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void terminateForInstance (org.asam.ods.AoSession aoSess, String name, org.asam.ods.T_LONGLONG aid, org.asam.ods.T_LONGLONG iid, String parameter) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.terminateForInstance(aoSess, name, aid, iid, parameter);
   } // terminateForInstance
@@ -492,7 +511,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public String getHostname (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String getHostname (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.getHostname(aoSess);
   } // getHostname
@@ -512,7 +532,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         *    FILESERVER_NO_MEMORY,
         *    FILESERVER_NOT_FOUND
         */
-  public String getContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String getContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.getContext(aoSess, key);
   } // getContext
@@ -531,7 +552,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public void setContext (org.asam.ods.AoSession aoSess, String key, String value) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void setContext (org.asam.ods.AoSession aoSess, String key, String value) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.setContext(aoSess, key, value);
   } // setContext
@@ -549,7 +571,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public void removeContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public void removeContext (org.asam.ods.AoSession aoSess, String key) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     _impl.removeContext(aoSess, key);
   } // removeContext
@@ -567,7 +590,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         *    FILESERVER_NOT_IMPLEMENTED
         *    FILESERVER_NO_MEMORY
         */
-  public String[] listContext (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String[] listContext (org.asam.ods.AoSession aoSess) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.listContext(aoSess);
   } // listContext
@@ -587,7 +611,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         * @return  The interface version of the CorbaFileServerIF.
         *
         */
-  public String getInterfaceVersion () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public String getInterfaceVersion () throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.getInterfaceVersion();
   } // getInterfaceVersion
@@ -612,7 +637,8 @@ public class CORBAFileServerIFPOATie extends CORBAFileServerIFPOA
         *
         *
         */
-  public long[] getSizes (org.asam.ods.AoSession aoSess, String[] names) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
+  @Override
+public long[] getSizes (org.asam.ods.AoSession aoSess, String[] names) throws com.highqsoft.corbafileserver.generated.CORBAFileServerException
   {
     return _impl.getSizes(aoSess, names);
   } // getSizes

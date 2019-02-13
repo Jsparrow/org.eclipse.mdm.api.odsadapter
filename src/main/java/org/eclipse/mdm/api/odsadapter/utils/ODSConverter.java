@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.Blob;
 import org.asam.ods.DataType;
 import org.asam.ods.NameValueSeqUnit;
@@ -111,8 +112,7 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	public static List<Value> fromODSValueSeq(Attribute attribute, Aggregation aggregation, String unit, TS_ValueSeq odsValueSeq)
-			throws DataAccessException {
+	public static List<Value> fromODSValueSeq(Attribute attribute, Aggregation aggregation, String unit, TS_ValueSeq odsValueSeq) {
 		DataType dataType = odsValueSeq.u.discriminator();
 		short[] flags = odsValueSeq.flag;
 		List<Value> values = new ArrayList<>(flags.length);
@@ -299,7 +299,7 @@ public final class ODSConverter {
 				values.add(createValue(attribute, aggregation, dataType, unit, flags[i] == 15, fromODSBlob(odsValues[i])));
 			}
 		} else {
-			throw new DataAccessException("Conversion for ODS data type '" + dataType.toString() + "' does not exist.");
+			throw new DataAccessException(new StringBuilder().append("Conversion for ODS data type '").append(dataType.toString()).append("' does not exist.").toString());
 		}
 
 		return values;
@@ -360,7 +360,7 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	public static TS_ValueSeq toODSValueSeq(Attribute attribute, List<Value> values) throws DataAccessException {
+	public static TS_ValueSeq toODSValueSeq(Attribute attribute, List<Value> values) {
 		int size = values == null ? 0 : values.size();
 		short[] flags = new short[size];
 
@@ -613,7 +613,7 @@ public final class ODSConverter {
 			}
 			odsValueSeq.u.blobVal(odsValues);
 		} else {
-			throw new DataAccessException("Mapping for value type '" + type + "' does not exist.");
+			throw new DataAccessException(new StringBuilder().append("Mapping for value type '").append(type).append("' does not exist.").toString());
 		}
 
 		return odsValueSeq;
@@ -640,7 +640,7 @@ public final class ODSConverter {
 	 * @return The converted {@link T_LONGLONG} array.
 	 */
 	private static T_LONGLONG[] toLongLong(String[] value) {
-		return Stream.of(value).map(s -> toODSID(s)).toArray(T_LONGLONG[]::new);
+		return Stream.of(value).map(ODSConverter::toODSID).toArray(T_LONGLONG[]::new);
 	}
 
 	/**
@@ -652,8 +652,7 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	public static List<MeasuredValues> fromODSMeasuredValuesSeq(NameValueSeqUnit[] odsMeasuredValuesSeq)
-			throws DataAccessException {
+	public static List<MeasuredValues> fromODSMeasuredValuesSeq(NameValueSeqUnit[] odsMeasuredValuesSeq) {
 		List<MeasuredValues> measuredValues = new ArrayList<>(odsMeasuredValuesSeq.length);
 
 		for (NameValueSeqUnit odsMeasuredValues : odsMeasuredValuesSeq) {
@@ -672,7 +671,7 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	private static MeasuredValues fromODSMeasuredValues(NameValueSeqUnit odsMeasuredValues) throws DataAccessException {
+	private static MeasuredValues fromODSMeasuredValues(NameValueSeqUnit odsMeasuredValues) {
 		TS_ValueSeq odsValueSeq = odsMeasuredValues.value;
 		DataType dataType = odsValueSeq.u.discriminator();
 		ScalarType scalarType;
@@ -719,7 +718,7 @@ public final class ODSConverter {
 			values = fromODSExternalReferenceSeq(odsValueSeq.u.extRefVal());
 		} else {
 			throw new DataAccessException(
-					"Conversion for ODS measured points of type '" + dataType.toString() + "' does not exist.");
+					new StringBuilder().append("Conversion for ODS measured points of type '").append(dataType.toString()).append("' does not exist.").toString());
 		}
 
 		return scalarType.createMeasuredValues(odsMeasuredValues.valName, odsMeasuredValues.unit, values,
@@ -735,7 +734,7 @@ public final class ODSConverter {
 	 * @throws DataAccessException
 	 *             Thrown on conversion errors.
 	 */
-	public static TS_Value toODSValue(Attribute attribute, Value value) throws DataAccessException {
+	public static TS_Value toODSValue(Attribute attribute, Value value) {
 		TS_Value odsValue = new TS_Value(new TS_Union(), toODSValidFlag(value.isValid()));
 		ValueType<?> type = value.getValueType();
 
@@ -807,7 +806,7 @@ public final class ODSConverter {
 		} else if (ValueType.BLOB == type) {
 			odsValue.u.blobVal(toODSBlob(value.extract()));
 		} else {
-			throw new DataAccessException("Mapping for value type '" + type + "' does not exist.");
+			throw new DataAccessException(new StringBuilder().append("Mapping for value type '").append(type).append("' does not exist.").toString());
 		}
 
 		return odsValue;
@@ -963,7 +962,7 @@ public final class ODSConverter {
 	 * @return The converted {@code String} is returned.
 	 */
 	private static LocalDateTime fromODSDate(String input) {
-		if (input == null || input.isEmpty()) {
+		if (input == null || StringUtils.isEmpty(input)) {
 			return null;
 		}
 

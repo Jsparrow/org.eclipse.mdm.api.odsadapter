@@ -16,9 +16,9 @@ package org.eclipse.mdm.api.odsadapter.search;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
-import static org.mockito.Matchers.anyCollectionOf;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyCollectionOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -74,7 +74,7 @@ public class ODSFreeTextSearchTest {
 
 	@SuppressWarnings("unchecked")
 	@Before
-	public void init() throws DataAccessException {
+	public void init() {
 		ts = mock(TestStep.class);
 		loader = mock(EntityLoader.class);
 		List<Entity> tsList = new ArrayList<>();
@@ -86,9 +86,7 @@ public class ODSFreeTextSearchTest {
 				Collection<Long> object = (Collection<Long>) invocation.getArguments()[1];
 
 				List<Entity> res = new ArrayList<>();
-				for (int i = 0; i < object.size(); i++) {
-					res.add(ts);
-				}
+				object.forEach(anObject -> res.add(ts));
 
 				return res;
 			}
@@ -98,7 +96,7 @@ public class ODSFreeTextSearchTest {
 	}
 
 	@Test
-	public void noIndex_emptyResult() throws DataAccessException {
+	public void noIndex_emptyResult() {
 		ODSFreeTextSearch ftsOtherIndex = new ODSFreeTextSearch(loader, "UNKNOWN_INDEX", HOST);
 
 		Map<Class<? extends Entity>, List<Entity>> map = ftsOtherIndex.search("VAG_002");
@@ -139,7 +137,7 @@ public class ODSFreeTextSearchTest {
 	}
 
 	@Test(expected = IllegalStateException.class)
-	public void illegalLoadRequest_niceExceptionIsThrown() throws DataAccessException, InterruptedException {
+	public void illegalLoadRequest_niceExceptionIsThrown() throws InterruptedException {
 		loader = mock(EntityLoader.class);
 		when(loader.loadAll(any(), anyCollectionOf(String.class))).thenThrow(new DataAccessException(""));
 		createExampleIndex("TestStep", "mdm2", "asdf");
@@ -153,7 +151,7 @@ public class ODSFreeTextSearchTest {
 	}
 
 	private void createExampleIndex(String type, String name, String value, String id) throws InterruptedException {
-		String json = "{\"attr\":\"" + StringEscapeUtils.escapeJson(value) + "\"}";
+		String json = new StringBuilder().append("{\"attr\":\"").append(StringEscapeUtils.escapeJson(value)).append("\"}").toString();
 
 		client.prepareIndex(name, type, id).setSource(json).get();
 

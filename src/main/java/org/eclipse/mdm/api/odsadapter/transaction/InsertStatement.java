@@ -43,8 +43,6 @@ import org.eclipse.mdm.api.base.query.Aggregation;
 import org.eclipse.mdm.api.base.query.DataAccessException;
 import org.eclipse.mdm.api.base.query.Filter;
 import org.eclipse.mdm.api.base.query.Query;
-import org.eclipse.mdm.api.base.query.Record;
-import org.eclipse.mdm.api.base.query.Result;
 import org.eclipse.mdm.api.odsadapter.query.ODSEntityFactory;
 import org.eclipse.mdm.api.odsadapter.utils.ODSConverter;
 import org.eclipse.mdm.api.odsadapter.utils.ODSUtils;
@@ -100,7 +98,7 @@ final class InsertStatement extends BaseStatement {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void execute(Collection<Entity> entities) throws AoException, DataAccessException, IOException {
+	public void execute(Collection<Entity> entities) throws AoException, IOException {
 		entities.stream().map(ODSEntityFactory::extract).forEach(this::readEntityCore);
 		execute();
 	}
@@ -117,7 +115,7 @@ final class InsertStatement extends BaseStatement {
 	 * @throws IOException
 	 *             Thrown if a file transfer operation fails.
 	 */
-	public void executeWithCores(Collection<Core> cores) throws AoException, DataAccessException, IOException {
+	public void executeWithCores(Collection<Core> cores) throws AoException, IOException {
 		cores.forEach(this::readEntityCore);
 		execute();
 	}
@@ -139,7 +137,7 @@ final class InsertStatement extends BaseStatement {
 	 * @throws IOException
 	 *             Thrown if a file transfer operation fails.
 	 */
-	private void execute() throws AoException, DataAccessException, IOException {
+	private void execute() throws AoException, IOException {
 		List<AIDNameValueSeqUnitId> anvsuList = new ArrayList<>();
 		T_LONGLONG aID = getEntityType().getODSID();
 
@@ -171,7 +169,7 @@ final class InsertStatement extends BaseStatement {
 		}
 		long stop = System.currentTimeMillis();
 
-		LOGGER.debug("{} " + getEntityType() + " instances created in {} ms.", elemIds.length, stop - start);
+		LOGGER.debug(new StringBuilder().append("{} ").append(getEntityType()).append(" instances created in {} ms.").toString(), elemIds.length, stop - start);
 
 		for (List<Entity> children : childrenMap.values()) {
 			getTransaction().create(children);
@@ -194,8 +192,7 @@ final class InsertStatement extends BaseStatement {
 	 */
 	private void readEntityCore(Core core) {
 		if (!core.getTypeName().equals(getEntityType().getName())) {
-			throw new IllegalArgumentException("Entity core '" + core.getTypeName()
-					+ "' is incompatible with current insert statement for entity type '" + getEntityType() + "'.");
+			throw new IllegalArgumentException(new StringBuilder().append("Entity core '").append(core.getTypeName()).append("' is incompatible with current insert statement for entity type '").append(getEntityType()).append("'.").toString());
 		}
 
 		cores.add(core);
@@ -208,22 +205,16 @@ final class InsertStatement extends BaseStatement {
 		}
 
 		// add all entity values
-		for (Value value : core.getAllValues().values()) {
-			insertMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value);
-		}
+		core.getAllValues().values().forEach(value -> insertMap.computeIfAbsent(value.getName(), k -> new ArrayList<>()).add(value));
 
 		// collect file links
 		fileLinkToUpload.addAll(core.getAddedFileLinks());
 
 		// define "empty" values for informative relations
-		for (Relation relation : getEntityType().getInfoRelations()) {
-			insertMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
-		}
+		getEntityType().getInfoRelations().forEach(relation -> insertMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue()));
 
 		// define "empty" values for parent relations
-		for (Relation relation : getEntityType().getParentRelations()) {
-			insertMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue());
-		}
+		getEntityType().getParentRelations().forEach(relation -> insertMap.computeIfAbsent(relation.getName(), k -> new ArrayList<>()).add(relation.createValue()));
 
 		// replace "empty" relation values with corresponding instance IDs
 		setRelationIDs(core.getMutableStore().getCurrent());
@@ -253,8 +244,8 @@ final class InsertStatement extends BaseStatement {
 			Relation relation = getEntityType().getRelation(getModelManager().getEntityType(relatedEntity));
 			List<Value> relationValues = insertMap.get(relation.getName());
 			if (relationValues == null) {
-				throw new IllegalStateException("Relation '" + relation + "' is incompatible with insert statement "
-						+ "for entity type '" + getEntityType() + "'");
+				throw new IllegalStateException(new StringBuilder().append("Relation '").append(relation).append("' is incompatible with insert statement ").append("for entity type '").append(getEntityType()).append("'")
+						.toString());
 			}
 			relationValues.get(relationValues.size() - 1).set(relatedEntity.getID());
 		}
@@ -267,7 +258,7 @@ final class InsertStatement extends BaseStatement {
 	 * @throws DataAccessException
 	 *             Thrown if unable to query used sort indices.
 	 */
-	private void adjustMissingSortIndices() throws DataAccessException {
+	private void adjustMissingSortIndices() {
 		EntityType testStep = getEntityType();
 		EntityType test = getModelManager().getEntityType(Test.class);
 		Relation parentRelation = testStep.getRelation(test);
@@ -277,11 +268,10 @@ final class InsertStatement extends BaseStatement {
 				.group(parentRelation.getAttribute());
 
 		Filter filter = Filter.idsOnly(parentRelation, sortIndexTestSteps.keySet());
-		for (Result result : query.fetch(filter)) {
-			Record record = result.getRecord(testStep);
+		query.fetch(filter).stream().map(result -> result.getRecord(testStep)).forEach(record -> {
 			int sortIndex = (Integer) record.getValues().get(Sortable.ATTR_SORT_INDEX).extract();
 			sortIndexTestSteps.remove(record.getID(parentRelation).get()).setIndices(sortIndex + 1);
-		}
+		});
 
 		// start at 1 for all remaining
 		sortIndexTestSteps.values().forEach(tss -> tss.setIndices(0));

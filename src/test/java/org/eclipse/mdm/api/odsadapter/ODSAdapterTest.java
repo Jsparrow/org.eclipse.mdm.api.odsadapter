@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.Transaction;
@@ -113,16 +114,16 @@ public class ODSAdapterTest {
 		String nameServicePort = System.getProperty("port");
 		String serviceName = System.getProperty("service");
 
-		if (nameServiceHost == null || nameServiceHost.isEmpty()) {
+		if (nameServiceHost == null || StringUtils.isEmpty(nameServiceHost)) {
 			throw new IllegalArgumentException("name service host is unknown: define system property 'host'");
 		}
 
-		nameServicePort = nameServicePort == null || nameServicePort.isEmpty() ? String.valueOf(2809) : nameServicePort;
-		if (nameServicePort == null || nameServicePort.isEmpty()) {
+		nameServicePort = nameServicePort == null || StringUtils.isEmpty(nameServicePort) ? String.valueOf(2809) : nameServicePort;
+		if (nameServicePort == null || StringUtils.isEmpty(nameServicePort)) {
 			throw new IllegalArgumentException("name service port is unknown: define system property 'port'");
 		}
 
-		if (serviceName == null || serviceName.isEmpty()) {
+		if (serviceName == null || StringUtils.isEmpty(serviceName)) {
 			throw new IllegalArgumentException("service name is unknown: define system property 'service'");
 		}
 
@@ -185,7 +186,7 @@ public class ODSAdapterTest {
 	}
 
 	@org.junit.Test
-	public void runtTestScript() throws DataAccessException {
+	public void runtTestScript() {
 		List<CatalogComponent> catalogComponents = createCatalogComponents();
 		List<TemplateRoot> templateRoots = createTemplateRoots(catalogComponents);
 		List<TemplateTestStep> templateTestSteps = createTemplateTestSteps(templateRoots);
@@ -244,7 +245,7 @@ public class ODSAdapterTest {
 		}
 	}
 
-	private List<Project> createTestData(TemplateTest templateTest, Quantity quantity) throws DataAccessException {
+	private List<Project> createTestData(TemplateTest templateTest, Quantity quantity) {
 
 		Project project = entityFactory.createProject("simple_project");
 		Pool pool = entityFactory.createPool("simple_pool", project);
@@ -253,31 +254,25 @@ public class ODSAdapterTest {
 
 		// create measurement test data
 		List<WriteRequest> writeRequests = new ArrayList<>();
-		for (Test test : tests) {
-			for (TestStep testStep : test.getCommissionedTestSteps()) {
-				Optional<TemplateTestStep> templateTestStep = TemplateTestStep.of(testStep);
-				ContextRoot[] contextRoots = new ContextRoot[0];
-				if (templateTestStep.isPresent()) {
-					contextRoots = templateTestStep.get().getTemplateRoots().stream()
-							.map(templateRoot -> entityFactory.createContextRoot(templateRoot))
-							.toArray(ContextRoot[]::new);
-				}
-				for (int i = 1; i < 3; i++) {
-					Measurement measurement = entityFactory.createMeasurement("measurement_" + i, testStep,
-							contextRoots);
-
-					// create channels
-					List<Channel> channels = new ArrayList<>();
-					for (int j = 0; j < 9; j++) {
-						channels.add(entityFactory.createChannel("channel_ " + j, measurement, quantity));
-					}
-
-					// create channel group
-					ChannelGroup channelGroup = entityFactory.createChannelGroup("group", 10, measurement);
-					writeRequests.addAll(createMeasurementData(measurement, channelGroup, channels));
-				}
+		// create channels
+		// create channel group
+		tests.forEach(test -> test.getCommissionedTestSteps().forEach(testStep -> {
+			Optional<TemplateTestStep> templateTestStep = TemplateTestStep.of(testStep);
+			ContextRoot[] contextRoots = new ContextRoot[0];
+			if (templateTestStep.isPresent()) {
+				contextRoots = templateTestStep.get().getTemplateRoots().stream()
+						.map(entityFactory::createContextRoot).toArray(ContextRoot[]::new);
 			}
-		}
+			for (int i = 1; i < 3; i++) {
+				Measurement measurement = entityFactory.createMeasurement("measurement_" + i, testStep, contextRoots);
+				List<Channel> channels = new ArrayList<>();
+				for (int j = 0; j < 9; j++) {
+					channels.add(entityFactory.createChannel("channel_ " + j, measurement, quantity));
+				}
+				ChannelGroup channelGroup = entityFactory.createChannelGroup("group", 10, measurement);
+				writeRequests.addAll(createMeasurementData(measurement, channelGroup, channels));
+			}
+		}));
 
 		Transaction transaction = entityManager.startTransaction();
 		try {
@@ -344,20 +339,18 @@ public class ODSAdapterTest {
 		return writeRequests;
 	}
 
-	private static void delete(Transaction transaction, String key, Collection<? extends Deletable> entities)
-			throws DataAccessException {
-		LOGGER.info(">>>>>>>>>>>>>>>>> deleting " + key + "...");
+	private static void delete(Transaction transaction, String key, Collection<? extends Deletable> entities) {
+		LOGGER.info(new StringBuilder().append(">>>>>>>>>>>>>>>>> deleting ").append(key).append("...").toString());
 		long start = System.currentTimeMillis();
 		transaction.delete(entities);
-		LOGGER.info(">>>>>>>>>>>>>>>>> " + key + " deleted in " + (System.currentTimeMillis() - start) + " ms");
+		LOGGER.info(new StringBuilder().append(">>>>>>>>>>>>>>>>> ").append(key).append(" deleted in ").append(System.currentTimeMillis() - start).append(" ms").toString());
 	}
 
-	private static void create(Transaction transaction, String key, Collection<? extends Entity> entities)
-			throws DataAccessException {
-		LOGGER.info(">>>>>>>>>>>>>>>>> creating " + key + "...");
+	private static void create(Transaction transaction, String key, Collection<? extends Entity> entities) {
+		LOGGER.info(new StringBuilder().append(">>>>>>>>>>>>>>>>> creating ").append(key).append("...").toString());
 		long start = System.currentTimeMillis();
 		transaction.create(entities);
-		LOGGER.info(">>>>>>>>>>>>>>>>> " + key + " written in " + (System.currentTimeMillis() - start) + " ms");
+		LOGGER.info(new StringBuilder().append(">>>>>>>>>>>>>>>>> ").append(key).append(" written in ").append(System.currentTimeMillis() - start).append(" ms").toString());
 	}
 
 	private List<Test> createTests(int count, Pool pool, TemplateTest templateTest) {
@@ -368,9 +361,7 @@ public class ODSAdapterTest {
 
 	private TemplateTest createTemplateTest(List<TemplateTestStep> templateTestSteps) {
 		TemplateTest templateTest = entityFactory.createTemplateTest("tpl_test");
-		templateTestSteps.forEach(tts -> {
-			entityFactory.createTemplateTestStepUsage(UUID.randomUUID().toString(), templateTest, tts);
-		});
+		templateTestSteps.forEach(tts -> entityFactory.createTemplateTestStepUsage(UUID.randomUUID().toString(), templateTest, tts));
 		return templateTest;
 	}
 
@@ -380,10 +371,10 @@ public class ODSAdapterTest {
 
 		List<TemplateTestStep> templateTestSteps = new ArrayList<>();
 		TemplateTestStep templateTestStep1 = entityFactory.createTemplateTestStep("tpl_test_step_1");
-		templateRoots.forEach(tr -> templateTestStep1.setTemplateRoot(tr));
+		templateRoots.forEach(templateTestStep1::setTemplateRoot);
 		templateTestSteps.add(templateTestStep1);
 		TemplateTestStep templateTestStep2 = entityFactory.createTemplateTestStep("tpl_test_step_2");
-		templateRoots.forEach(tr -> templateTestStep2.setTemplateRoot(tr));
+		templateRoots.forEach(templateTestStep2::setTemplateRoot);
 		templateTestSteps.add(templateTestStep2);
 
 		return templateTestSteps;
@@ -396,12 +387,12 @@ public class ODSAdapterTest {
 		List<TemplateRoot> templateRoots = new ArrayList<>();
 		groups.forEach((contextType, catalogComps) -> {
 			TemplateRoot templateRoot = entityFactory.createTemplateRoot(contextType,
-					"tpl_" + toLower(contextType.name()) + "_root");
+					new StringBuilder().append("tpl_").append(toLower(contextType.name())).append("_root").toString());
 			// create child template components for template root
 			catalogComps.forEach(catalogComp -> {
 				TemplateComponent templateComponent = entityFactory
-						.createTemplateComponent("tpl_" + catalogComp.getName() + "_parent", templateRoot, catalogComp);
-				entityFactory.createTemplateComponent("tpl_" + catalogComp.getName() + "_child", templateComponent,
+						.createTemplateComponent(new StringBuilder().append("tpl_").append(catalogComp.getName()).append("_parent").toString(), templateRoot, catalogComp);
+				entityFactory.createTemplateComponent(new StringBuilder().append("tpl_").append(catalogComp.getName()).append("_child").toString(), templateComponent,
 						catalogComp);
 			});
 
@@ -435,7 +426,7 @@ public class ODSAdapterTest {
 	}
 
 	private static String toLower(String name) {
-		return name.toLowerCase(Locale.ROOT);
+		return StringUtils.lowerCase(name, Locale.ROOT);
 	}
 
 }

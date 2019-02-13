@@ -15,7 +15,7 @@
 
 package org.eclipse.mdm.api.odsadapter.utils;
 
-import com.google.common.collect.ImmutableBiMap;
+import org.apache.commons.lang3.StringUtils;
 import org.asam.ods.AggrFunc;
 import org.asam.ods.DataType;
 import org.asam.ods.SelOpcode;
@@ -24,10 +24,12 @@ import org.eclipse.mdm.api.base.adapter.RelationType;
 import org.eclipse.mdm.api.base.model.ContextType;
 import org.eclipse.mdm.api.base.model.ValueType;
 import org.eclipse.mdm.api.base.query.Aggregation;
-import org.eclipse.mdm.api.base.query.BracketOperator;
-import org.eclipse.mdm.api.base.query.JoinType;
-import org.eclipse.mdm.api.base.query.ComparisonOperator;
 import org.eclipse.mdm.api.base.query.BooleanOperator;
+import org.eclipse.mdm.api.base.query.BracketOperator;
+import org.eclipse.mdm.api.base.query.ComparisonOperator;
+import org.eclipse.mdm.api.base.query.JoinType;
+
+import com.google.common.collect.ImmutableBiMap;
 
 /**
  * Utility class provides bidirectional mappings for ODS types
@@ -168,6 +170,6 @@ public abstract class ODSUtils {
                     .build();
 
     public static boolean isValidID(String instanceID) {
-        return instanceID != null && !instanceID.isEmpty() && !"0".equals(instanceID);
+        return instanceID != null && !StringUtils.isEmpty(instanceID) && !"0".equals(instanceID);
     }
 }

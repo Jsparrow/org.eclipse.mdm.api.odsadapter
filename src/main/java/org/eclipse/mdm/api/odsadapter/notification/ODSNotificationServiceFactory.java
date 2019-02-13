@@ -17,6 +17,7 @@ package org.eclipse.mdm.api.odsadapter.notification;
 
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mdm.api.base.ConnectionException;
 import org.eclipse.mdm.api.base.ServiceNotProvidedException;
 import org.eclipse.mdm.api.base.adapter.ModelManager;
@@ -63,7 +64,7 @@ public class ODSNotificationServiceFactory {
 			throw new ConnectionException("ModelManager is not a ODSModelManager!");
 		}
 
-		if (SERVER_TYPE_PEAK.equalsIgnoreCase(type)) {
+		if (StringUtils.equalsIgnoreCase(SERVER_TYPE_PEAK, type)) {
 			String url = getParameter(parameters, PARAM_URL);
 			
 			LOGGER.info("Connecting to Peak Notification Server ...");
@@ -74,7 +75,7 @@ public class ODSNotificationServiceFactory {
 			} catch (NotificationException e) {
 				throw new ConnectionException("Could not connect to notification service!", e);
 			}
-		} else if (SERVER_TYPE_AVALON.equalsIgnoreCase(type)) {
+		} else if (StringUtils.equalsIgnoreCase(SERVER_TYPE_AVALON, type)) {
 
 			String serviceName = getParameter(parameters, ODSContextFactory.PARAM_SERVICENAME);
 			serviceName = serviceName.replace(".ASAM-ODS", "");
@@ -102,8 +103,8 @@ public class ODSNotificationServiceFactory {
 
 	private String getParameter(Map<String, String> parameters, String name) throws ConnectionException {
 		String value = parameters.get(name);
-		if (value == null || value.isEmpty()) {
-			throw new ConnectionException("Connection parameter with name '" + name + "' is either missing or empty.");
+		if (value == null || StringUtils.isEmpty(value)) {
+			throw new ConnectionException(new StringBuilder().append("Connection parameter with name '").append(name).append("' is either missing or empty.").toString());
 		}
 
 		return value;

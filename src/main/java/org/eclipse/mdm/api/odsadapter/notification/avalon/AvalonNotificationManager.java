@@ -109,7 +109,7 @@ public class AvalonNotificationManager implements NotificationService {
 		try {
 			EventProcessor consumer = new EventProcessor(orb, listener, this, nameServiceURL, serviceName);
 
-			List<String> aids = filter.getEntityTypes().stream().map(e -> e.getId()).collect(Collectors.toList());
+			List<String> aids = filter.getEntityTypes().stream().map(EntityType::getId).collect(Collectors.toList());
 
 			Set<ModificationType> modes = filter.getTypes().stream()
 					.filter(m -> !ModificationType.MODEL_MODIFIED.equals(m)).collect(Collectors.toSet());
@@ -130,20 +130,21 @@ public class AvalonNotificationManager implements NotificationService {
 	@Override
 	public void deregister(String registration) {
 		EventProcessor processor = eventProcessors.get(registration);
-		if (processor != null) {
-			processor.disconnect();
-			eventProcessors.remove(registration);
+		if (processor == null) {
+			return;
 		}
+		processor.disconnect();
+		eventProcessors.remove(registration);
 	}
 
 	@Override
 	public void close(boolean isDeregisterAll) throws NotificationException {
 		LOGGER.info("Closing NotificationManager...");
 
-		for (String registration : eventProcessors.keySet()) {
-			LOGGER.debug("Disconnecting registration '" + registration + "'.");
+		eventProcessors.keySet().forEach(registration -> {
+			LOGGER.debug(new StringBuilder().append("Disconnecting registration '").append(registration).append("'.").toString());
 			deregister(registration);
-		}
+		});
 
 		try {
 			executor.shutdown();
@@ -171,7 +172,7 @@ public class AvalonNotificationManager implements NotificationService {
 			List<String> ids = Arrays.asList(Long.toString(ODSConverter.fromODSLong(ieId)));
 
 			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace("Notification event with: entityType=" + entityType + ", user=" + user);
+				LOGGER.trace(new StringBuilder().append("Notification event with: entityType=").append(entityType).append(", user=").append(user).toString());
 			}
 
 			switch (mode) {

@@ -28,6 +28,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mdm.api.base.model.Entity;
 import org.eclipse.mdm.api.base.model.Measurement;
 import org.eclipse.mdm.api.base.model.Test;
@@ -84,10 +85,10 @@ public class ODSFreeTextSearch {
 	 * @param sourceName
 	 * @throws DataAccessException
 	 */
-	public ODSFreeTextSearch(EntityLoader entityLoader, String sourceName, String host) throws DataAccessException {
+	public ODSFreeTextSearch(EntityLoader entityLoader, String sourceName, String host) {
 		this.loader = entityLoader;
 
-		url = host + "/" + sourceName.toLowerCase() + "/_search?fields=_type,_id,_index&size=50";
+		url = new StringBuilder().append(host).append("/").append(StringUtils.lowerCase(sourceName)).append("/_search?fields=_type,_id,_index&size=50").toString();
 
 		client = new HttpClient();
 	}
@@ -162,15 +163,15 @@ public class ODSFreeTextSearch {
 		String type = object.get("_type").getAsString();
 		Class<? extends Entity> clazz = getClass4Type(type);
 
-		if (clazz != null) {
-			if (!map.containsKey(clazz)) {
-				List<String> list = new ArrayList<>();
-				map.put(clazz, list);
-			}
-
-			List<String> list = map.get(clazz);
-			list.add((String) object.get("_id").getAsString());
+		if (clazz == null) {
+			return;
 		}
+		if (!map.containsKey(clazz)) {
+			List<String> list = new ArrayList<>();
+			map.put(clazz, list);
+		}
+		List<String> list = map.get(clazz);
+		list.add((String) object.get("_id").getAsString());
 	}
 
 	/**
